@@ -1,0 +1,740 @@
+:root {
+  --bg: #07111f;
+  --bg-elevated: rgba(8, 16, 28, 0.78);
+  --panel: rgba(12, 22, 38, 0.88);
+  --panel-soft: rgba(16, 28, 48, 0.72);
+  --surface: rgba(255, 255, 255, 0.04);
+  --border: rgba(148, 163, 184, 0.18);
+  --border-strong: rgba(148, 163, 184, 0.32);
+  --text: #cbd5e1;
+  --text-strong: #f8fafc;
+  --muted: #8ca0b8;
+  --accent: #68e1fd;
+  --accent-soft: rgba(104, 225, 253, 0.14);
+  --accent-strong: #a5b4fc;
+  --shadow:
+    0 24px 80px rgba(2, 6, 23, 0.5), 0 8px 24px rgba(15, 23, 42, 0.35);
+  --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  --sans: Inter, 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  color-scheme: dark;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top, rgba(104, 225, 253, 0.16), transparent 28%),
+    radial-gradient(circle at 80% 15%, rgba(165, 180, 252, 0.14), transparent 24%),
+    linear-gradient(180deg, #06101d 0%, #091423 52%, #050b14 100%);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.5;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100svh;
+  overflow: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+.app-shell {
+  position: relative;
+  width: 100%;
+  height: 100svh;
+  overflow: hidden;
+  color-scheme: dark;
+  background:
+    radial-gradient(circle at top, rgba(104, 225, 253, 0.16), transparent 28%),
+    radial-gradient(circle at 80% 15%, rgba(165, 180, 252, 0.14), transparent 24%),
+    linear-gradient(180deg, #06101d 0%, #091423 52%, #050b14 100%);
+}
+
+.app-shell[data-theme='light'] {
+  --bg: #f6f9fc;
+  --bg-elevated: rgba(255, 255, 255, 0.88);
+  --panel: rgba(255, 255, 255, 0.94);
+  --panel-soft: rgba(243, 247, 252, 0.92);
+  --surface: rgba(255, 255, 255, 0.92);
+  --border: rgba(15, 23, 42, 0.12);
+  --border-strong: rgba(15, 23, 42, 0.22);
+  --text: #334155;
+  --text-strong: #0f172a;
+  --muted: #64748b;
+  --accent: #0284c7;
+  --accent-soft: rgba(2, 132, 199, 0.12);
+  --accent-strong: #0369a1;
+  --shadow: 0 20px 48px rgba(15, 23, 42, 0.14), 0 6px 18px rgba(15, 23, 42, 0.08);
+  color-scheme: light;
+  background:
+    radial-gradient(circle at top, rgba(56, 189, 248, 0.16), transparent 30%),
+    radial-gradient(circle at 82% 16%, rgba(14, 165, 233, 0.1), transparent 26%),
+    linear-gradient(180deg, #f9fcff 0%, #f2f7fd 54%, #eef4fb 100%);
+}
+
+.app-shell::before,
+.app-shell::after {
+  content: '';
+  position: absolute;
+  inset: auto;
+  pointer-events: none;
+  border-radius: 999px;
+  filter: blur(32px);
+  opacity: 0.7;
+}
+
+.app-shell::before {
+  width: 28rem;
+  height: 28rem;
+  top: -10rem;
+  left: -6rem;
+  background: rgba(104, 225, 253, 0.08);
+}
+
+.app-shell::after {
+  width: 24rem;
+  height: 24rem;
+  right: -8rem;
+  bottom: -7rem;
+  background: rgba(165, 180, 252, 0.08);
+}
+
+.app-hud {
+  position: absolute;
+  z-index: 2;
+  top: 28px;
+  left: 28px;
+  width: min(460px, calc(100vw - 56px));
+  padding: 20px 22px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(10, 18, 31, 0.92), rgba(10, 18, 31, 0.72));
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.app-hud h1 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.lead {
+  margin: 14px 0 0;
+  max-width: 38ch;
+  color: var(--muted);
+}
+
+.canvas-shell {
+  width: 100%;
+  height: 100%;
+}
+
+.canvas-shell .react-flow {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.04), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0.01));
+}
+
+.canvas-shell .react-flow__renderer {
+  pointer-events: auto;
+}
+
+.canvas-shell .react-flow__controls {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.canvas-shell .react-flow__controls-button {
+  width: 36px;
+  height: 36px;
+  background: rgba(10, 18, 31, 0.9);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-strong);
+}
+
+.canvas-shell .react-flow__controls-button:hover {
+  background: rgba(18, 28, 46, 0.95);
+}
+
+.canvas-shell .react-flow__controls-button svg {
+  fill: currentColor;
+}
+
+.canvas-shell .react-flow__handle {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(8, 16, 28, 0.95);
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(104, 225, 253, 0.18);
+}
+
+.canvas-shell .react-flow__handle-right {
+  right: 6px;
+}
+
+.canvas-shell .react-flow__handle-left {
+  left: 6px;
+}
+
+.canvas-shell .react-flow__attribution {
+  display: none;
+}
+
+.main-toolbar {
+  position: absolute;
+  z-index: 50;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px) saturate(140%);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.menu-bar {
+  position: absolute;
+  z-index: 50;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px) saturate(140%);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.menu-group--theme {
+  margin-left: 6px;
+}
+
+.menu-button--theme {
+  border-color: rgba(148, 163, 184, 0.26);
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.menu-group {
+  position: relative;
+}
+
+.menu-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  outline: none;
+}
+
+.menu-button:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-strong);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.menu-button--primary {
+  background: rgba(104, 225, 253, 0.15);
+  color: var(--accent);
+  border-color: rgba(104, 225, 253, 0.3);
+}
+
+.menu-button--primary:hover {
+  background: rgba(104, 225, 253, 0.25);
+  box-shadow: 0 0 12px rgba(104, 225, 253, 0.2);
+}
+
+.menu-caret {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  min-width: 190px;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(12, 18, 31, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.48);
+  display: grid;
+  gap: 4px;
+}
+
+.menu-item {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-strong);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.menu-divider {
+  height: 1px;
+  background: rgba(148, 163, 184, 0.16);
+  margin: 4px 0;
+}
+
+.menu-submenu {
+  position: relative;
+}
+
+.menu-submenu::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -10px;
+  width: 10px;
+  height: 100%;
+}
+
+.menu-submenu:hover > .menu-submenu-dropdown {
+  display: grid;
+}
+
+.menu-submenu-dropdown {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 8px);
+  min-width: 190px;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(12, 18, 31, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.48);
+  display: none;
+  gap: 4px;
+}
+
+.app-shell[data-theme='light'] .canvas-shell .react-flow {
+  background: linear-gradient(160deg, #f7faff 0%, #eef4fb 100%);
+}
+
+.app-shell[data-theme='light'] .canvas-shell .react-flow__controls {
+  border-color: rgba(15, 23, 42, 0.16);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.14);
+}
+
+.app-shell[data-theme='light'] .canvas-shell .react-flow__controls-button {
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+  color: #0f172a;
+}
+
+.app-shell[data-theme='light'] .canvas-shell .react-flow__controls-button:hover {
+  background: rgba(241, 245, 249, 0.98);
+}
+
+.app-shell[data-theme='light'] .menu-bar {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(15, 23, 42, 0.14);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+}
+
+.app-shell[data-theme='light'] .menu-button:hover {
+  background: rgba(15, 23, 42, 0.06);
+  border-color: rgba(15, 23, 42, 0.14);
+}
+
+.app-shell[data-theme='light'] .menu-button--primary {
+  background: rgba(2, 132, 199, 0.12);
+  color: #0369a1;
+  border-color: rgba(2, 132, 199, 0.3);
+}
+
+.app-shell[data-theme='light'] .menu-dropdown,
+.app-shell[data-theme='light'] .menu-submenu-dropdown {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.16);
+}
+
+.app-shell[data-theme='light'] .menu-item:hover {
+  background: rgba(15, 23, 42, 0.06);
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+.app-shell[data-theme='light'] .system-hud__panel {
+  background: rgba(255, 255, 255, 0.86);
+  border: none;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.14);
+}
+
+.app-shell[data-theme='light'] .system-hud__panel--inputs {
+  border-left: 2px solid rgba(34, 211, 238, 0.8);
+}
+
+.app-shell[data-theme='light'] .system-hud__panel--outputs {
+  border-right: 2px solid rgba(251, 146, 60, 0.8);
+}
+
+.app-shell[data-theme='light'] .system-hud__toggle {
+  background: rgba(241, 245, 249, 0.85);
+  border-color: rgba(15, 23, 42, 0.16);
+}
+
+.app-shell[data-theme='light'] .source-node,
+.app-shell[data-theme='light'] .target-node,
+.app-shell[data-theme='light'] .recipe-node {
+  color: #0f172a;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05), 0 8px 24px rgba(15, 23, 42, 0.07);
+}
+
+/* ── Source node (teal) ── */
+.app-shell[data-theme='light'] .source-node {
+  background: linear-gradient(180deg, #ffffff, #f0fdfa);
+  border-color: rgba(20, 184, 166, 0.4);
+}
+
+.app-shell[data-theme='light'] .source-node--auto {
+  background: linear-gradient(180deg, #f0fdfa, #e0faf5);
+  border-color: rgba(20, 184, 166, 0.48);
+}
+
+.app-shell[data-theme='light'] .react-flow__node.selected .source-node {
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2), 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.app-shell[data-theme='light'] .source-node__header {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.0));
+  border-bottom-color: rgba(20, 184, 166, 0.2);
+}
+
+.app-shell[data-theme='light'] .source-node__kicker {
+  color: #0d9488;
+}
+
+.app-shell[data-theme='light'] .source-node__auto-btn {
+  border-color: rgba(20, 184, 166, 0.3);
+  background: rgba(20, 184, 166, 0.06);
+  color: #94a3b8;
+}
+
+.app-shell[data-theme='light'] .source-node__auto-btn:hover {
+  color: #0d9488;
+  border-color: rgba(20, 184, 166, 0.5);
+  background: rgba(20, 184, 166, 0.1);
+}
+
+.app-shell[data-theme='light'] .source-node__auto-btn.is-active {
+  background: rgba(20, 184, 166, 0.12);
+  border-color: rgba(20, 184, 166, 0.45);
+  color: #0d9488;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.1);
+}
+
+.app-shell[data-theme='light'] .source-node__row-label--auto {
+  color: #0d9488;
+}
+
+/* ── Target node (orange) ── */
+.app-shell[data-theme='light'] .target-node {
+  background: linear-gradient(180deg, #ffffff, #fff7ed);
+  border-color: rgba(249, 115, 22, 0.38);
+}
+
+.app-shell[data-theme='light'] .target-node--auto {
+  background: linear-gradient(180deg, #fff7ed, #ffeedd);
+  border-color: rgba(249, 115, 22, 0.45);
+}
+
+.app-shell[data-theme='light'] .react-flow__node.selected .target-node {
+  border-color: #f97316;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2), 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.app-shell[data-theme='light'] .target-node__header {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.0));
+  border-bottom-color: rgba(249, 115, 22, 0.2);
+}
+
+.app-shell[data-theme='light'] .target-node__kicker {
+  color: #ea6c0f;
+}
+
+.app-shell[data-theme='light'] .target-node__auto-btn {
+  border-color: rgba(249, 115, 22, 0.3);
+  background: rgba(249, 115, 22, 0.06);
+  color: #94a3b8;
+}
+
+.app-shell[data-theme='light'] .target-node__auto-btn:hover {
+  color: #f97316;
+  border-color: rgba(249, 115, 22, 0.5);
+  background: rgba(249, 115, 22, 0.1);
+}
+
+.app-shell[data-theme='light'] .target-node__auto-btn.is-active {
+  background: rgba(249, 115, 22, 0.12);
+  border-color: rgba(249, 115, 22, 0.45);
+  color: #f97316;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.1);
+}
+
+.app-shell[data-theme='light'] .target-node__row-label--auto {
+  color: #ea6c0f;
+}
+
+/* ── Recipe node ── */
+.app-shell[data-theme='light'] .recipe-node {
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border-color: rgba(100, 116, 139, 0.2);
+}
+
+.app-shell[data-theme='light'] .recipe-node--auto {
+  background: linear-gradient(180deg, #f8fafc, #eef2f8);
+  border-color: rgba(100, 116, 139, 0.35);
+}
+
+.app-shell[data-theme='light'] .recipe-node__header {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.0));
+  border-bottom-color: rgba(15, 23, 42, 0.08);
+}
+
+.app-shell[data-theme='light'] .source-node__input,
+.app-shell[data-theme='light'] .target-node__input,
+.app-shell[data-theme='light'] .recipe-node__machine-input,
+.app-shell[data-theme='light'] .recipe-editor__field input,
+.app-shell[data-theme='light'] .recipe-editor__row input,
+.app-shell[data-theme='light'] .recipe-editor__row select {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.18);
+}
+
+.app-shell[data-theme='light'] .source-node__input {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(20, 184, 166, 0.35);
+}
+
+.app-shell[data-theme='light'] .target-node__input {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(249, 115, 22, 0.35);
+}
+
+.app-shell[data-theme='light'] .source-node__input--auto,
+.app-shell[data-theme='light'] .target-node__input--auto,
+.app-shell[data-theme='light'] .recipe-node__machine-input--auto {
+  background: rgba(241, 245, 249, 0.96);
+  color: #64748b;
+}
+
+.app-shell[data-theme='light'] .recipe-node__port-amount,
+.app-shell[data-theme='light'] .recipe-node__port-rate,
+.app-shell[data-theme='light'] .system-hud__value {
+  color: #334155;
+}
+
+.app-shell[data-theme='light'] .recipe-node__select {
+  background: rgba(255, 255, 255, 0.96);
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.24);
+}
+
+.app-shell[data-theme='light'] .recipe-node__select option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+.app-shell[data-theme='light'] .react-flow__edge.custom-edge-item .react-flow__edge-path {
+  stroke: #94a3b8 !important;
+}
+
+.app-shell[data-theme='light'] .react-flow__edge.custom-edge-fluid .react-flow__edge-path {
+  stroke: #4ddcff !important;
+}
+
+.app-shell[data-theme='light'] .recipe-node__handle--item {
+  background-color: #94a3b8 !important;
+  border-color: #94a3b8 !important;
+  box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.24) !important;
+}
+
+.app-shell[data-theme='light'] .recipe-node__handle--fluid {
+  background-color: #4ddcff !important;
+  border-color: #4ddcff !important;
+  box-shadow: 0 0 0 4px rgba(77, 220, 255, 0.26) !important;
+}
+
+.app-shell[data-theme='light'] .recipe-node__controls {
+  background: linear-gradient(180deg, rgba(245, 249, 255, 0.98), rgba(238, 245, 255, 0.98));
+  border-top-color: rgba(15, 23, 42, 0.08);
+}
+
+.app-shell[data-theme='light'] .recipe-node__footer {
+  background: linear-gradient(180deg, rgba(247, 250, 255, 0.99), rgba(241, 246, 255, 0.99));
+  border-top-color: rgba(15, 23, 42, 0.08);
+}
+
+.app-shell[data-theme='light'] .recipe-editor__overlay {
+  background: rgba(241, 245, 249, 0.72);
+}
+
+.app-shell[data-theme='light'] .recipe-editor__modal {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(244, 248, 255, 0.99));
+  border-color: rgba(15, 23, 42, 0.16);
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.18);
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+}
+
+.toolbar-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-strong);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.toolbar-btn--primary {
+  background: rgba(104, 225, 253, 0.15);
+  color: var(--accent);
+  border-color: rgba(104, 225, 253, 0.3);
+  font-weight: 600;
+}
+
+.toolbar-btn--primary:hover {
+  background: rgba(104, 225, 253, 0.25);
+  box-shadow: 0 0 12px rgba(104, 225, 253, 0.2);
+}
+
+.canvas-shell .react-flow__edge-path {
+  transition: stroke-width 0.2s ease, filter 0.2s ease;
+}
+
+.react-flow__edge.custom-edge-item:hover .react-flow__edge-path,
+.react-flow__edge.custom-edge-item.selected .react-flow__edge-path {
+  stroke-width: 4 !important;
+  filter: drop-shadow(0 0 6px rgba(229, 231, 235, 0.8));
+}
+
+.react-flow__edge.custom-edge-fluid:hover .react-flow__edge-path,
+.react-flow__edge.custom-edge-fluid.selected .react-flow__edge-path {
+  stroke-width: 4 !important;
+  filter: drop-shadow(0 0 6px rgba(77, 220, 255, 0.8));
+}
+
+.ft-btn {
+  color: var(--text-strong);
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(148,163,184,0.06);
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ft-btn:hover {
+  background: rgba(104,225,253,0.06);
+  border-color: rgba(104,225,253,0.14);
+}
+
+@media (max-width: 768px) {
+  body {
+    overflow: auto;
+  }
+
+  .app-shell {
+    height: 100dvh;
+  }
+
+  .app-hud {
+    top: 16px;
+    left: 16px;
+    width: calc(100vw - 32px);
+  }
+}

@@ -1,0 +1,186 @@
+.ep-editor__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 8, 16, 0.72);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 120;
+}
+
+.ep-editor__modal {
+  width: min(400px, calc(100vw - 48px));
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: linear-gradient(180deg, rgba(12, 20, 36, 0.98), rgba(8, 14, 28, 0.98));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  color: var(--text-strong);
+  overflow: hidden;
+}
+
+.ep-editor__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.ep-editor__eyebrow {
+  margin: 0 0 4px;
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.ep-editor__title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.ep-editor__icon-btn {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--text-strong);
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.ep-editor__body {
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.ep-editor__field {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ep-editor__field input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(3, 8, 16, 0.6);
+  color: var(--text-strong);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.ep-editor__type-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.ep-editor__type-btn {
+  padding: 10px 0;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(148, 163, 184, 0.06);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.ep-editor__type-btn:hover {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-strong);
+}
+
+.ep-editor__type-btn.is-active {
+  background: rgba(104, 225, 253, 0.14);
+  border-color: rgba(104, 225, 253, 0.36);
+  color: var(--accent);
+}
+
+.ep-editor__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.ep-editor__btn {
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.ep-editor__btn--cancel {
+  background: rgba(148, 163, 184, 0.08);
+  border-color: rgba(148, 163, 184, 0.18);
+  color: var(--text);
+}
+
+.ep-editor__btn--cancel:hover {
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.ep-editor__btn--save {
+  background: rgba(104, 225, 253, 0.14);
+  border-color: rgba(104, 225, 253, 0.32);
+  color: var(--accent);
+}
+
+.ep-editor__btn--save:hover {
+  background: rgba(104, 225, 253, 0.22);
+}
+
+/* Light theme */
+.app-shell[data-theme='light'] .ep-editor__modal {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(244, 248, 255, 0.99));
+  border-color: rgba(15, 23, 42, 0.16);
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.18);
+}
+
+.app-shell[data-theme='light'] .ep-editor__overlay {
+  background: rgba(241, 245, 249, 0.72);
+}
+
+.app-shell[data-theme='light'] .ep-editor__field input {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.18);
+}
+
+.app-shell[data-theme='light'] .ep-editor__type-btn {
+  background: rgba(15, 23, 42, 0.04);
+  border-color: rgba(15, 23, 42, 0.14);
+  color: #334155;
+}
+
+.app-shell[data-theme='light'] .ep-editor__type-btn:hover {
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.app-shell[data-theme='light'] .ep-editor__type-btn.is-active {
+  background: rgba(2, 132, 199, 0.1);
+  border-color: rgba(2, 132, 199, 0.3);
+  color: #0369a1;
+}
+
+.app-shell[data-theme='light'] .ep-editor__btn--save {
+  background: rgba(2, 132, 199, 0.1);
+  border-color: rgba(2, 132, 199, 0.3);
+  color: #0369a1;
+}
