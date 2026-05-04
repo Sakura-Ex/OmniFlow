@@ -2,10 +2,14 @@ export type ResourceCategory = string
 
 export type RoutingMode = 'global' | 'wired'
 
+export type MeasureMode = 'per_cycle' | 'rate_per_tick' | 'rate_per_sec'
+
 export interface Resource {
   category: ResourceCategory
   id: string
   amount: number
+  measure_mode?: MeasureMode
+  consumable?: boolean
   probability?: number
   routing_mode?: RoutingMode
   routing_locked?: boolean
@@ -20,6 +24,7 @@ export interface UtilityDef {
   amount_mutable: boolean
   routing_mode: RoutingMode
   routing_locked: boolean
+  measure_mode?: MeasureMode
 }
 
 export interface MachineArchetype {

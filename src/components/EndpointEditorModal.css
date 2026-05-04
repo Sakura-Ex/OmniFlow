@@ -78,33 +78,82 @@
   font-size: 13px;
 }
 
-.ep-editor__type-row {
+/* ── Port table (multi-port edit) ── */
+
+.ep-editor__port-table {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 4px;
 }
 
-.ep-editor__type-btn {
-  padding: 10px 0;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(148, 163, 184, 0.06);
-  color: var(--text);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-  text-transform: none;
-  letter-spacing: 0;
+.ep-editor__port-table-header,
+.ep-editor__port-row {
+  display: grid;
+  grid-template-columns: 1fr 100px 32px;
+  gap: 6px;
+  align-items: center;
 }
 
-.ep-editor__type-btn:hover {
-  background: rgba(148, 163, 184, 0.12);
+.ep-editor__port-table-header {
+  font-size: 10px;
+  color: rgba(148, 163, 184, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.ep-editor__port-row input,
+.ep-editor__port-row select {
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(3, 8, 16, 0.6);
   color: var(--text-strong);
+  font-family: var(--mono);
+  font-size: 12px;
 }
 
-.ep-editor__type-btn.is-active {
-  background: rgba(104, 225, 253, 0.14);
-  border-color: rgba(104, 225, 253, 0.36);
+.ep-editor__port-row select {
+  cursor: pointer;
+}
+
+.ep-editor__port-remove-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: rgba(248, 113, 113, 0.08);
+  color: #fca5a5;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ep-editor__port-remove-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.ep-editor__add-port-btn {
+  display: block;
+  width: 100%;
+  padding: 10px 0;
+  border: 2px dashed rgba(148, 163, 184, 0.18);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 12px;
+  margin-top: 4px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.ep-editor__add-port-btn:hover {
+  border-color: var(--accent);
   color: var(--accent);
 }
 
@@ -157,26 +206,12 @@
   background: rgba(241, 245, 249, 0.72);
 }
 
-.app-shell[data-theme='light'] .ep-editor__field input {
+.app-shell[data-theme='light'] .ep-editor__field input,
+.app-shell[data-theme='light'] .ep-editor__port-row input,
+.app-shell[data-theme='light'] .ep-editor__port-row select {
   background: #f8fafc;
   color: #0f172a;
   border-color: rgba(15, 23, 42, 0.18);
-}
-
-.app-shell[data-theme='light'] .ep-editor__type-btn {
-  background: rgba(15, 23, 42, 0.04);
-  border-color: rgba(15, 23, 42, 0.14);
-  color: #334155;
-}
-
-.app-shell[data-theme='light'] .ep-editor__type-btn:hover {
-  background: rgba(15, 23, 42, 0.08);
-}
-
-.app-shell[data-theme='light'] .ep-editor__type-btn.is-active {
-  background: rgba(2, 132, 199, 0.1);
-  border-color: rgba(2, 132, 199, 0.3);
-  color: #0369a1;
 }
 
 .app-shell[data-theme='light'] .ep-editor__btn--save {

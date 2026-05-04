@@ -11,7 +11,7 @@ function emptyDef(): ResourceCategoryDef {
   return {
     id: '',
     displayName: '',
-    unit: '',
+    base_unit: '',
     themeColor: '#94a3b8',
     defaultRouting: 'wired',
   }
@@ -60,8 +60,8 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
               <input
                 type="text"
                 placeholder="单位 (如 RPM)"
-                value={draft.unit}
-                onChange={(e) => setDraft((prev) => ({ ...prev, unit: e.target.value }))}
+                value={draft.base_unit}
+                onChange={(e) => setDraft((prev) => ({ ...prev, base_unit: e.target.value }))}
               />
               <input
                 type="color"
@@ -103,8 +103,8 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
                   />
                   <input
                     type="text"
-                    value={entry.unit}
-                    onChange={(e) => updateCategory(entry.id, { unit: e.target.value })}
+                    value={entry.base_unit}
+                    onChange={(e) => updateCategory(entry.id, { base_unit: e.target.value })}
                     className="resource-registry__mono"
                   />
                   <input

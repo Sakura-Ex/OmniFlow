@@ -3,7 +3,7 @@ import type { MachineArchetype, Resource, RoutingMode, UtilityDef } from '../../
 import { customGenericArchetype } from './customGeneric'
 import { fluidNetworkedArchetype } from './fluidNetworked'
 import { gtElectricArchetype } from './gtElectric'
-import { deriveUtilityAmount, inferUtilityCategory } from './shared'
+import { deriveUtilityAmount } from './shared'
 
 // Add new archetypes by creating a new file and registering it here.
 export const machineArchetypeRegistry: Record<string, MachineArchetype> = {
@@ -48,9 +48,10 @@ export function applyArchetypeToInputs(
     const routingMode: RoutingMode = existing?.routing_mode ?? def.routing_mode
 
     return {
-      category: inferUtilityCategory(def.type),
+      category: def.type,
       id: utilityId,
       amount: typeof existing?.amount === 'number' ? existing.amount : defaultAmount,
+      measure_mode: def.measure_mode ?? existing?.measure_mode ?? 'per_cycle',
       probability: existing?.probability,
       _uid: existing?._uid ?? `utility-${utilityId}`,
       is_utility: true,

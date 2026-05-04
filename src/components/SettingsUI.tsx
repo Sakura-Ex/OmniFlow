@@ -1,12 +1,12 @@
 import { useMemo, useState, useEffect, useRef, type Dispatch, type SetStateAction } from 'react'
-import type { Resource } from '../types/types'
+import type { Resource, MeasureMode } from '../types/types'
 import { GT_VOLTAGE_TIERS, evaluateGtMultiblockState } from '../modifiers/gtMultiblock'
 import { listModifiers } from '../modifiers/registry'
 import { createDefaultModifierState, patchModifierSchemaWithNodeResources } from '../modifiers/state'
 import { getMachineArchetype, machineArchetypes } from '../data/archetypes/index'
 import { useResourceRegistry } from '../registry/resourceRegistry'
-import { FALLBACK_CATEGORY } from '../registry/defaults'
-import type { ResourceCategoryDef } from '../registry/types'
+import { buildUnitSuffix } from '../registry/units'
+import { resolveCategoryDef } from '../utils/endpointNorm'
 
 type SettingsUIProps = {
   machineName: string
@@ -34,6 +34,7 @@ const emptyResource = (): Resource => ({
   category: 'item',
   id: '',
   amount: 1,
+  measure_mode: 'per_cycle',
   routing_mode: 'wired',
   routing_locked: false,
   _uid: crypto.randomUUID(),
@@ -91,22 +92,6 @@ function normalizeGtHatches(state: Record<string, unknown>): Array<{ tier: strin
     }))
     .filter((row: { amps: number }) => row.amps > 0)
   return rows.length > 0 ? rows : [{ tier: 'LV', amps: 1 }]
-}
-
-function resolveCategoryDef(
-  categories: Record<string, ResourceCategoryDef>,
-  typeId?: string | null
-): ResourceCategoryDef {
-  if (!typeId) return FALLBACK_CATEGORY
-  const exact = categories[typeId]
-  if (exact) return exact
-  const colonIdx = typeId.indexOf(':')
-  if (colonIdx > 0) {
-    const ns = typeId.slice(0, colonIdx)
-    const nsMatch = categories[ns]
-    if (nsMatch) return nsMatch
-  }
-  return FALLBACK_CATEGORY
 }
 
 export function SettingsUI(props: SettingsUIProps) {
@@ -226,6 +211,7 @@ export function SettingsUI(props: SettingsUIProps) {
           <div className="recipe-editor__row recipe-editor__row--resource-route-header">
             <span className="recipe-editor__row-header-item">ID</span>
             <span className="recipe-editor__row-header-item">数量</span>
+            <span className="recipe-editor__row-header-item">度量</span>
             <span className="recipe-editor__row-header-item">类型</span>
             <span className="recipe-editor__row-header-item"></span>
             <span className="recipe-editor__row-header-item"></span>
@@ -234,7 +220,10 @@ export function SettingsUI(props: SettingsUIProps) {
         )}
         {materialInputRows.map(({ resource: input, index }) => {
           const rate = inputRateMap.get(input.id)
+          const catDef = registryCategories[input.category]
+          const suffix = catDef ? buildUnitSuffix(catDef.base_unit, input.measure_mode) : input.category
           const rateText = rate !== undefined ? `${formatRate(rate)}/s` : ''
+
           return (
             <div className="recipe-editor__row recipe-editor__row--resource-route" key={input._uid ?? `input-${index}`}>
               <input
@@ -243,12 +232,23 @@ export function SettingsUI(props: SettingsUIProps) {
                 value={input.id}
                 onChange={(e) => updateResourceAtIndex(setBaseInputs, index, { id: e.target.value })}
               />
-              <input
-                type="number"
-                min={0}
-                value={input.amount}
-                onChange={(e) => updateResourceAtIndex(setBaseInputs, index, { amount: Number(e.target.value) })}
-              />
+              <div className="recipe-editor__input-wrap">
+                <input
+                  type="number"
+                  min={0}
+                  value={input.amount}
+                  onChange={(e) => updateResourceAtIndex(setBaseInputs, index, { amount: Number(e.target.value) })}
+                />
+                <span className="recipe-editor__input-suffix">{suffix}</span>
+              </div>
+              <select
+                value={input.measure_mode ?? 'per_cycle'}
+                onChange={(e) => updateResourceAtIndex(setBaseInputs, index, { measure_mode: e.target.value as MeasureMode })}
+              >
+                <option value="per_cycle">/次</option>
+                <option value="rate_per_tick">/t</option>
+                <option value="rate_per_sec">/s</option>
+              </select>
               <select
                 value={input.category}
                 onChange={(e) => updateResourceAtIndex(setBaseInputs, index, { category: e.target.value })}
@@ -328,10 +328,11 @@ export function SettingsUI(props: SettingsUIProps) {
             const catDef = resolveCategoryDef(registryCategories, typeId)
 
             if (isReadOnlyTag) {
+              const utilSuffix = buildUnitSuffix(catDef.base_unit, input.measure_mode)
               return (
                 <div className="recipe-settings__utility-label" key={input._uid ?? `utility-${index}`}>
                   <span className="recipe-settings__utility-label-text">
-                    {catDef.displayName} ({input.id}) : {input.amount} {catDef.unit}
+                    {catDef.displayName} ({input.id}) : {input.amount} {utilSuffix}
                   </span>
                   <span className="recipe-settings__utility-badges">
                     <span className="recipe-settings__utility-badge">{input.routing_mode === 'global' ? '🌐' : '🔌'}</span>
@@ -341,8 +342,9 @@ export function SettingsUI(props: SettingsUIProps) {
               )
             }
 
+            const utilSuffix = buildUnitSuffix(catDef.base_unit, input.measure_mode)
             const actualText = catDef.id !== '_fallback'
-              ? `${formatPower(previewPowerActualEu)} ${catDef.unit}`
+              ? `${formatPower(previewPowerActualEu)} ${utilSuffix}`
               : ''
 
             return (
@@ -356,7 +358,7 @@ export function SettingsUI(props: SettingsUIProps) {
                     disabled={!isAmountMutable}
                     onChange={(e) => updateResourceAtIndex(setBaseInputs, index, { amount: Number(e.target.value) })}
                   />
-                  <span className="recipe-editor__input-suffix">{catDef.unit}</span>
+                  <span className="recipe-editor__input-suffix">{utilSuffix}</span>
                 </div>
                 <span></span>
                 <button
@@ -581,7 +583,7 @@ export function SettingsUI(props: SettingsUIProps) {
                 </label>
 
                 <div className="recipe-settings__multiblock-summary">
-                  <span>⚡ 机器总能量池: {formatPower(summary.totalEuPerTick)} {resolveCategoryDef(registryCategories, 'gt:eu').unit}</span>
+                  <span>⚡ 机器总能量池: {formatPower(summary.totalEuPerTick)} {buildUnitSuffix(resolveCategoryDef(registryCategories, 'gt:eu').base_unit, 'rate_per_tick')}</span>
                   <span>👑 最高运行层级: {summary.highestTier}</span>
                   {!summary.canStart && baseEuPerTick > 0 && (
                     <span style={{ color: 'var(--color-danger, #f87171)' }}>⛔ 能量池不足，无法启动</span>
@@ -590,7 +592,7 @@ export function SettingsUI(props: SettingsUIProps) {
                     <>
                       <span>🔁 实际并行: ×{summary.actualParallel}</span>
                       <span>🔁 实际超频: {summary.actualOverclockCount} 次</span>
-                      <span>⚡ 最终功耗: {formatPower(summary.finalEuPerTick)} {resolveCategoryDef(registryCategories, 'gt:eu').unit}</span>
+                      <span>⚡ 最终功耗: {formatPower(summary.finalEuPerTick)} {buildUnitSuffix(resolveCategoryDef(registryCategories, 'gt:eu').base_unit, 'rate_per_tick')}</span>
                       <span>⏱️ 时间缩放: ×{summary.finalDurationScale.toFixed(4)}</span>
                     </>
                   )}
@@ -690,14 +692,17 @@ export function SettingsUI(props: SettingsUIProps) {
           <div className="recipe-editor__row recipe-editor__row--resource-route-header">
             <span className="recipe-editor__row-header-item">ID</span>
             <span className="recipe-editor__row-header-item">数量</span>
+            <span className="recipe-editor__row-header-item">度量</span>
             <span className="recipe-editor__row-header-item">类型</span>
             <span className="recipe-editor__row-header-item"></span>
             <span className="recipe-editor__row-header-item"></span>
-            <span className="recipe-editor__row-header-item">速率</span>
+            <span className="recipe-editor__row-header-item">实际速率</span>
           </div>
         )}
         {outputRows.map(({ resource: output, index }) => {
           const rate = outputRateMap.get(output.id)
+          const catDef = registryCategories[output.category]
+          const suffix = catDef ? buildUnitSuffix(catDef.base_unit, output.measure_mode) : output.category
           const rateText = rate !== undefined ? `${formatRate(rate)}/s` : ''
           return (
             <div className="recipe-editor__row recipe-editor__row--resource-route" key={output._uid ?? `output-${index}`}>
@@ -707,12 +712,23 @@ export function SettingsUI(props: SettingsUIProps) {
                 value={output.id}
                 onChange={(e) => updateResourceAtIndex(setBaseOutputs, index, { id: e.target.value })}
               />
-              <input
-                type="number"
-                min={0}
-                value={output.amount}
-                onChange={(e) => updateResourceAtIndex(setBaseOutputs, index, { amount: Number(e.target.value) })}
-              />
+              <div className="recipe-editor__input-wrap">
+                <input
+                  type="number"
+                  min={0}
+                  value={output.amount}
+                  onChange={(e) => updateResourceAtIndex(setBaseOutputs, index, { amount: Number(e.target.value) })}
+                />
+                <span className="recipe-editor__input-suffix">{suffix}</span>
+              </div>
+              <select
+                value={output.measure_mode ?? 'per_cycle'}
+                onChange={(e) => updateResourceAtIndex(setBaseOutputs, index, { measure_mode: e.target.value as MeasureMode })}
+              >
+                <option value="per_cycle">/次</option>
+                <option value="rate_per_tick">/t</option>
+                <option value="rate_per_sec">/s</option>
+              </select>
               <select
                 value={output.category}
                 onChange={(e) => updateResourceAtIndex(setBaseOutputs, index, { category: e.target.value })}

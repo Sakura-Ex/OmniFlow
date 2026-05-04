@@ -7,6 +7,13 @@ export interface RecipePort extends Resource {
   type?: 'item' | 'fluid'
 }
 
+export interface EndpointPort {
+  id: string
+  amount: number
+  item_type: string
+  _uid?: string
+}
+
 /** 供应源模式：limit=设定上限 | infinite=无限供应 */
 export type SourceNodeMode = 'limit' | 'infinite'
 /** 配方机器模式：limit=产能上限 | auto=按需运转 */
@@ -15,26 +22,34 @@ export type RecipeNodeMode = 'limit' | 'auto'
 export type TargetNodeMode = 'demand' | 'maximize' | 'overflow'
 
 export interface SourceNodeData {
-  id: string
-  label: string
-  amount: number
+  /** Multi-port definition — primary data shape */
+  ports?: EndpointPort[]
+  /** @deprecated legacy single-port fields, normalized to ports[0] by normalizeEndpoint */
+  id?: string
+  label?: string
+  amount?: number
   item_type?: string
   mode?: SourceNodeMode
   /** @deprecated 由 mode 替代，保留以兼容旧存档 */
   is_auto?: boolean
   actual_amount?: number
+  actual_amounts?: Record<string, number>
   is_virtual?: boolean
 }
 
 export interface TargetNodeData {
-  id: string
-  label: string
-  amount: number
+  /** Multi-port definition — primary data shape */
+  ports?: EndpointPort[]
+  /** @deprecated legacy single-port fields, normalized to ports[0] by normalizeEndpoint */
+  id?: string
+  label?: string
+  amount?: number
   item_type?: string
   mode?: TargetNodeMode
   /** @deprecated 由 mode 替代，保留以兼容旧存档 */
   is_auto?: boolean
   actual_amount?: number
+  actual_amounts?: Record<string, number>
   is_virtual?: boolean
 }
 

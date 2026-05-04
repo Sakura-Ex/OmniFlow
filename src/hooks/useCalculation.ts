@@ -3,8 +3,9 @@ import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type { Edge, Node } from 'reactflow'
 import type { RecipeNodeData } from '../types/recipe'
 import type { CalculateResponse } from '../types/api'
-import { ensureRecipeDataShape, getCalculatedRates, toLegacyPort } from '../modifiers/calculate'
+import { ensureRecipeDataShape, getCalculatedRates, toLegacyPort, normalizePayloadResources } from '../modifiers/calculate'
 import { buildTopologicalNets, translatePortIds } from '../utils/topologicalNets'
+import { normalizeEndpointPorts } from '../utils/endpointNorm'
 
 const VIRTUAL_GLOBAL_SOURCE = 'Virtual_Global_Source'
 const VIRTUAL_GLOBAL_TARGET = 'Virtual_Global_Target'
@@ -108,52 +109,82 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       }
 
       if (n.type === 'sourceNode' || n.type === 'targetNode') {
-        const resourceId: string = n.data?.id ?? n.id
-        const itemType: string = n.data?.item_type ?? 'item'
-        const qualifiedId = `${itemType}:${resourceId}`
-        const translated = netLookup.get(`${n.id}|${qualifiedId}`) ?? `Void_${n.id}_${qualifiedId}`
-        namespaceAlias.set(translated, resourceId)
+        const ports = normalizeEndpointPorts(n.data)
+        for (const port of ports) {
+          if (!port.id) continue
+          const itemType = port.item_type ?? 'item'
+          const qualifiedId = `${itemType}:${port.id}`
+          const translated = netLookup.get(`${n.id}|${qualifiedId}`) ?? `Void_${n.id}_${qualifiedId}`
+          namespaceAlias.set(translated, port.id)
+        }
       }
     }
 
     // ── Step 3: compile payload nodes with translated port IDs (Task 2) ──────
-    const payloadNodes = nodesRef.current.map((n) => {
-      // Source / target nodes have a single port whose ID equals data.id.
-      // We must rewrite that ID to the same net name used on the edge handles,
-      // otherwise the backend can't match the edge to the node port.
+    // Multi-port SourceNode/TargetNode are exploded into N single-port nodes
+    // so the backend's simple LP model can handle them independently.
+    const subNodeToOriginalId = new Map<string, string>() // subId → originalNodeId
+    const portHandleToSubNodeId = new Map<string, string>() // "origNodeId|handleId" → subId
+
+    const payloadNodes: Array<{ id: string; type: string; data: Record<string, unknown> }> = []
+    for (const n of nodesRef.current) {
       if (n.type === 'sourceNode' || n.type === 'targetNode') {
-        const resourceId: string = n.data?.id ?? n.id
-        const itemType: string = n.data?.item_type ?? 'item'
-        const qualifiedId = `${itemType}:${resourceId}`
-        const key = `${n.id}|${qualifiedId}`
-        const netName = netLookup.get(key) ?? qualifiedId
-        return { id: n.id, type: n.type, data: { ...n.data, id: netName } }
+        const ports = normalizeEndpointPorts(n.data)
+        const isAuto = resolveIsAuto(n.data)
+        const mode: string = n.data?.mode ?? (n.type === 'sourceNode' ? (isAuto ? 'infinite' : 'limit') : (isAuto ? 'maximize' : 'demand'))
+
+        ports.forEach((port, pi) => {
+          const itemType = port.item_type ?? 'item'
+          const qualifiedId = `${itemType}:${port.id}`
+          const key = `${n.id}|${qualifiedId}`
+          const netName = netLookup.get(key) ?? qualifiedId
+          const subId = `${n.id}__p${pi}`
+
+          subNodeToOriginalId.set(subId, n.id)
+           portHandleToSubNodeId.set(key, subId)
+
+          payloadNodes.push({
+             id: subId,
+             type: n.type ?? 'sourceNode',
+             data: {
+               id: netName,
+               amount: port.amount,
+               is_auto: isAuto,
+               mode,
+             },
+           })
+        })
+        continue
       }
 
-      if (n.type !== 'recipeNode') return { id: n.id, type: n.type, data: n.data }
+      if (n.type !== 'recipeNode') {
+        payloadNodes.push({ id: n.id, type: n.type ?? 'unknown', data: n.data as Record<string, unknown> })
+        continue
+      }
 
       const shaped = shapedRecipeByNodeId.get(n.id)!
       const calculated = getCalculatedRates(shaped)
 
-      const rawInputs = calculated.inputRates.map(toLegacyPort)
-      const rawOutputs = calculated.outputRates.map(toLegacyPort)
+      const normInputs = normalizePayloadResources(calculated.inputRates)
+      const normOutputs = normalizePayloadResources(calculated.outputRates)
 
-      return {
+      const rawInputs = normInputs.map(toLegacyPort)
+      const rawOutputs = normOutputs.map(toLegacyPort)
+
+      payloadNodes.push({
         id: n.id,
         type: n.type,
         data: {
           ...shaped,
-          // Task 2: rewrite port IDs to net names
           inputs: translatePortIds(rawInputs, n.id, netLookup),
           outputs: translatePortIds(rawOutputs, n.id, netLookup),
           duration_ticks: 20,
         },
-      }
-    })
+      })
+    }
 
     // ── Step 4: build wired edges with translated handle IDs (Task 3) ─────────
-    // The backend matches edges to ports by their handle string; since we've
-    // renamed port IDs in the node payload, we must rename handles here too.
+    // Redirect edge source/target to exploded sub-node IDs when applicable.
     const wiredEdges = physicalEdges.map((e) => {
       const srcNetName = e.sourceHandle
         ? (netLookup.get(`${e.source}|${e.sourceHandle}`) ?? e.sourceHandle)
@@ -161,9 +192,18 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       const tgtNetName = e.targetHandle
         ? (netLookup.get(`${e.target}|${e.targetHandle}`) ?? e.targetHandle)
         : e.targetHandle
+
+      // Redirect to sub-node ID if the source/target was exploded
+      const srcSubId = e.sourceHandle
+        ? (portHandleToSubNodeId.get(`${e.source}|${e.sourceHandle}`) ?? e.source)
+        : e.source
+      const tgtSubId = e.targetHandle
+        ? (portHandleToSubNodeId.get(`${e.target}|${e.targetHandle}`) ?? e.target)
+        : e.target
+
       return {
-        source: e.source,
-        target: e.target,
+        source: srcSubId,
+        target: tgtSubId,
         sourceHandle: srcNetName,
         targetHandle: tgtNetName,
       }
@@ -256,23 +296,52 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
 
           if (node.type === 'sourceNode') {
             const isAuto = resolveIsAuto(nextData)
+            // Aggregate exploded sub-node results → per-port actual_amounts
+            const ports = normalizeEndpointPorts(node.data)
+            const actualAmounts: Record<string, number> = {}
+            let totalActual = 0
+            for (const port of ports) {
+              const itemType = port.item_type ?? 'item'
+              const qualifiedId = `${itemType}:${port.id}`
+              const key = `${node.id}|${qualifiedId}`
+              const subNodeId = portHandleToSubNodeId.get(key)
+              if (subNodeId) {
+                const subResult = nodeResults[subNodeId]
+                const amt = typeof subResult?.actual_amount === 'number' ? subResult.actual_amount : 0
+                actualAmounts[port.id] = amt
+                totalActual += amt
+              }
+            }
             nextData = {
               ...nextData,
               is_auto: isAuto,
-              actual_amount: typeof directNodeResult?.actual_amount === 'number'
-                ? directNodeResult.actual_amount
-                : nextSystemInputs[nextData.id],
+              actual_amount: totalActual,
+              actual_amounts: actualAmounts,
             }
           }
 
           if (node.type === 'targetNode') {
             const isAuto = resolveIsAuto(nextData)
+            const ports = normalizeEndpointPorts(node.data)
+            const actualAmounts: Record<string, number> = {}
+            let totalActual = 0
+            for (const port of ports) {
+              const itemType = port.item_type ?? 'item'
+              const qualifiedId = `${itemType}:${port.id}`
+              const key = `${node.id}|${qualifiedId}`
+              const subNodeId = portHandleToSubNodeId.get(key)
+              if (subNodeId) {
+                const subResult = nodeResults[subNodeId]
+                const amt = typeof subResult?.actual_amount === 'number' ? subResult.actual_amount : 0
+                actualAmounts[port.id] = amt
+                totalActual += amt
+              }
+            }
             nextData = {
               ...nextData,
               is_auto: isAuto,
-              actual_amount: typeof directNodeResult?.actual_amount === 'number'
-                ? directNodeResult.actual_amount
-                : nextSystemOutputs[nextData.id],
+              actual_amount: totalActual,
+              actual_amounts: actualAmounts,
             }
           }
 

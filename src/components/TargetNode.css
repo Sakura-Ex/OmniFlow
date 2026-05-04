@@ -13,12 +13,10 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* demand: 默认实线框 */
 .target-node--demand {
   border-color: rgba(251, 146, 60, 0.5);
 }
 
-/* maximize: 高亮金色品级边框，无线馨光 */
 .target-node--maximize {
   border-style: solid;
   border-color: rgba(234, 179, 8, 0.7);
@@ -28,7 +26,6 @@
   box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.3), 0 10px 30px rgba(2, 6, 23, 0.46);
 }
 
-/* overflow: 整体变暗、边框淡化 */
 .target-node--overflow {
   border-style: dashed;
   border-color: rgba(148, 163, 184, 0.25);
@@ -53,6 +50,12 @@
   background: linear-gradient(180deg, rgba(251, 146, 60, 0.08), transparent);
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
+}
+
+.target-node__header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .target-node__edit-btn {
@@ -105,7 +108,6 @@
   box-shadow: 0 0 0 2px rgba(251, 146, 60, 0.15);
 }
 
-/* maximize 活跃按鈕：金色 */
 /* Segmented control container for mode buttons */
 .target-node__seg {
   display: inline-flex;
@@ -151,20 +153,6 @@
   color: #eab308;
 }
 
-.target-node__row-label {
-  flex: 0 0 auto;
-  color: var(--muted);
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
-
-.target-node__row-label--auto {
-  color: #fb923c;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-}
-
 .target-node__kicker {
   margin: 0;
   color: #fb923c;
@@ -173,71 +161,4 @@
   text-transform: uppercase;
   font-weight: 600;
   text-align: right;
-}
-
-.target-node__body {
-  padding: 10px 16px 14px;
-  text-align: right;
-}
-
-.target-node__mode-row {
-  padding: 8px 16px 0;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.target-node__row,
-.target-node__rate-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  justify-content: flex-end;
-  margin-top: 10px;
-}
-
-.target-node__row + .target-node__row {
-  margin-top: 8px;
-}
-
-.target-node__input {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: 7px 10px;
-  border: 1px solid rgba(251, 146, 60, 0.3);
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.22);
-  color: #fff;
-  font-family: var(--mono);
-  font-size: 13px;
-  outline: none;
-  text-align: right;
-}
-
-.target-node__input:focus {
-  border-color: #fb923c;
-}
-
-.target-node__input--auto {
-  color: #94a3b8;
-  background: rgba(15, 23, 42, 0.62);
-  border-style: dashed;
-  cursor: not-allowed;
-}
-
-.target-node__input--auto::placeholder {
-  color: rgba(148, 163, 184, 0.82);
-}
-
-.target-node__handle {
-  position: absolute !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  width: 12px;
-  height: 12px;
-  border-width: 2px;
-  z-index: 4;
-  left: -6px;
-  background-color: #fb923c !important;
-  border-color: #fb923c !important;
-  box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.2) !important;
 }

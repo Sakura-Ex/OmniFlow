@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
 import type { RecipeNodeData, RecipeNodeMode } from '../types/recipe'
 import { useRecipeEditor } from '../RecipeEditorContext'
@@ -6,34 +6,33 @@ import { useNodeData } from '../NodeDataContext'
 import { ensureRecipeDataShape, getCalculatedRates } from '../modifiers/calculate'
 import { resolveRecipePowerProfile } from '../modifiers/gtMultiblock'
 import { useResourceRegistry } from '../registry/resourceRegistry'
-import { FALLBACK_CATEGORY } from '../registry/defaults'
+import { resolveCategoryDef } from '../utils/endpointNorm'
+import { buildUnitSuffix } from '../registry/units'
 import type { ResourceCategoryDef } from '../registry/types'
+import type { MeasureMode, Resource } from '../types/types'
 import './RecipeNode.css'
 
-function resolveCategoryDef(
-  categories: Record<string, ResourceCategoryDef>,
-  typeId?: string | null
-): ResourceCategoryDef {
-  if (!typeId) return FALLBACK_CATEGORY
-  const exact = categories[typeId]
-  if (exact) return exact
-  const colonIdx = typeId.indexOf(':')
-  if (colonIdx > 0) {
-    const ns = typeId.slice(0, colonIdx)
-    const nsMatch = categories[ns]
-    if (nsMatch) return nsMatch
-  }
-  return FALLBACK_CATEGORY
+function resolveUnit(catDef: ResourceCategoryDef, mMode?: MeasureMode): string {
+  return buildUnitSuffix(catDef.base_unit, mMode)
 }
 
-function formatPortAmount(amount: number, catDef: ResourceCategoryDef, durationSeconds?: number) {
-  const isRateBased = catDef.unit.endsWith('/t') || catDef.unit.endsWith('/s')
-  if (catDef.id === 'fluid') return `x${amount}${catDef.unit}`
-  if (isRateBased) {
+function formatPortAmount(
+  amount: number,
+  catDef: ResourceCategoryDef,
+  mMode?: MeasureMode,
+  durationSeconds?: number
+) {
+  const fluidCatIds = new Set(['fluid', 'utility:water'])
+  if (fluidCatIds.has(catDef.id)) {
+    const unit = resolveUnit(catDef, mMode)
+    return `x${amount}${unit}`
+  }
+  if (mMode === 'rate_per_tick' || mMode === 'rate_per_sec') {
     const ticks = typeof durationSeconds === 'number' && durationSeconds > 0 ? durationSeconds * 20 : 1
     const total = amount * ticks
     const rounded = parseFloat(total.toPrecision(6))
-    return `${rounded} ${catDef.unit}`
+    const unit = resolveUnit(catDef, mMode)
+    return `${rounded} ${unit}`
   }
   return `x${amount}`
 }
@@ -54,9 +53,10 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   const registryCategories = useResourceRegistry((state) => state.categories)
   const gtEuCatDef = resolveCategoryDef(registryCategories, 'gt:eu')
   const thermalRfCatDef = resolveCategoryDef(registryCategories, 'thermal:rf')
+  const gtEuUnit = buildUnitSuffix(gtEuCatDef.base_unit, 'rate_per_tick')
+  const thermalRfUnit = buildUnitSuffix(thermalRfCatDef.base_unit, 'rate_per_tick')
   const normalizedData = ensureRecipeDataShape(data)
   const calculated = getCalculatedRates(normalizedData)
-  // mode 优先；字段回退：is_auto=true 映射 auto，false 映射 limit
   const mode: RecipeNodeMode = normalizedData.mode ?? ((normalizedData.is_auto ?? true) ? 'auto' : 'limit')
   const isLimit = mode === 'limit'
   const manualCap = typeof normalizedData.manual_machines === 'number' ? normalizedData.manual_machines : null
@@ -64,11 +64,6 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   const machinesExact = typeof normalizedData.machines_exact === 'number' ? normalizedData.machines_exact : null
   const runtimeMachines = machinesExact ?? machinesActual
   const [draftManualMachines, setDraftManualMachines] = useState(String(normalizedData.manual_machines ?? ''))
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDraftManualMachines(String(normalizedData.manual_machines ?? ''))
-  }, [normalizedData.manual_machines, normalizedData.recipe_id])
   
   const calculatedForPower = getCalculatedRates(normalizedData)
   const powerProfile = resolveRecipePowerProfile(normalizedData, calculatedForPower.transformedInputs)
@@ -99,6 +94,70 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
     }
   }
 
+  const renderResourceRows = (
+    resources: Resource[],
+    rates: Resource[],
+    side: 'input' | 'output'
+  ) => resources.map((res, index) => {
+    const typeId = res.utility_type ?? res.category
+    const catDef = resolveCategoryDef(registryCategories, typeId)
+    const mMode: MeasureMode | undefined = res.measure_mode
+    const hexColor = catDef.themeColor
+    const glowColor = hexColor.startsWith('#')
+      ? `${hexColor}${Math.round(0.38 * 255).toString(16).padStart(2, '0')}`
+      : hexColor.replace(')', ', 0.38)').replace('rgb', 'rgba')
+
+    const unit = resolveUnit(catDef, mMode)
+    const isRate = mMode === 'rate_per_tick' || mMode === 'rate_per_sec'
+    const rate = rates[index]
+    const portRate = calculated.isInstant
+      ? 'Instant'
+      : isRate
+        ? `${formatDisplayValue(res.amount)} ${unit}`
+        : `${formatDisplayValue(rate?.amount)}/s`
+    const handleId = `${res.category}:${res.id || res._uid || `${side}-${index}`}`
+
+    const isLeft = side === 'input'
+
+    return (
+      <li className={`recipe-node__port recipe-node__port--${isLeft ? 'left' : 'right'}`} key={res._uid ?? `${id}-${side}-${index}`}>
+        <div className={`recipe-node__port-core recipe-node__port-core--${isLeft ? 'left' : 'right'}`}>
+          {isLeft ? (
+            <>
+              {res.routing_mode !== 'global' && (
+                <Handle
+                  id={handleId} type="target" position={Position.Left}
+                  style={{ left: '-6px', backgroundColor: hexColor, borderColor: hexColor, boxShadow: `0 0 0 4px ${glowColor}` }}
+                />
+              )}
+              <span className="recipe-node__port-type" style={{ color: hexColor, borderColor: hexColor }}>{catDef.displayName}</span>
+              <span className="recipe-node__port-name recipe-node__port-name--left">{res.id}</span>
+              <div className="recipe-node__port-stats recipe-node__port-stats--right">
+                <span className="recipe-node__port-amount">{formatPortAmount(res.amount, catDef, mMode, calculated.duration)}</span>
+                <span className="recipe-node__port-rate">{portRate}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="recipe-node__port-stats recipe-node__port-stats--left">
+                <span className="recipe-node__port-amount">{formatPortAmount(res.amount, catDef, mMode)}</span>
+                <span className="recipe-node__port-rate">{portRate}</span>
+              </div>
+              <span className="recipe-node__port-name recipe-node__port-name--right">{res.id}</span>
+              <span className="recipe-node__port-type" style={{ color: hexColor, borderColor: hexColor }}>{catDef.displayName}</span>
+              {res.routing_mode !== 'global' && (
+                <Handle
+                  id={handleId} type="source" position={Position.Right}
+                  style={{ right: '-6px', backgroundColor: hexColor, borderColor: hexColor, boxShadow: `0 0 0 4px ${glowColor}` }}
+                />
+              )}
+            </>
+          )}
+        </div>
+      </li>
+    )
+  })
+
   return (
     <article className={`recipe-node recipe-node--${mode}`}>
       <header className="recipe-node__header">
@@ -109,27 +168,17 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
           </div>
         </div>
         <div className="recipe-node__header-actions">
-          <button className="recipe-node__autofill-btn" onClick={() => onAutoFill(id)} title="补全未连端口">
-            🪄
-          </button>
-          <button className="recipe-node__edit-btn" onClick={() => onEdit(id, data)} title="编辑配方">
-            ⚙️
-          </button>
+          <button className="recipe-node__autofill-btn" onClick={() => onAutoFill(id)} title="补全未连端口">🪄</button>
+          <button className="recipe-node__edit-btn" onClick={() => onEdit(id, data)} title="编辑配方">⚙️</button>
           <div className="recipe-node__seg">
             <button
               className={`recipe-node__mode-btn nodrag${mode === 'auto' ? ' is-active' : ''}`}
-              onClick={() => handleSetMode('auto')}
-              title="按需运转"
-            >
-              🔄
-            </button>
+              onClick={() => handleSetMode('auto')} title="按需运转"
+            >🔄</button>
             <button
               className={`recipe-node__mode-btn nodrag${mode === 'limit' ? ' is-active' : ''}`}
-              onClick={() => handleSetMode('limit')}
-              title="产能上限"
-            >
-              🚧
-            </button>
+              onClick={() => handleSetMode('limit')} title="产能上限"
+            >🚧</button>
           </div>
         </div>
       </header>
@@ -138,104 +187,14 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
         <section className="recipe-node__ports recipe-node__ports--inputs">
           <p className="recipe-node__section-label">Inputs</p>
           <ul className="recipe-node__port-list">
-            {calculated.transformedInputs.map((input, index) => {
-              const typeId = input.utility_type ?? input.category
-              const catDef = resolveCategoryDef(registryCategories, typeId)
-              const hexColor = catDef.themeColor
-              const glowColor = hexColor.startsWith('#')
-                ? `${hexColor}${Math.round(0.38 * 255).toString(16).padStart(2, '0')}`
-                : hexColor.replace(')', ', 0.38)').replace('rgb', 'rgba')
-              const rate = calculated.inputRates[index]
-              const portRate = calculated.isInstant
-                ? 'Instant'
-                : catDef.unit.endsWith('/t') || catDef.unit.endsWith('/s')
-                  ? `${formatDisplayValue(input.amount)} ${catDef.unit}`
-                  : `${formatDisplayValue(rate?.amount)}/s`
-              const handleId = `${input.category}:${input.id || input._uid || `input-${index}`}`
-
-              return (
-                <li className="recipe-node__port recipe-node__port--left" key={input._uid ?? `${id}-input-${index}`}>
-                  <div className="recipe-node__port-core recipe-node__port-core--left">
-                    {input.routing_mode !== 'global' && (
-                      <Handle
-                        id={handleId}
-                        type="target"
-                        position={Position.Left}
-                        style={{
-                          left: '-6px',
-                          backgroundColor: hexColor,
-                          borderColor: hexColor,
-                          boxShadow: `0 0 0 4px ${glowColor}`,
-                        }}
-                      />
-                    )}
-                    <span className="recipe-node__port-type" style={{ color: hexColor, borderColor: hexColor }}>
-                      {catDef.displayName}
-                    </span>
-                    <span className="recipe-node__port-name recipe-node__port-name--left">
-                      {input.id}
-                    </span>
-                    <div className="recipe-node__port-stats recipe-node__port-stats--right">
-                      <span className="recipe-node__port-amount">
-                        {formatPortAmount(input.amount, catDef, calculated.duration)}
-                      </span>
-                      <span className="recipe-node__port-rate">{portRate}</span>
-                    </div>
-                  </div>
-                </li>
-              )
-            })}
+            {renderResourceRows(calculated.transformedInputs, calculated.inputRates, 'input')}
           </ul>
         </section>
 
         <section className="recipe-node__ports recipe-node__ports--outputs">
-          <p className="recipe-node__section-label recipe-node__section-label--right">
-            Outputs
-          </p>
+          <p className="recipe-node__section-label recipe-node__section-label--right">Outputs</p>
           <ul className="recipe-node__port-list recipe-node__port-list--right">
-            {calculated.transformedOutputs.map((output, index) => {
-              const typeId = output.utility_type ?? output.category
-              const catDef = resolveCategoryDef(registryCategories, typeId)
-              const hexColor = catDef.themeColor
-              const glowColor = hexColor.startsWith('#')
-                ? `${hexColor}${Math.round(0.38 * 255).toString(16).padStart(2, '0')}`
-                : hexColor.replace(')', ', 0.38)').replace('rgb', 'rgba')
-              const rate = calculated.outputRates[index]
-              const portRate = calculated.isInstant ? 'Instant' : `${formatDisplayValue(rate?.amount)}/s`
-              const handleId = `${output.category}:${output.id || output._uid || `output-${index}`}`
-
-              return (
-                <li className="recipe-node__port recipe-node__port--right" key={output._uid ?? `${id}-output-${index}`}>
-                  <div className="recipe-node__port-core recipe-node__port-core--right">
-                    <div className="recipe-node__port-stats recipe-node__port-stats--left">
-                      <span className="recipe-node__port-amount">
-                        {formatPortAmount(output.amount, catDef)}
-                      </span>
-                      <span className="recipe-node__port-rate">{portRate}</span>
-                    </div>
-                    <span className="recipe-node__port-name recipe-node__port-name--right">
-                      {output.id}
-                    </span>
-                    <span className="recipe-node__port-type" style={{ color: hexColor, borderColor: hexColor }}>
-                      {catDef.displayName}
-                    </span>
-                    {output.routing_mode !== 'global' && (
-                      <Handle
-                        id={handleId}
-                        type="source"
-                        position={Position.Right}
-                        style={{
-                          right: '-6px',
-                          backgroundColor: hexColor,
-                          borderColor: hexColor,
-                          boxShadow: `0 0 0 4px ${glowColor}`,
-                        }}
-                      />
-                    )}
-                  </div>
-                </li>
-              )
-            })}
+            {renderResourceRows(calculated.transformedOutputs, calculated.outputRates, 'output')}
           </ul>
         </section>
       </div>
@@ -274,7 +233,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
           <div className="recipe-node__footer-line">
             <span className="recipe-node__footer-label">⚡ 总功耗</span>
             <strong className="recipe-node__footer-value">
-              {totalEu !== null ? `${formatDisplayValue(totalEu)} ${gtEuCatDef.unit}` : '待计算...'}
+              {totalEu !== null ? `${formatDisplayValue(totalEu)} ${gtEuUnit}` : '待计算...'}
             </strong>
           </div>
         )}
@@ -283,7 +242,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
           <div className="recipe-node__footer-line">
             <span className="recipe-node__footer-label">⚡ 总能耗</span>
             <strong className="recipe-node__footer-value">
-              {totalRf !== null ? `${totalRf} ${thermalRfCatDef.unit}` : '待计算...'}
+              {totalRf !== null ? `${totalRf} ${thermalRfUnit}` : '待计算...'}
             </strong>
           </div>
         )}

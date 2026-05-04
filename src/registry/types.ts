@@ -1,7 +1,7 @@
 export interface ResourceCategoryDef {
   id: string
   displayName: string
-  unit: string
+  base_unit: string
   themeColor: string
   defaultRouting: 'wired' | 'global'
 }

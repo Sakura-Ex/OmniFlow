@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
+import { useCallback, useState, type KeyboardEvent } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
 import { useNodeData } from '../NodeDataContext'
 import { useEndpointEditor } from '../EndpointEditorContext'
 import { useResourceRegistry } from '../registry/resourceRegistry'
+import { buildUnitSuffix } from '../registry/units'
+import { normalizeEndpointPorts, resolveCategoryDef } from '../utils/endpointNorm'
 import type { TargetNodeData, TargetNodeMode } from '../types/recipe'
 import './TargetNode.css'
 
@@ -16,78 +18,48 @@ export function TargetNode({ id, data }: NodeProps<TargetNodeData>) {
   const { updateNodeData } = useNodeData()
   const { onEdit } = useEndpointEditor()
   const registryCategories = useResourceRegistry((state) => state.categories)
-  const itemType = data.item_type ?? 'item'
-  const catDef = registryCategories[itemType]
-  const unit = catDef?.unit ?? itemType
-  // mode 优先；字段回退：is_auto=true 映射 maximize，is_auto=false 映射 demand
+  const ports = normalizeEndpointPorts(data)
   const mode: TargetNodeMode = data.mode ?? ((data.is_auto ?? data.is_virtual ?? true) ? 'maximize' : 'demand')
-  const isDemand = mode === 'demand'
-  const [draftId, setDraftId] = useState(data.label ?? data.id)
-  const [draftAmount, setDraftAmount] = useState(String(data.amount))
-
-  useEffect(() => {
-    setDraftId(data.label ?? data.id); // eslint-disable-line react-hooks/set-state-in-effect
-    setDraftAmount(formatValue(data.amount) || String(data.amount))
-  }, [data.id, data.label, data.amount])
+  const isEditable = mode === 'demand'
+  const [draftAmounts, setDraftAmounts] = useState<Record<number, string>>({})
 
   const handleSetMode = useCallback((nextMode: TargetNodeMode) => {
     if (nextMode === mode) return
     if (nextMode === 'demand') {
-      const raw = data.actual_amount ?? data.amount
-      const clean = parseFloat(parseFloat(String(raw)).toPrecision(6))
-      updateNodeData(id, { mode: 'demand', is_auto: false, amount: clean })
-      setDraftAmount(formatValue(raw) || String(raw))
+      updateNodeData(id, { mode: 'demand', is_auto: false })
     } else {
       updateNodeData(id, { mode: nextMode, is_auto: true })
     }
-  }, [mode, data.amount, data.actual_amount, id, updateNodeData])
+  }, [mode, id, updateNodeData])
 
-  const commitId = useCallback(() => {
-    const trimmed = draftId.trim()
-    const nextId = trimmed.length > 0 ? trimmed : data.id
+  const commitAmount = useCallback((portIndex: number) => {
+    const draft = draftAmounts[portIndex]
+    if (draft === undefined) return
+    const parsed = Number.parseFloat(draft)
+    const nextAmount = Number.isFinite(parsed) ? parsed : (ports[portIndex]?.amount ?? 0)
+    const nextPorts = ports.map((p, i) => i === portIndex ? { ...p, amount: nextAmount } : p)
+    updateNodeData(id, { ports: nextPorts })
+    setDraftAmounts((prev) => {
+      const next = { ...prev }
+      delete next[portIndex]
+      return next
+    })
+  }, [draftAmounts, ports, id, updateNodeData])
 
-    updateNodeData(
-      id,
-      { id: nextId, label: nextId },
-      nextId !== data.id
-        ? { role: 'target', previousId: data.id, nextId }
-        : undefined
-    )
-
-    setDraftId(nextId)
-  }, [draftId, data.id, id, updateNodeData])
-
-  const commitAmount = useCallback(() => {
-    const parsed = Number.parseFloat(draftAmount)
-    const nextAmount = Number.isFinite(parsed) ? parsed : data.amount
-
-    updateNodeData(id, { amount: nextAmount })
-    setDraftAmount(String(nextAmount))
-  }, [draftAmount, data.amount, id, updateNodeData])
-
-  const handleIdKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
+  const handleAmountKeyDown = useCallback((portIndex: number) => (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       event.preventDefault()
       event.currentTarget.blur()
     } else if (event.key === 'Escape') {
       event.preventDefault()
-      setDraftId(data.label ?? data.id)
+      setDraftAmounts((prev) => {
+        const next = { ...prev }
+        delete next[portIndex]
+        return next
+      })
       event.currentTarget.blur()
     }
-  }, [data.id, data.label])
-
-  const handleAmountKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      event.preventDefault()
-      event.currentTarget.blur()
-    } else if (event.key === 'Escape') {
-      event.preventDefault()
-      setDraftAmount(String(data.amount))
-      event.currentTarget.blur()
-    }
-  }, [data.amount])
-
-  const displayAmount = isDemand ? draftAmount : formatValue(data.actual_amount)
+  }, [])
 
   const modeConfig: Record<TargetNodeMode, { icon: string; title: string }> = {
     demand:   { icon: '🎯', title: '固定需求' },
@@ -99,14 +71,12 @@ export function TargetNode({ id, data }: NodeProps<TargetNodeData>) {
     <article className={`target-node target-node--${mode}`}>
       <header className="target-node__header">
         <p className="target-node__kicker">OUTPUT DEMAND</p>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <div className="target-node__header-actions">
           <button
             className="target-node__edit-btn nodrag"
             onClick={() => onEdit(id, 'target', data)}
             title="设置"
-          >
-            ⚙
-          </button>
+          >⚙</button>
           <div className="target-node__seg">
             {(Object.keys(modeConfig) as TargetNodeMode[]).map((m) => (
               <button
@@ -122,44 +92,56 @@ export function TargetNode({ id, data }: NodeProps<TargetNodeData>) {
         </div>
       </header>
 
-      <div className="target-node__body">
-        <div className="target-node__row">
-          <span className="target-node__row-label">物品 ID</span>
-          <input
-            type="text"
-            className="target-node__input nodrag"
-            value={draftId}
-            onChange={(event) => setDraftId(event.target.value)}
-            onBlur={commitId}
-            onKeyDown={handleIdKeyDown}
-            spellCheck={false}
-            title="Item Id"
-          />
-        </div>
-        <div className="target-node__row">
-          <span className="target-node__row-label">
-            {isDemand ? `需求速率 (${unit})` : `实际产出 (${unit})`}
-          </span>
-          <input
-            type="number"
-            className={`target-node__input nodrag${!isDemand ? ' target-node__input--auto' : ''}`}
-            value={displayAmount}
-            readOnly={!isDemand}
-            onChange={(event) => { if (isDemand) setDraftAmount(event.target.value) }}
-            onBlur={isDemand ? commitAmount : undefined}
-            onKeyDown={isDemand ? handleAmountKeyDown : undefined}
-            placeholder="[ 等待计算 ]"
-          />
-        </div>
-      </div>
+      <section className="recipe-node__ports">
+        <ul className="recipe-node__port-list">
+          {ports.map((port, index) => {
+            const itemType = port.item_type ?? 'item'
+            const catDef = resolveCategoryDef(registryCategories, itemType)
+            const unit = buildUnitSuffix(catDef.base_unit, 'rate_per_sec')
+            const hexColor = catDef.themeColor
+            const glowColor = hexColor.startsWith('#')
+              ? `${hexColor}${Math.round(0.38 * 255).toString(16).padStart(2, '0')}`
+              : hexColor.replace(')', ', 0.38)').replace('rgb', 'rgba')
+            const handleId = `${itemType}:${port.id}`
+            const actualAmt = data.actual_amounts?.[port.id]
+            const draftAmount = draftAmounts[index]
+            const displayValue = isEditable
+              ? (draftAmount !== undefined ? draftAmount : formatValue(port.amount) || String(port.amount))
+              : (actualAmt !== undefined ? formatValue(actualAmt) : '')
 
-      <Handle
-        id={`${itemType}:${data.id}`}
-        type="target"
-        position={Position.Left}
-        className="target-node__handle"
-        style={{ left: '-6px' }}
-      />
+            return (
+              <li className="recipe-node__port recipe-node__port--left" key={port._uid ?? `${id}-port-${index}`}>
+                <div className="recipe-node__port-core recipe-node__port-core--left">
+                  <Handle
+                    id={handleId}
+                    type="target"
+                    position={Position.Left}
+                    className="recipe-node__handle"
+                    style={{ left: '-6px', backgroundColor: hexColor, borderColor: hexColor, boxShadow: `0 0 0 4px ${glowColor}` }}
+                  />
+                  <span className="recipe-node__port-type" style={{ color: hexColor, borderColor: hexColor }}>
+                    {catDef.displayName}
+                  </span>
+                  <span className="recipe-node__port-name recipe-node__port-name--left">{port.id || '(未命名)'}</span>
+                  <div className="endpoint-inline-stat">
+                    <input
+                      type="number"
+                      className={`endpoint-inline-input nodrag${!isEditable ? ' endpoint-inline-input--readonly' : ''}`}
+                      value={displayValue}
+                      readOnly={!isEditable}
+                      onChange={(e) => isEditable && setDraftAmounts((prev) => ({ ...prev, [index]: e.target.value }))}
+                      onBlur={isEditable ? () => commitAmount(index) : undefined}
+                      onKeyDown={isEditable ? handleAmountKeyDown(index) : undefined}
+                      placeholder="等待计算"
+                    />
+                    <span className="endpoint-inline-unit">{unit}</span>
+                  </div>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
     </article>
   )
 }

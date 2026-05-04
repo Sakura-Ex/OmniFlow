@@ -14,6 +14,7 @@
 
 import type { Edge, Node } from 'reactflow'
 import type { Resource } from '../types/types'
+import { normalizeEndpointPorts } from './endpointNorm'
 
 /** Key used to look up a port in the net table: "<nodeId>|<portId>" */
 type PortKey = string
@@ -161,16 +162,17 @@ export function buildTopologicalNets(
         }
       }
     } else if (node.type === 'sourceNode' || node.type === 'targetNode') {
-      // Source/target nodes have a single implicit port whose ID is data.id
-      const resourceId: string = node.data?.id ?? nid
-      const itemType: string = node.data?.item_type ?? 'item'
-      const qualifiedId = `${itemType}:${resourceId}`
-      const key = portKey(nid, qualifiedId)
-      // Source/Target nodes never carry global routing; they're always wired.
-      if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
-        addToNet(getNetName(uf.find(key)), key)
-      } else {
-        addToNet(`Void_${nid}_${qualifiedId}`, key)
+      const ports = normalizeEndpointPorts(node.data)
+      for (const port of ports) {
+        if (!port.id) continue
+        const itemType = port.item_type ?? 'item'
+        const qualifiedId = `${itemType}:${port.id}`
+        const key = portKey(nid, qualifiedId)
+        if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
+          addToNet(getNetName(uf.find(key)), key)
+        } else {
+          addToNet(`Void_${nid}_${qualifiedId}`, key)
+        }
       }
     }
   }

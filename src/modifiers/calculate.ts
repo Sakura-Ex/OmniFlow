@@ -4,8 +4,10 @@ import { createDefaultModifierState } from './state'
 import { getModifierById } from './registry'
 import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArchetype } from '../data/archetypes/index'
 
+export const GAME_BASE_TPS = 20
+
 const MAX_INSTANT_RATE = 1e9
-const TICKS_PER_SECOND = 20
+const TICKS_PER_SECOND = GAME_BASE_TPS
 
 function deepCloneResources(resources: Resource[]): Resource[] {
   return resources.map((res) => ({ ...res }))
@@ -204,16 +206,19 @@ export function getCalculatedRates(nodeData: RecipeNodeData): CalculatedRates {
 
   // ═══ Phase 5: Duration and rate calculation ═══
   const duration = Math.max(0.05, baseDuration * totalDurationMultiplier)
-  const divisor = duration > 0 ? duration : null
+  const perCycleDivisor = duration > 0 ? duration : null
 
-  const inputRates = inputs.map((res) => ({
-    ...res,
-    amount: divisor ? res.amount / divisor : MAX_INSTANT_RATE,
-  }))
-  const outputRates = outputs.map((res) => ({
-    ...res,
-    amount: divisor ? res.amount / divisor : MAX_INSTANT_RATE,
-  }))
+  function rateForResource(res: Resource): number {
+    const mMode = res.measure_mode ?? 'per_cycle'
+    const prob = res.probability ?? 1
+    if (mMode === 'rate_per_tick') return res.amount * GAME_BASE_TPS
+    if (mMode === 'rate_per_sec') return res.amount
+    if (perCycleDivisor) return (res.amount * prob) / perCycleDivisor
+    return MAX_INSTANT_RATE
+  }
+
+  const inputRates = inputs.map((res) => ({ ...res, amount: rateForResource(res) }))
+  const outputRates = outputs.map((res) => ({ ...res, amount: rateForResource(res) }))
 
   return {
     transformedInputs: inputs,
@@ -223,4 +228,19 @@ export function getCalculatedRates(nodeData: RecipeNodeData): CalculatedRates {
     duration,
     isInstant: duration === 0,
   }
+}
+
+export function normalizePayloadResources(rates: Resource[]): Resource[] {
+  const keep = rates.filter((r) => r.consumable !== false)
+  const merged = new Map<string, Resource>()
+  for (const r of keep) {
+    const key = `${r.category}:${r.id}`
+    const existing = merged.get(key)
+    if (existing) {
+      existing.amount += r.amount
+    } else {
+      merged.set(key, { ...r })
+    }
+  }
+  return [...merged.values()]
 }

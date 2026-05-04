@@ -9,6 +9,7 @@ export const gtElectricArchetype: MachineArchetype = {
       amount_mutable: true,
       routing_mode: 'global',
       routing_locked: true,
+      measure_mode: 'rate_per_tick',
     },
   },
   default_modifiers: ['gt_multiblock'],

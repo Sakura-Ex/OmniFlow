@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
-import type { SourceNodeData, TargetNodeData } from '../types/recipe'
+import type { SourceNodeData, TargetNodeData, EndpointPort } from '../types/recipe'
 import type { EndpointEditorTarget } from '../EndpointEditorContext'
 import { useResourceRegistry } from '../registry/resourceRegistry'
+import { normalizeEndpointPorts, emptyEndpointPort } from '../utils/endpointNorm'
 import './EndpointEditorModal.css'
 
 type Props = {
@@ -16,24 +17,41 @@ export function EndpointEditorModal({ node, onClose, onSave }: Props) {
     () => Object.values(registryCategories).map((cat) => ({ id: cat.id, displayName: cat.displayName })),
     [registryCategories]
   )
-  const [itemId, setItemId] = useState(node?.data.label ?? node?.data.id ?? '')
-  const [itemType, setItemType] = useState<string>(node?.data.item_type ?? 'item')
-  const [amount, setAmount] = useState(String(node?.data.amount ?? ''))
+
+  const initialPorts = node ? normalizeEndpointPorts(node.data) : []
+  const [ports, setPorts] = useState<EndpointPort[]>(
+    initialPorts.length > 0
+      ? initialPorts.map((p) => ({ ...p, _uid: p._uid ?? crypto.randomUUID() }))
+      : [emptyEndpointPort()]
+  )
 
   if (!node) return null
 
   const isSource = node.role === 'source'
-  const catDef = registryCategories[itemType]
-  const unit = catDef?.unit ?? ''
-  const rateLabel = isSource ? `最大供应速率 (${unit})` : `需求速率 (${unit})`
+
+  const updatePort = (index: number, patch: Partial<EndpointPort>) => {
+    setPorts((prev) => prev.map((p, i) => i === index ? { ...p, ...patch } : p))
+  }
+
+  const addPort = () => {
+    setPorts((prev) => [...prev, emptyEndpointPort(prev[0]?.item_type ?? 'item')])
+  }
+
+  const removePort = (index: number) => {
+    setPorts((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)))
+  }
 
   const handleSave = () => {
-    const parsed = parseFloat(amount)
+    const validPorts = ports.filter((p) => p.id.trim().length > 0)
+    const firstPort = validPorts[0]
     onSave(node.id, {
-      id: itemId.trim() || node.data.id,
-      label: itemId.trim() || node.data.id,
-      item_type: itemType,
-      amount: Number.isFinite(parsed) ? parsed : node.data.amount,
+      // Keep backward compat fields
+      id: firstPort?.id ?? '',
+      label: firstPort?.id ?? '',
+      amount: firstPort?.amount ?? 0,
+      item_type: firstPort?.item_type ?? 'item',
+      // Main data shape
+      ports: validPorts.length > 0 ? validPorts : ports,
     })
   }
 
@@ -53,40 +71,39 @@ export function EndpointEditorModal({ node, onClose, onSave }: Props) {
         </header>
 
         <div className="ep-editor__body">
-          <div className="ep-editor__field">
-            <label>物品 / 流体 ID</label>
-            <input
-              type="text"
-              value={itemId}
-              onChange={(e) => setItemId(e.target.value)}
-              spellCheck={false}
-              placeholder="例：minecraft:water"
-            />
-          </div>
-
-          <div className="ep-editor__field">
-            <label>类型</label>
-            <select
-              value={itemType}
-              onChange={(e) => setItemType(e.target.value)}
-            >
-              {categoryOptions.map((opt) => (
-                <option key={opt.id} value={opt.id}>{opt.displayName}</option>
-              ))}
-            </select>
-          </div>
-
-          {!node.data.is_auto && (
-            <div className="ep-editor__field">
-              <label>{rateLabel}</label>
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                min={0}
-              />
+          <div className="ep-editor__port-table">
+            <div className="ep-editor__port-table-header">
+              <span>资源 ID</span>
+              <span>类型</span>
+              <span></span>
             </div>
-          )}
+            {ports.map((port, index) => (
+              <div className="ep-editor__port-row" key={port._uid ?? index}>
+                  <input
+                    type="text"
+                    value={port.id}
+                    onChange={(e) => updatePort(index, { id: e.target.value })}
+                    spellCheck={false}
+                    placeholder="例：iron_ingot"
+                  />
+                  <select
+                    value={port.item_type}
+                    onChange={(e) => updatePort(index, { item_type: e.target.value })}
+                  >
+                    {categoryOptions.map((opt) => (
+                      <option key={opt.id} value={opt.id}>{opt.displayName}</option>
+                    ))}
+                  </select>
+                  <button
+                    className="ep-editor__port-remove-btn"
+                    onClick={() => removePort(index)}
+                    disabled={ports.length <= 1}
+                    title="删除此行"
+                  >✕</button>
+                </div>
+            ))}
+            <button className="ep-editor__add-port-btn" onClick={addPort}>+ 添加资源</button>
+          </div>
         </div>
 
         <footer className="ep-editor__footer">

@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
+import { useCallback, useState, type KeyboardEvent } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
 import { useNodeData } from '../NodeDataContext'
 import { useEndpointEditor } from '../EndpointEditorContext'
 import { useResourceRegistry } from '../registry/resourceRegistry'
+import { buildUnitSuffix } from '../registry/units'
+import { normalizeEndpointPorts, resolveCategoryDef } from '../utils/endpointNorm'
 import type { SourceNodeData, SourceNodeMode } from '../types/recipe'
 import './SourceNode.css'
 
 function formatValue(value: number | undefined) {
   if (typeof value !== 'number' || Number.isNaN(value)) return ''
-  // Strip float noise: round to 6 sig figs, then remove trailing zeros
   const rounded = parseFloat(value.toPrecision(6))
   return Number.isFinite(rounded) ? String(rounded) : ''
 }
@@ -17,148 +18,122 @@ export function SourceNode({ id, data }: NodeProps<SourceNodeData>) {
   const { updateNodeData } = useNodeData()
   const { onEdit } = useEndpointEditor()
   const registryCategories = useResourceRegistry((state) => state.categories)
-  const itemType = data.item_type ?? 'item'
-  const catDef = registryCategories[itemType]
-  const unit = catDef?.unit ?? itemType
-  // mode 优先；回退到 is_auto / is_virtual 字段（兼容旧存档）
+  const ports = normalizeEndpointPorts(data)
   const mode: SourceNodeMode = data.mode ?? ((data.is_auto ?? data.is_virtual ?? true) ? 'infinite' : 'limit')
-  const isLimit = mode === 'limit'
-  const [draftId, setDraftId] = useState(data.label ?? data.id)
-  const [draftAmount, setDraftAmount] = useState(String(data.amount))
-
-  useEffect(() => {
-    setDraftId(data.label ?? data.id); // eslint-disable-line react-hooks/set-state-in-effect
-    setDraftAmount(formatValue(data.amount) || String(data.amount))
-  }, [data.id, data.label, data.amount])
+  const isEditable = mode === 'limit'
+  const [draftAmounts, setDraftAmounts] = useState<Record<number, string>>({})
 
   const handleSetMode = useCallback((nextMode: SourceNodeMode) => {
     if (nextMode === mode) return
     if (nextMode === 'limit') {
-      const raw = data.actual_amount ?? data.amount
-      const clean = parseFloat(parseFloat(String(raw)).toPrecision(6))
-      updateNodeData(id, { mode: 'limit', is_auto: false, amount: clean })
-      setDraftAmount(formatValue(raw) || String(raw))
+      updateNodeData(id, { mode: 'limit', is_auto: false })
     } else {
       updateNodeData(id, { mode: 'infinite', is_auto: true })
     }
-  }, [mode, data.amount, data.actual_amount, id, updateNodeData])
+  }, [mode, id, updateNodeData])
 
-  const commitId = useCallback(() => {
-    const trimmed = draftId.trim()
-    const nextId = trimmed.length > 0 ? trimmed : data.id
+  const commitAmount = useCallback((portIndex: number) => {
+    const draft = draftAmounts[portIndex]
+    if (draft === undefined) return
+    const parsed = Number.parseFloat(draft)
+    const nextAmount = Number.isFinite(parsed) ? parsed : (ports[portIndex]?.amount ?? 0)
+    const nextPorts = ports.map((p, i) => i === portIndex ? { ...p, amount: nextAmount } : p)
+    updateNodeData(id, { ports: nextPorts })
+    setDraftAmounts((prev) => {
+      const next = { ...prev }
+      delete next[portIndex]
+      return next
+    })
+  }, [draftAmounts, ports, id, updateNodeData])
 
-    updateNodeData(
-      id,
-      { id: nextId, label: nextId },
-      nextId !== data.id
-        ? { role: 'source', previousId: data.id, nextId }
-        : undefined
-    )
-
-    setDraftId(nextId)
-  }, [draftId, data.id, id, updateNodeData])
-
-  const commitAmount = useCallback(() => {
-    const parsed = Number.parseFloat(draftAmount)
-    const nextAmount = Number.isFinite(parsed) ? parsed : data.amount
-
-    updateNodeData(id, { amount: nextAmount })
-    setDraftAmount(String(nextAmount))
-  }, [draftAmount, data.amount, id, updateNodeData])
-
-  const handleIdKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
+  const handleAmountKeyDown = useCallback((portIndex: number) => (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       event.preventDefault()
       event.currentTarget.blur()
     } else if (event.key === 'Escape') {
       event.preventDefault()
-      setDraftId(data.label ?? data.id)
+      setDraftAmounts((prev) => {
+        const next = { ...prev }
+        delete next[portIndex]
+        return next
+      })
       event.currentTarget.blur()
     }
-  }, [data.id, data.label])
-
-  const handleAmountKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      event.preventDefault()
-      event.currentTarget.blur()
-    } else if (event.key === 'Escape') {
-      event.preventDefault()
-      setDraftAmount(String(data.amount))
-      event.currentTarget.blur()
-    }
-  }, [data.amount])
-
-  const displayAmount = isLimit ? draftAmount : formatValue(data.actual_amount)
+  }, [])
 
   return (
     <article className={`source-node source-node--${mode}`}>
       <header className="source-node__header">
         <p className="source-node__kicker">INPUT SOURCE</p>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <div className="source-node__header-actions">
           <button
             className="source-node__edit-btn nodrag"
             onClick={() => onEdit(id, 'source', data)}
             title="设置"
-          >
-            ⚙
-          </button>
+          >⚙</button>
           <div className="source-node__seg">
             <button
               className={`source-node__mode-btn nodrag${mode === 'limit' ? ' is-active' : ''}`}
-              onClick={() => handleSetMode('limit')}
-              title="供给上限"
-            >
-              🚧
-            </button>
+              onClick={() => handleSetMode('limit')} title="供给上限"
+            >🚧</button>
             <button
               className={`source-node__mode-btn nodrag${mode === 'infinite' ? ' is-active' : ''}`}
-              onClick={() => handleSetMode('infinite')}
-              title="无限供应"
-            >
-              ♾️
-            </button>
+              onClick={() => handleSetMode('infinite')} title="无限供应"
+            >♾️</button>
           </div>
         </div>
       </header>
 
-      <div className="source-node__body">
-        <div className="source-node__row">
-          <span className="source-node__row-label">物品 ID</span>
-          <input
-            type="text"
-            className="source-node__input nodrag"
-            value={draftId}
-            onChange={(event) => setDraftId(event.target.value)}
-            onBlur={commitId}
-            onKeyDown={handleIdKeyDown}
-            spellCheck={false}
-            title="Item Id"
-          />
-        </div>
-        <div className="source-node__row">
-          <span className="source-node__row-label">
-            {isLimit ? `供给上限 (${unit})` : `实际消耗量 (${unit})`}
-          </span>
-          <input
-            type="number"
-            className={`source-node__input nodrag${!isLimit ? ' source-node__input--auto' : ''}`}
-            value={displayAmount}
-            readOnly={!isLimit}
-            onChange={(event) => { if (isLimit) setDraftAmount(event.target.value) }}
-            onBlur={isLimit ? commitAmount : undefined}
-            onKeyDown={isLimit ? handleAmountKeyDown : undefined}
-            placeholder="[ 等待计算 ]"
-          />
-        </div>
-      </div>
+      <section className="recipe-node__ports">
+        <ul className="recipe-node__port-list recipe-node__port-list--right">
+          {ports.map((port, index) => {
+            const itemType = port.item_type ?? 'item'
+            const catDef = resolveCategoryDef(registryCategories, itemType)
+            const unit = buildUnitSuffix(catDef.base_unit, 'rate_per_sec')
+            const hexColor = catDef.themeColor
+            const glowColor = hexColor.startsWith('#')
+              ? `${hexColor}${Math.round(0.38 * 255).toString(16).padStart(2, '0')}`
+              : hexColor.replace(')', ', 0.38)').replace('rgb', 'rgba')
+            const handleId = `${itemType}:${port.id}`
+            const actualAmt = data.actual_amounts?.[port.id]
+            const draftAmount = draftAmounts[index]
+            const displayValue = isEditable
+              ? (draftAmount !== undefined ? draftAmount : formatValue(port.amount) || String(port.amount))
+              : (actualAmt !== undefined ? formatValue(actualAmt) : '')
 
-      <Handle
-        id={`${itemType}:${data.id}`}
-        type="source"
-        position={Position.Right}
-        className="source-node__handle"
-        style={{ right: '-6px' }}
-      />
+            return (
+              <li className="recipe-node__port recipe-node__port--right" key={port._uid ?? `${id}-port-${index}`}>
+                <div className="recipe-node__port-core recipe-node__port-core--right">
+                  <div className="endpoint-inline-stat">
+                    <input
+                      type="number"
+                      className={`endpoint-inline-input nodrag${!isEditable ? ' endpoint-inline-input--readonly' : ''}`}
+                      value={displayValue}
+                      readOnly={!isEditable}
+                      onChange={(e) => isEditable && setDraftAmounts((prev) => ({ ...prev, [index]: e.target.value }))}
+                      onBlur={isEditable ? () => commitAmount(index) : undefined}
+                      onKeyDown={isEditable ? handleAmountKeyDown(index) : undefined}
+                      placeholder="等待计算"
+                    />
+                    <span className="endpoint-inline-unit">{unit}</span>
+                  </div>
+                  <span className="recipe-node__port-name recipe-node__port-name--right">{port.id || '(未命名)'}</span>
+                  <span className="recipe-node__port-type" style={{ color: hexColor, borderColor: hexColor }}>
+                    {catDef.displayName}
+                  </span>
+                  <Handle
+                    id={handleId}
+                    type="source"
+                    position={Position.Right}
+                    className="recipe-node__handle"
+                    style={{ right: '-6px', backgroundColor: hexColor, borderColor: hexColor, boxShadow: `0 0 0 4px ${glowColor}` }}
+                  />
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
     </article>
   )
 }

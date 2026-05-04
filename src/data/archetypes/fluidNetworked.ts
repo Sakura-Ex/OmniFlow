@@ -9,6 +9,7 @@ export const fluidNetworkedArchetype: MachineArchetype = {
       amount_mutable: true,
       routing_mode: 'global',
       routing_locked: false,
+      measure_mode: 'rate_per_sec',
     },
   },
   default_modifiers: [],

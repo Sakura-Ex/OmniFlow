@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type { Edge, Node } from 'reactflow'
-import type { RecipeNodeData } from '../types/recipe'
+import type { RecipeNodeData, EndpointPort } from '../types/recipe'
 
 export type HandleUpdate = {
   role: 'source' | 'target'
@@ -51,20 +51,34 @@ export function useNodeOperations({
 
     if (typeof nextIsAuto === 'boolean') {
       if (currentNode.type === 'sourceNode') {
+        const ports: EndpointPort[] = currentNode.data?.ports ?? []
+        const actualAmounts: Record<string, number> = { ...currentNode.data?.actual_amounts }
+        for (const port of ports) {
+          if (port.id) {
+            actualAmounts[port.id] = nextIsAuto
+              ? (currentNode.data?.actual_amounts?.[port.id] ?? lastSystemInputs[port.id])
+              : (currentNode.data?.actual_amounts?.[port.id])
+          }
+        }
         mergedData = {
           ...mergedData,
           is_auto: nextIsAuto,
-          actual_amount: nextIsAuto
-            ? (currentData.actual_amount ?? lastSystemInputs[mergedData.id])
-            : currentData.actual_amount,
+          actual_amounts: actualAmounts,
         }
       } else if (currentNode.type === 'targetNode') {
+        const ports: EndpointPort[] = currentNode.data?.ports ?? []
+        const actualAmounts: Record<string, number> = { ...currentNode.data?.actual_amounts }
+        for (const port of ports) {
+          if (port.id) {
+            actualAmounts[port.id] = nextIsAuto
+              ? (currentNode.data?.actual_amounts?.[port.id] ?? lastSystemOutputs[port.id])
+              : (currentNode.data?.actual_amounts?.[port.id])
+          }
+        }
         mergedData = {
           ...mergedData,
           is_auto: nextIsAuto,
-          actual_amount: nextIsAuto
-            ? (currentData.actual_amount ?? lastSystemOutputs[mergedData.id])
-            : currentData.actual_amount,
+          actual_amounts: actualAmounts,
         }
       } else if (currentNode.type === 'recipeNode') {
         mergedData = { ...mergedData, is_auto: nextIsAuto }
@@ -86,8 +100,12 @@ export function useNodeOperations({
     if (handleChanged && handleUpdate) {
       const currentNode = nodesRef.current.find((n) => n.id === nodeId)
       const nodeItemType: string = currentNode?.data?.item_type ?? 'item'
-      const prevHandle = `${nodeItemType}:${handleUpdate.previousId}`
-      const nextHandle = `${nodeItemType}:${handleUpdate.nextId}`
+      // Try multi-port format first — item_type may be per-port
+      const ports: EndpointPort[] = currentNode?.data?.ports ?? []
+      const oldPort = ports.find((p) => p.id === handleUpdate.previousId)
+      const portItemType = oldPort?.item_type ?? nodeItemType
+      const prevHandle = `${portItemType}:${handleUpdate.previousId}`
+      const nextHandle = `${portItemType}:${handleUpdate.nextId}`
       const nextEdges = edgesRef.current.map((edge) => {
         if (
           handleUpdate.role === 'source' &&
@@ -170,6 +188,7 @@ export function useNodeOperations({
           is_auto: true,
           actual_amount: cachedAmount,
           item_type: cat,
+          ports: [{ id: input.id, amount: cachedAmount ?? 9999, item_type: cat, _uid: crypto.randomUUID() }],
         },
       })
 
@@ -203,6 +222,7 @@ export function useNodeOperations({
           is_auto: true,
           actual_amount: cachedAmount,
           item_type: cat,
+          ports: [{ id: output.id, amount: cachedAmount ?? 0, item_type: cat, _uid: crypto.randomUUID() }],
         },
       })
 
