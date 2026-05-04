@@ -56,7 +56,7 @@ export interface RecipeNodeData {
   /** @deprecated legacy tick field retained only for backward compatibility */
   base_duration?: number
   active_modifiers?: string[]
-  modifier_states?: Record<string, Record<string, any>>
+  modifier_states?: Record<string, Record<string, unknown>>
   mode?: RecipeNodeMode
   /** @deprecated 由 mode 替代，保留以兼容旧存档 */
   is_auto?: boolean
@@ -69,6 +69,6 @@ export interface RecipeNodeData {
     rf_per_tick?: number
     base_voltage?: string
     can_overclock?: boolean
-    [key: string]: any
+    [key: string]: unknown
   }
 }

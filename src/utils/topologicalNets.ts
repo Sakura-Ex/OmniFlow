@@ -67,23 +67,6 @@ class UnionFind {
   }
 }
 
-/**
- * Determines the routing mode of a specific port on a recipe node.
- * Returns 'global' | 'wired'. Non-recipe nodes are always 'wired'.
- */
-function getPortRoutingMode(
-  nodeId: string,
-  portId: string,
-  role: 'source' | 'target',
-  shapedRecipes: Map<string, { base_inputs?: Resource[]; base_outputs?: Resource[] }>
-): 'global' | 'wired' {
-  const shaped = shapedRecipes.get(nodeId)
-  if (!shaped) return 'wired'
-  const ports = role === 'source' ? (shaped.base_outputs ?? []) : (shaped.base_inputs ?? [])
-  const port = ports.find((p) => p.id === portId)
-  return port?.routing_mode === 'global' ? 'global' : 'wired'
-}
-
 export interface TopologicalNets {
   /**
    * Full lookup: portKey(nodeId, portId) → compiled net name.
@@ -207,11 +190,11 @@ function hasEdgeForKey(key: PortKey, edges: Edge[], nodeId: string): boolean {
  * @param nodeId     The owning node's ID
  * @param lookup     Net lookup table from buildTopologicalNets
  */
-export function translatePortIds(
-  ports: Array<{ id: string; [key: string]: any }>,
+export function translatePortIds<T extends { id: string }>(
+  ports: T[],
   nodeId: string,
   lookup: NetLookupTable
-): Array<{ id: string; [key: string]: any }> {
+): T[] {
   return ports.map((port) => {
     const key = portKey(nodeId, port.id)
     const netName = lookup.get(key)

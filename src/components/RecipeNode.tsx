@@ -4,6 +4,7 @@ import type { RecipeNodeData, RecipeNodeMode } from '../types/recipe'
 import { useRecipeEditor } from '../RecipeEditorContext'
 import { useNodeData } from '../NodeDataContext'
 import { ensureRecipeDataShape, getCalculatedRates } from '../modifiers/calculate'
+import { resolveRecipePowerProfile } from '../modifiers/gtMultiblock'
 import './RecipeNode.css'
 
 const portToneMap = {
@@ -34,9 +35,14 @@ const portToneMap = {
   },
 } as const
 
-function formatPortAmount(amount: number, kind: keyof typeof portToneMap) {
+function formatPortAmount(amount: number, kind: keyof typeof portToneMap, durationSeconds?: number) {
   if (kind === 'fluid') return `x${amount}mB`
-  if (kind === 'energy') return `${amount} EU`
+  if (kind === 'energy') {
+    const ticks = typeof durationSeconds === 'number' && durationSeconds > 0 ? durationSeconds * 20 : 1
+    const totalEu = amount * ticks
+    const rounded = parseFloat(totalEu.toPrecision(6))
+    return `${rounded} EU`
+  }
   return `x${amount}`
 }
 
@@ -65,13 +71,16 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   const [draftManualMachines, setDraftManualMachines] = useState(String(normalizedData.manual_machines ?? ''))
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDraftManualMachines(String(normalizedData.manual_machines ?? ''))
   }, [normalizedData.manual_machines, normalizedData.recipe_id])
   
-  // Power calculation mock fallback
+  const calculatedForPower = getCalculatedRates(normalizedData)
+  const powerProfile = resolveRecipePowerProfile(normalizedData, calculatedForPower.transformedInputs)
+  const machineCountForPower = runtimeMachines ?? machinesActual ?? null
   const totalEu =
-    machinesActual !== null && typeof normalizedData.metadata.eu_per_tick === 'number'
-      ? normalizedData.metadata.eu_per_tick * machinesActual
+    machineCountForPower !== null && powerProfile.hasPowerSetting
+      ? powerProfile.actualEuPerTick * machineCountForPower
       : null
   const totalRf =
     machinesActual !== null && typeof normalizedData.metadata.rf_per_tick === 'number'
@@ -138,7 +147,11 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
               const category = input.category in portToneMap ? input.category as keyof typeof portToneMap : 'item'
               const tone = portToneMap[category]
               const rate = calculated.inputRates[index]
-              const portRate = calculated.isInstant ? 'Instant' : `${formatDisplayValue(rate?.amount)}/s`
+              const portRate = calculated.isInstant
+                ? 'Instant'
+                : category === 'energy'
+                  ? `${formatDisplayValue(input.amount)} EU/t`
+                  : `${formatDisplayValue(rate?.amount)}/s`
               const handleId = input.id || input._uid || `input-${index}`
 
               return (
@@ -168,7 +181,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
                     </span>
                     <div className="recipe-node__port-stats recipe-node__port-stats--right">
                       <span className="recipe-node__port-amount">
-                        {formatPortAmount(input.amount, category)}
+                        {formatPortAmount(input.amount, category, calculated.duration)}
                       </span>
                       <span className="recipe-node__port-rate">{portRate}</span>
                     </div>
@@ -260,11 +273,11 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
           </div>
         </div>
 
-        {normalizedData.system === 'gregtech' && normalizedData.metadata.eu_per_tick && (
+        {normalizedData.system === 'gregtech' && powerProfile.hasPowerSetting && (
           <div className="recipe-node__footer-line">
             <span className="recipe-node__footer-label">⚡ 总功耗</span>
             <strong className="recipe-node__footer-value">
-              {totalEu !== null ? `${totalEu} EU/t` : '待计算...'}
+              {totalEu !== null ? `${formatDisplayValue(totalEu)} EU/t` : '待计算...'}
             </strong>
           </div>
         )}

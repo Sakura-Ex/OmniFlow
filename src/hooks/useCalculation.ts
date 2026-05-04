@@ -9,7 +9,7 @@ import { buildTopologicalNets, translatePortIds } from '../utils/topologicalNets
 const VIRTUAL_GLOBAL_SOURCE = 'Virtual_Global_Source'
 const VIRTUAL_GLOBAL_TARGET = 'Virtual_Global_Target'
 
-function resolveIsAuto(data: any): boolean {
+function resolveIsAuto(data: Record<string, unknown> | undefined): boolean {
   if (typeof data?.mode === 'string') {
     return data.mode !== 'limit' && data.mode !== 'demand'
   }

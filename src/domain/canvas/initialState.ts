@@ -1,6 +1,6 @@
 import type { Node, Edge } from 'reactflow'
 
-export const initialNodes: Node<any>[] = [
+export const initialNodes: Node[] = [
   {
     id: 'source-1',
     type: 'sourceNode',

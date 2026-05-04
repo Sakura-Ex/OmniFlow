@@ -23,7 +23,6 @@ export function useCanvasOperations({
   setNodes,
   setEdges,
   nodesRef,
-  edgesRef,
   takeSnapshot,
   setSystemInputs,
   setSystemOutputs,
@@ -37,7 +36,7 @@ export function useCanvasOperations({
   const onConnect = useCallback((params: Connection) => {
     takeSnapshot()
     const sourceNode = nodesRef.current.find((n) => n.id === params.source)
-    const sourcePort = sourceNode?.data?.outputs?.find((o: any) => o.id === params.sourceHandle)
+    const sourcePort = sourceNode?.data?.outputs?.find((o: { id: string; category?: string; type?: string }) => o.id === params.sourceHandle)
 
     const sourcePortCategory = sourcePort?.category ?? sourcePort?.type
     const isFluid = sourcePortCategory === 'fluid' || params.sourceHandle === 'water'
@@ -65,7 +64,7 @@ export function useCanvasOperations({
   const handleAddSource = useCallback(() => {
     takeSnapshot()
     const id = makeId()
-    const newNode: Node<any> = {
+    const newNode: Node = {
       id,
       type: 'sourceNode',
       position: { x: 320 + Math.random() * 50, y: 180 + Math.random() * 50 },
@@ -119,7 +118,7 @@ export function useCanvasOperations({
   const handleAddTarget = useCallback(() => {
     takeSnapshot()
     const id = makeId()
-    const newNode: Node<any> = {
+    const newNode: Node = {
       id,
       type: 'targetNode',
       position: { x: 320 + Math.random() * 50, y: 180 + Math.random() * 50 },

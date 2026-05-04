@@ -23,7 +23,9 @@ type UseFileIOParams = {
 function stripState<T extends { selected?: boolean; dragging?: boolean }>(items: T[]) {
   return items.map((item) => {
     const { selected, dragging, ...rest } = item
-    return rest as T
+    void selected
+    void dragging
+    return rest as unknown as T
   })
 }
 

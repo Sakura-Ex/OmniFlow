@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type { Edge, Node } from 'reactflow'
-import type { RecipeNodeData } from '../types/recipe'
+import type { RecipeNodeData, RecipePort } from '../types/recipe'
 
 export type HandleUpdate = {
   role: 'source' | 'target'
@@ -42,7 +42,7 @@ export function useNodeOperations({
 }: UseNodeOperationsParams) {
   const updateNodeData = useCallback((
     nodeId: string,
-    nextData: Record<string, any>,
+    nextData: Record<string, unknown>,
     handleUpdate?: HandleUpdate,
   ) => {
     const currentNode = nodesRef.current.find((n) => n.id === nodeId)
@@ -163,7 +163,7 @@ export function useNodeOperations({
         },
       })
 
-      const style = edgeStyleForPort(input.category ?? (input as any).type)
+      const style = edgeStyleForPort(input.category ?? (input as RecipePort).type)
       edgesToAdd.push({
         id: `e-${sourceId}-${input.id}-${nodeId}-${input.id}-${Date.now()}`,
         source: sourceId,
@@ -196,7 +196,7 @@ export function useNodeOperations({
         },
       })
 
-      const style = edgeStyleForPort(output.category ?? (output as any).type)
+      const style = edgeStyleForPort(output.category ?? (output as RecipePort).type)
       edgesToAdd.push({
         id: `e-${nodeId}-${output.id}-${targetId}-${output.id}-${Date.now()}`,
         source: nodeId,

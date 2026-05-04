@@ -191,11 +191,17 @@ export default function App() {
     <main className="app-shell" data-theme={theme}>
       <section className="canvas-shell">
         <RecipeEditorModal
+          key={editingNode?.id ?? 'closed'}
           node={editingNode}
           onClose={handleCloseEditor}
           onSave={handleSaveEditor}
         />
-        <EndpointEditorModal node={editingEndpoint} onClose={handleCloseEndpointEditor} onSave={handleSaveEndpoint} />
+        <EndpointEditorModal
+          key={editingEndpoint?.id ?? 'closed'}
+          node={editingEndpoint}
+          onClose={handleCloseEndpointEditor}
+          onSave={handleSaveEndpoint}
+        />
         <SystemHUD
           systemInputs={systemInputs}
           systemOutputs={systemOutputs}

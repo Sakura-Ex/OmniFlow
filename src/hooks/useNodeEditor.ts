@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import type { Node } from 'reactflow'
-import type { RecipeNodeData } from '../types/recipe'
+import type { RecipeNodeData, SourceNodeData, TargetNodeData } from '../types/recipe'
 import type { EndpointEditorTarget } from '../EndpointEditorContext'
 
 type UseNodeEditorParams = {
@@ -29,7 +29,7 @@ export function useNodeEditor({ setNodes, takeSnapshot }: UseNodeEditorParams) {
     setEditingNode(null)
   }, [setNodes, takeSnapshot])
 
-  const handleEditEndpoint = useCallback((id: string, role: 'source' | 'target', data: any) => {
+  const handleEditEndpoint = useCallback((id: string, role: 'source' | 'target', data: SourceNodeData | TargetNodeData) => {
     setEditingEndpoint({ id, role, data })
   }, [])
 
@@ -37,7 +37,7 @@ export function useNodeEditor({ setNodes, takeSnapshot }: UseNodeEditorParams) {
     setEditingEndpoint(null)
   }, [])
 
-  const handleSaveEndpoint = useCallback((id: string, patch: any) => {
+  const handleSaveEndpoint = useCallback((id: string, patch: Partial<SourceNodeData & TargetNodeData>) => {
     takeSnapshot()
     setNodes((prev) => prev.map((node) =>
       node.id !== id ? node : { ...node, data: { ...node.data, ...patch } }

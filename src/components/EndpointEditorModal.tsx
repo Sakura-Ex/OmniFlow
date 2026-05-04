@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { SourceNodeData, TargetNodeData } from '../types/recipe'
 import type { EndpointEditorTarget } from '../EndpointEditorContext'
 import './EndpointEditorModal.css'
@@ -10,16 +10,9 @@ type Props = {
 }
 
 export function EndpointEditorModal({ node, onClose, onSave }: Props) {
-  const [itemId, setItemId] = useState('')
-  const [itemType, setItemType] = useState<'item' | 'fluid'>('item')
-  const [amount, setAmount] = useState('')
-
-  useEffect(() => {
-    if (!node) return
-    setItemId(node.data.label ?? node.data.id)
-    setItemType(node.data.item_type ?? 'item')
-    setAmount(String(node.data.amount ?? ''))
-  }, [node])
+  const [itemId, setItemId] = useState(node?.data.label ?? node?.data.id ?? '')
+  const [itemType, setItemType] = useState<'item' | 'fluid'>(node?.data.item_type ?? 'item')
+  const [amount, setAmount] = useState(String(node?.data.amount ?? ''))
 
   if (!node) return null
 

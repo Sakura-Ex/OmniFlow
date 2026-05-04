@@ -23,7 +23,7 @@ export function SourceNode({ id, data }: NodeProps<SourceNodeData>) {
   const [draftAmount, setDraftAmount] = useState(String(data.amount))
 
   useEffect(() => {
-    setDraftId(data.label ?? data.id)
+    setDraftId(data.label ?? data.id); // eslint-disable-line react-hooks/set-state-in-effect
     setDraftAmount(formatValue(data.amount) || String(data.amount))
   }, [data.id, data.label, data.amount])
 

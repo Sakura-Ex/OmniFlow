@@ -18,7 +18,9 @@ type UseUndoRedoParams = {
 function stripState<T extends { selected?: boolean; dragging?: boolean }>(items: T[]) {
   return items.map((item) => {
     const { selected, dragging, ...rest } = item
-    return rest as T
+    void selected
+    void dragging
+    return rest as unknown as T
   })
 }
 
@@ -34,8 +36,8 @@ export function useUndoRedo({
 
   const takeSnapshot = useCallback(() => {
     setPast((p) => {
-      const currentNodes = stripState(JSON.parse(JSON.stringify(nodesRef.current)))
-      const currentEdges = stripState(JSON.parse(JSON.stringify(edgesRef.current)))
+      const currentNodes = stripState(JSON.parse(JSON.stringify(nodesRef.current))) as Node[]
+      const currentEdges = stripState(JSON.parse(JSON.stringify(edgesRef.current))) as Edge[]
 
       if (p.length > 0) {
         const last = p[p.length - 1]
@@ -59,8 +61,8 @@ export function useUndoRedo({
 
     setFuture((f) => [
       {
-        nodes: stripState(JSON.parse(JSON.stringify(nodesRef.current))),
-        edges: stripState(JSON.parse(JSON.stringify(edgesRef.current))),
+        nodes: stripState(JSON.parse(JSON.stringify(nodesRef.current))) as Node[],
+        edges: stripState(JSON.parse(JSON.stringify(edgesRef.current))) as Edge[],
       },
       ...f,
     ])
@@ -80,8 +82,8 @@ export function useUndoRedo({
     setPast((p) => [
       ...p,
       {
-        nodes: stripState(JSON.parse(JSON.stringify(nodesRef.current))),
-        edges: stripState(JSON.parse(JSON.stringify(edgesRef.current))),
+        nodes: stripState(JSON.parse(JSON.stringify(nodesRef.current))) as Node[],
+        edges: stripState(JSON.parse(JSON.stringify(edgesRef.current))) as Edge[],
       },
     ])
 

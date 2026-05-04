@@ -9,7 +9,7 @@ type HandleUpdate = {
 type NodeDataContextValue = {
   updateNodeData: (
     nodeId: string,
-    nextData: Record<string, any>,
+    nextData: Record<string, unknown>,
     handleUpdate?: HandleUpdate
   ) => void
 }

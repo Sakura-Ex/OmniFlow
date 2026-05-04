@@ -10,11 +10,11 @@ export const recipeMock: RecipeNodeData = {
     can_overclock: true
   },
   inputs: [
-    { id: 'iron_dust', type: 'item', amount: 1 },
-    { id: 'oxygen', type: 'fluid', amount: 1000 },
+    { id: 'iron_dust', category: 'item', type: 'item', amount: 1 },
+    { id: 'oxygen', category: 'fluid', type: 'fluid', amount: 1000 },
   ],
   outputs: [
-    { id: 'steel_ingot', type: 'item', amount: 1 },
-    { id: 'tiny_dark_ashes', type: 'item', amount: 1 },
+    { id: 'steel_ingot', category: 'item', type: 'item', amount: 1 },
+    { id: 'tiny_dark_ashes', category: 'item', type: 'item', amount: 1 },
   ],
 }
