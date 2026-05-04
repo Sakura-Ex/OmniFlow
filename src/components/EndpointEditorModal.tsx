@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { SourceNodeData, TargetNodeData } from '../types/recipe'
 import type { EndpointEditorTarget } from '../EndpointEditorContext'
+import { useResourceRegistry } from '../registry/resourceRegistry'
 import './EndpointEditorModal.css'
 
 type Props = {
@@ -10,15 +11,20 @@ type Props = {
 }
 
 export function EndpointEditorModal({ node, onClose, onSave }: Props) {
+  const registryCategories = useResourceRegistry((state) => state.categories)
+  const categoryOptions = useMemo(
+    () => Object.values(registryCategories).map((cat) => ({ id: cat.id, displayName: cat.displayName })),
+    [registryCategories]
+  )
   const [itemId, setItemId] = useState(node?.data.label ?? node?.data.id ?? '')
-  const [itemType, setItemType] = useState<'item' | 'fluid'>(node?.data.item_type ?? 'item')
+  const [itemType, setItemType] = useState<string>(node?.data.item_type ?? 'item')
   const [amount, setAmount] = useState(String(node?.data.amount ?? ''))
 
   if (!node) return null
 
   const isSource = node.role === 'source'
-  const isFluid = itemType === 'fluid'
-  const unit = isFluid ? 'mB/s' : '/s'
+  const catDef = registryCategories[itemType]
+  const unit = catDef?.unit ?? ''
   const rateLabel = isSource ? `最大供应速率 (${unit})` : `需求速率 (${unit})`
 
   const handleSave = () => {
@@ -60,20 +66,14 @@ export function EndpointEditorModal({ node, onClose, onSave }: Props) {
 
           <div className="ep-editor__field">
             <label>类型</label>
-            <div className="ep-editor__type-row">
-              <button
-                className={`ep-editor__type-btn${itemType === 'item' ? ' is-active' : ''}`}
-                onClick={() => setItemType('item')}
-              >
-                📦 物品
-              </button>
-              <button
-                className={`ep-editor__type-btn${itemType === 'fluid' ? ' is-active' : ''}`}
-                onClick={() => setItemType('fluid')}
-              >
-                💧 流体
-              </button>
-            </div>
+            <select
+              value={itemType}
+              onChange={(e) => setItemType(e.target.value)}
+            >
+              {categoryOptions.map((opt) => (
+                <option key={opt.id} value={opt.id}>{opt.displayName}</option>
+              ))}
+            </select>
           </div>
 
           {!node.data.is_auto && (

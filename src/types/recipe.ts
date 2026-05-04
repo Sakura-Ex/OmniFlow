@@ -1,6 +1,6 @@
-import type { Resource, ResourceCategory } from './types'
+import type { Resource } from './types'
 
-export type RecipePortKind = ResourceCategory
+export type RecipePortKind = string
 
 export interface RecipePort extends Resource {
   /** @deprecated legacy field, mapped from category for old payloads */
@@ -18,7 +18,7 @@ export interface SourceNodeData {
   id: string
   label: string
   amount: number
-  item_type?: 'item' | 'fluid'
+  item_type?: string
   mode?: SourceNodeMode
   /** @deprecated 由 mode 替代，保留以兼容旧存档 */
   is_auto?: boolean
@@ -30,7 +30,7 @@ export interface TargetNodeData {
   id: string
   label: string
   amount: number
-  item_type?: 'item' | 'fluid'
+  item_type?: string
   mode?: TargetNodeMode
   /** @deprecated 由 mode 替代，保留以兼容旧存档 */
   is_auto?: boolean

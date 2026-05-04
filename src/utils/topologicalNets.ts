@@ -136,37 +136,41 @@ export function buildTopologicalNets(
     if (node.type === 'recipeNode' && shaped) {
       for (const port of shaped.base_inputs ?? []) {
         if (!port.id) continue
-        const key = portKey(nid, port.id)
+        const qualifiedId = `${port.category}:${port.id}`
+        const key = portKey(nid, qualifiedId)
         if (port.routing_mode === 'global') {
-          addToNet(`Global_${port.id}`, key)
+          addToNet(`Global_${qualifiedId}`, key)
         } else if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
           // Port appears in a wired edge: assign to its connected-component net
           addToNet(getNetName(uf.find(key)), key)
         } else {
           // Void: no connection
-          addToNet(`Void_${nid}_${port.id}`, key)
+          addToNet(`Void_${nid}_${qualifiedId}`, key)
         }
       }
       for (const port of shaped.base_outputs ?? []) {
         if (!port.id) continue
-        const key = portKey(nid, port.id)
+        const qualifiedId = `${port.category}:${port.id}`
+        const key = portKey(nid, qualifiedId)
         if (port.routing_mode === 'global') {
-          addToNet(`Global_${port.id}`, key)
+          addToNet(`Global_${qualifiedId}`, key)
         } else if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
           addToNet(getNetName(uf.find(key)), key)
         } else {
-          addToNet(`Void_${nid}_${port.id}`, key)
+          addToNet(`Void_${nid}_${qualifiedId}`, key)
         }
       }
     } else if (node.type === 'sourceNode' || node.type === 'targetNode') {
-      // Source/target nodes have a single implicit port whose ID is node.data.id
+      // Source/target nodes have a single implicit port whose ID is data.id
       const resourceId: string = node.data?.id ?? nid
-      const key = portKey(nid, resourceId)
+      const itemType: string = node.data?.item_type ?? 'item'
+      const qualifiedId = `${itemType}:${resourceId}`
+      const key = portKey(nid, qualifiedId)
       // Source/Target nodes never carry global routing; they're always wired.
       if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
         addToNet(getNetName(uf.find(key)), key)
       } else {
-        addToNet(`Void_${nid}_${resourceId}`, key)
+        addToNet(`Void_${nid}_${qualifiedId}`, key)
       }
     }
   }
@@ -190,17 +194,18 @@ function hasEdgeForKey(key: PortKey, edges: Edge[], nodeId: string): boolean {
  * @param nodeId     The owning node's ID
  * @param lookup     Net lookup table from buildTopologicalNets
  */
-export function translatePortIds<T extends { id: string }>(
+export function translatePortIds<T extends { id: string; category?: string }>(
   ports: T[],
   nodeId: string,
   lookup: NetLookupTable
 ): T[] {
   return ports.map((port) => {
-    const key = portKey(nodeId, port.id)
+    const qualifiedId = port.category ? `${port.category}:${port.id}` : port.id
+    const key = portKey(nodeId, qualifiedId)
     const netName = lookup.get(key)
     if (!netName) {
       // Fallback: treat as void (should not normally happen if all ports are registered)
-      return { ...port, id: `Void_${nodeId}_${port.id}` }
+      return { ...port, id: `Void_${nodeId}_${qualifiedId}` }
     }
     return { ...port, id: netName }
   })

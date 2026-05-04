@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type { Edge, Node } from 'reactflow'
-import type { RecipeNodeData, RecipePort } from '../types/recipe'
+import type { RecipeNodeData } from '../types/recipe'
 
 export type HandleUpdate = {
   role: 'source' | 'target'
@@ -11,14 +11,6 @@ export type HandleUpdate = {
 
 function makeId() {
   return `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
-}
-
-function edgeStyleForPort(portType?: string) {
-  const isFluid = portType === 'fluid'
-  return {
-    className: isFluid ? 'custom-edge-fluid' : 'custom-edge-item',
-    stroke: isFluid ? '#4ddcff' : '#e5e7eb',
-  }
 }
 
 type UseNodeOperationsParams = {
@@ -92,20 +84,24 @@ export function useNodeOperations({
     nodesRef.current = nextNodes
 
     if (handleChanged && handleUpdate) {
+      const currentNode = nodesRef.current.find((n) => n.id === nodeId)
+      const nodeItemType: string = currentNode?.data?.item_type ?? 'item'
+      const prevHandle = `${nodeItemType}:${handleUpdate.previousId}`
+      const nextHandle = `${nodeItemType}:${handleUpdate.nextId}`
       const nextEdges = edgesRef.current.map((edge) => {
         if (
           handleUpdate.role === 'source' &&
           edge.source === nodeId &&
-          edge.sourceHandle === handleUpdate.previousId
+          edge.sourceHandle === prevHandle
         ) {
-          return { ...edge, sourceHandle: handleUpdate.nextId }
+          return { ...edge, sourceHandle: nextHandle }
         }
         if (
           handleUpdate.role === 'target' &&
           edge.target === nodeId &&
-          edge.targetHandle === handleUpdate.previousId
+          edge.targetHandle === prevHandle
         ) {
-          return { ...edge, targetHandle: handleUpdate.nextId }
+          return { ...edge, targetHandle: nextHandle }
         }
         return edge
       })
@@ -121,16 +117,27 @@ export function useNodeOperations({
     const data = recipeNode.data as RecipeNodeData
     const inputs = data.inputs ?? []
     const outputs = data.outputs ?? []
+    const baseInputs = data.base_inputs ?? data.inputs ?? []
+    const baseOutputs = data.base_outputs ?? data.outputs ?? []
     const position = recipeNode.position ?? { x: 0, y: 0 }
+
+    const inputCategoryMap = new Map<string, string>()
+    for (const inp of baseInputs) {
+      if (inp.id) inputCategoryMap.set(inp.id, inp.category ?? 'item')
+    }
+    const outputCategoryMap = new Map<string, string>()
+    for (const out of baseOutputs) {
+      if (out.id) outputCategoryMap.set(out.id, out.category ?? 'item')
+    }
 
     const missingInputs = inputs.filter((input) =>
       !edgesRef.current.some(
-        (edge) => edge.target === nodeId && edge.targetHandle === input.id
+        (edge) => edge.target === nodeId && edge.targetHandle === `${inputCategoryMap.get(input.id) ?? 'item'}:${input.id}`
       )
     )
     const missingOutputs = outputs.filter((output) =>
       !edgesRef.current.some(
-        (edge) => edge.source === nodeId && edge.sourceHandle === output.id
+        (edge) => edge.source === nodeId && edge.sourceHandle === `${outputCategoryMap.get(output.id) ?? 'item'}:${output.id}`
       )
     )
 
@@ -149,6 +156,8 @@ export function useNodeOperations({
       const sourceId = makeId()
       const y = position.y + index * spacing - inputOffset
       const cachedAmount = lastSystemInputs[input.id]
+      const cat = inputCategoryMap.get(input.id) ?? 'item'
+      const handleId = `${cat}:${input.id}`
 
       nodesToAdd.push({
         id: sourceId,
@@ -160,19 +169,17 @@ export function useNodeOperations({
           amount: cachedAmount ?? 9999,
           is_auto: true,
           actual_amount: cachedAmount,
+          item_type: cat,
         },
       })
 
-      const style = edgeStyleForPort(input.category ?? (input as RecipePort).type)
       edgesToAdd.push({
         id: `e-${sourceId}-${input.id}-${nodeId}-${input.id}-${Date.now()}`,
         source: sourceId,
-        sourceHandle: input.id,
+        sourceHandle: handleId,
         target: nodeId,
-        targetHandle: input.id,
+        targetHandle: handleId,
         type: 'default',
-        className: style.className,
-        style: { stroke: style.stroke, strokeWidth: 2 },
       })
     })
 
@@ -181,6 +188,8 @@ export function useNodeOperations({
       const targetId = makeId()
       const y = position.y + index * spacing - outputOffset
       const cachedAmount = lastSystemOutputs[output.id]
+      const cat = outputCategoryMap.get(output.id) ?? 'item'
+      const handleId = `${cat}:${output.id}`
 
       nodesToAdd.push({
         id: targetId,
@@ -193,19 +202,17 @@ export function useNodeOperations({
           mode: 'overflow',
           is_auto: true,
           actual_amount: cachedAmount,
+          item_type: cat,
         },
       })
 
-      const style = edgeStyleForPort(output.category ?? (output as RecipePort).type)
       edgesToAdd.push({
         id: `e-${nodeId}-${output.id}-${targetId}-${output.id}-${Date.now()}`,
         source: nodeId,
-        sourceHandle: output.id,
+        sourceHandle: handleId,
         target: targetId,
-        targetHandle: output.id,
+        targetHandle: handleId,
         type: 'default',
-        className: style.className,
-        style: { stroke: style.stroke, strokeWidth: 2 },
       })
     })
 

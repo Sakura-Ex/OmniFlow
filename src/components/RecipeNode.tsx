@@ -5,43 +5,35 @@ import { useRecipeEditor } from '../RecipeEditorContext'
 import { useNodeData } from '../NodeDataContext'
 import { ensureRecipeDataShape, getCalculatedRates } from '../modifiers/calculate'
 import { resolveRecipePowerProfile } from '../modifiers/gtMultiblock'
+import { useResourceRegistry } from '../registry/resourceRegistry'
+import { FALLBACK_CATEGORY } from '../registry/defaults'
+import type { ResourceCategoryDef } from '../registry/types'
 import './RecipeNode.css'
 
-const portToneMap = {
-  item: {
-    handle: '#e5e7eb',
-    glow: 'rgba(229, 231, 235, 0.38)',
-    text: 'ITEM',
-  },
-  fluid: {
-    handle: '#4ddcff',
-    glow: 'rgba(77, 220, 255, 0.42)',
-    text: 'FLUID',
-  },
-  energy: {
-    handle: '#f59e0b',
-    glow: 'rgba(245, 158, 11, 0.38)',
-    text: 'ENERGY',
-  },
-  stress: {
-    handle: '#c084fc',
-    glow: 'rgba(192, 132, 252, 0.36)',
-    text: 'STRESS',
-  },
-  heat: {
-    handle: '#fb7185',
-    glow: 'rgba(251, 113, 133, 0.34)',
-    text: 'HEAT',
-  },
-} as const
+function resolveCategoryDef(
+  categories: Record<string, ResourceCategoryDef>,
+  typeId?: string | null
+): ResourceCategoryDef {
+  if (!typeId) return FALLBACK_CATEGORY
+  const exact = categories[typeId]
+  if (exact) return exact
+  const colonIdx = typeId.indexOf(':')
+  if (colonIdx > 0) {
+    const ns = typeId.slice(0, colonIdx)
+    const nsMatch = categories[ns]
+    if (nsMatch) return nsMatch
+  }
+  return FALLBACK_CATEGORY
+}
 
-function formatPortAmount(amount: number, kind: keyof typeof portToneMap, durationSeconds?: number) {
-  if (kind === 'fluid') return `x${amount}mB`
-  if (kind === 'energy') {
+function formatPortAmount(amount: number, catDef: ResourceCategoryDef, durationSeconds?: number) {
+  const isRateBased = catDef.unit.endsWith('/t') || catDef.unit.endsWith('/s')
+  if (catDef.id === 'fluid') return `x${amount}${catDef.unit}`
+  if (isRateBased) {
     const ticks = typeof durationSeconds === 'number' && durationSeconds > 0 ? durationSeconds * 20 : 1
-    const totalEu = amount * ticks
-    const rounded = parseFloat(totalEu.toPrecision(6))
-    return `${rounded} EU`
+    const total = amount * ticks
+    const rounded = parseFloat(total.toPrecision(6))
+    return `${rounded} ${catDef.unit}`
   }
   return `x${amount}`
 }
@@ -59,6 +51,9 @@ function formatPercent(value: number) {
 export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   const { onEdit, onAutoFill } = useRecipeEditor()
   const { updateNodeData } = useNodeData()
+  const registryCategories = useResourceRegistry((state) => state.categories)
+  const gtEuCatDef = resolveCategoryDef(registryCategories, 'gt:eu')
+  const thermalRfCatDef = resolveCategoryDef(registryCategories, 'thermal:rf')
   const normalizedData = ensureRecipeDataShape(data)
   const calculated = getCalculatedRates(normalizedData)
   // mode 优先；字段回退：is_auto=true 映射 auto，false 映射 limit
@@ -144,15 +139,19 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
           <p className="recipe-node__section-label">Inputs</p>
           <ul className="recipe-node__port-list">
             {calculated.transformedInputs.map((input, index) => {
-              const category = input.category in portToneMap ? input.category as keyof typeof portToneMap : 'item'
-              const tone = portToneMap[category]
+              const typeId = input.utility_type ?? input.category
+              const catDef = resolveCategoryDef(registryCategories, typeId)
+              const hexColor = catDef.themeColor
+              const glowColor = hexColor.startsWith('#')
+                ? `${hexColor}${Math.round(0.38 * 255).toString(16).padStart(2, '0')}`
+                : hexColor.replace(')', ', 0.38)').replace('rgb', 'rgba')
               const rate = calculated.inputRates[index]
               const portRate = calculated.isInstant
                 ? 'Instant'
-                : category === 'energy'
-                  ? `${formatDisplayValue(input.amount)} EU/t`
+                : catDef.unit.endsWith('/t') || catDef.unit.endsWith('/s')
+                  ? `${formatDisplayValue(input.amount)} ${catDef.unit}`
                   : `${formatDisplayValue(rate?.amount)}/s`
-              const handleId = input.id || input._uid || `input-${index}`
+              const handleId = `${input.category}:${input.id || input._uid || `input-${index}`}`
 
               return (
                 <li className="recipe-node__port recipe-node__port--left" key={input._uid ?? `${id}-input-${index}`}>
@@ -162,26 +161,23 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
                         id={handleId}
                         type="target"
                         position={Position.Left}
-                        className={`recipe-node__handle recipe-node__handle--${category}`}
                         style={{
                           left: '-6px',
-                          backgroundColor: tone.handle,
-                          borderColor: tone.handle,
-                          boxShadow: `0 0 0 4px ${tone.glow}`,
+                          backgroundColor: hexColor,
+                          borderColor: hexColor,
+                          boxShadow: `0 0 0 4px ${glowColor}`,
                         }}
                       />
                     )}
-                    <span
-                      className={`recipe-node__port-type recipe-node__port-type--${category}`}
-                    >
-                      {tone.text}
+                    <span className="recipe-node__port-type" style={{ color: hexColor, borderColor: hexColor }}>
+                      {catDef.displayName}
                     </span>
                     <span className="recipe-node__port-name recipe-node__port-name--left">
                       {input.id}
                     </span>
                     <div className="recipe-node__port-stats recipe-node__port-stats--right">
                       <span className="recipe-node__port-amount">
-                        {formatPortAmount(input.amount, category, calculated.duration)}
+                        {formatPortAmount(input.amount, catDef, calculated.duration)}
                       </span>
                       <span className="recipe-node__port-rate">{portRate}</span>
                     </div>
@@ -198,40 +194,41 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
           </p>
           <ul className="recipe-node__port-list recipe-node__port-list--right">
             {calculated.transformedOutputs.map((output, index) => {
-              const category = output.category in portToneMap ? output.category as keyof typeof portToneMap : 'item'
-              const tone = portToneMap[category]
+              const typeId = output.utility_type ?? output.category
+              const catDef = resolveCategoryDef(registryCategories, typeId)
+              const hexColor = catDef.themeColor
+              const glowColor = hexColor.startsWith('#')
+                ? `${hexColor}${Math.round(0.38 * 255).toString(16).padStart(2, '0')}`
+                : hexColor.replace(')', ', 0.38)').replace('rgb', 'rgba')
               const rate = calculated.outputRates[index]
               const portRate = calculated.isInstant ? 'Instant' : `${formatDisplayValue(rate?.amount)}/s`
-              const handleId = output.id || output._uid || `output-${index}`
+              const handleId = `${output.category}:${output.id || output._uid || `output-${index}`}`
 
               return (
                 <li className="recipe-node__port recipe-node__port--right" key={output._uid ?? `${id}-output-${index}`}>
                   <div className="recipe-node__port-core recipe-node__port-core--right">
                     <div className="recipe-node__port-stats recipe-node__port-stats--left">
                       <span className="recipe-node__port-amount">
-                        {formatPortAmount(output.amount, category)}
+                        {formatPortAmount(output.amount, catDef)}
                       </span>
                       <span className="recipe-node__port-rate">{portRate}</span>
                     </div>
                     <span className="recipe-node__port-name recipe-node__port-name--right">
                       {output.id}
                     </span>
-                    <span
-                      className={`recipe-node__port-type recipe-node__port-type--${category}`}
-                    >
-                      {tone.text}
+                    <span className="recipe-node__port-type" style={{ color: hexColor, borderColor: hexColor }}>
+                      {catDef.displayName}
                     </span>
                     {output.routing_mode !== 'global' && (
                       <Handle
                         id={handleId}
                         type="source"
                         position={Position.Right}
-                        className={`recipe-node__handle recipe-node__handle--${category}`}
                         style={{
                           right: '-6px',
-                          backgroundColor: tone.handle,
-                          borderColor: tone.handle,
-                          boxShadow: `0 0 0 4px ${tone.glow}`,
+                          backgroundColor: hexColor,
+                          borderColor: hexColor,
+                          boxShadow: `0 0 0 4px ${glowColor}`,
                         }}
                       />
                     )}
@@ -273,20 +270,20 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
           </div>
         </div>
 
-        {normalizedData.system === 'gregtech' && powerProfile.hasPowerSetting && (
+        {powerProfile.hasPowerSetting && (
           <div className="recipe-node__footer-line">
             <span className="recipe-node__footer-label">⚡ 总功耗</span>
             <strong className="recipe-node__footer-value">
-              {totalEu !== null ? `${formatDisplayValue(totalEu)} EU/t` : '待计算...'}
+              {totalEu !== null ? `${formatDisplayValue(totalEu)} ${gtEuCatDef.unit}` : '待计算...'}
             </strong>
           </div>
         )}
-        
-        {(normalizedData.system === 'enderio' || normalizedData.system === 'thermal') && normalizedData.metadata.rf_per_tick && (
+
+        {normalizedData.metadata.rf_per_tick && (
           <div className="recipe-node__footer-line">
             <span className="recipe-node__footer-label">⚡ 总能耗</span>
             <strong className="recipe-node__footer-value">
-              {totalRf !== null ? `${totalRf} RF/t` : '待计算...'}
+              {totalRf !== null ? `${totalRf} ${thermalRfCatDef.unit}` : '待计算...'}
             </strong>
           </div>
         )}

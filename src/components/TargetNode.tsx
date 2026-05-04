@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
 import { useNodeData } from '../NodeDataContext'
 import { useEndpointEditor } from '../EndpointEditorContext'
+import { useResourceRegistry } from '../registry/resourceRegistry'
 import type { TargetNodeData, TargetNodeMode } from '../types/recipe'
 import './TargetNode.css'
 
@@ -14,10 +15,13 @@ function formatValue(value: number | undefined) {
 export function TargetNode({ id, data }: NodeProps<TargetNodeData>) {
   const { updateNodeData } = useNodeData()
   const { onEdit } = useEndpointEditor()
+  const registryCategories = useResourceRegistry((state) => state.categories)
+  const itemType = data.item_type ?? 'item'
+  const catDef = registryCategories[itemType]
+  const unit = catDef?.unit ?? itemType
   // mode 优先；字段回退：is_auto=true 映射 maximize，is_auto=false 映射 demand
   const mode: TargetNodeMode = data.mode ?? ((data.is_auto ?? data.is_virtual ?? true) ? 'maximize' : 'demand')
   const isDemand = mode === 'demand'
-  const isFluid = (data.item_type ?? 'item') === 'fluid'
   const [draftId, setDraftId] = useState(data.label ?? data.id)
   const [draftAmount, setDraftAmount] = useState(String(data.amount))
 
@@ -134,7 +138,7 @@ export function TargetNode({ id, data }: NodeProps<TargetNodeData>) {
         </div>
         <div className="target-node__row">
           <span className="target-node__row-label">
-            {isDemand ? `需求速率 (${isFluid ? 'mB/s' : '/s'})` : `实际产出 (${isFluid ? 'mB/s' : '/s'})`}
+            {isDemand ? `需求速率 (${unit})` : `实际产出 (${unit})`}
           </span>
           <input
             type="number"
@@ -150,7 +154,7 @@ export function TargetNode({ id, data }: NodeProps<TargetNodeData>) {
       </div>
 
       <Handle
-        id={data.id}
+        id={`${itemType}:${data.id}`}
         type="target"
         position={Position.Left}
         className="target-node__handle"

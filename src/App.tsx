@@ -1,14 +1,15 @@
-﻿import { useCallback, useEffect, useRef, useState } from 'react'
+﻿﻿import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactFlow, {
   Background,
   BackgroundVariant,
   Controls,
   type ReactFlowInstance,
 } from 'reactflow'
-import { nodeTypes } from './flowConfig'
+import { nodeTypes, edgeTypes } from './flowConfig'
 import { RecipeEditorModal } from './components/RecipeEditorModal'
 import { EndpointEditorModal } from './components/EndpointEditorModal'
 import { SystemHUD } from './components/SystemHUD'
+import { ResourceRegistryPanel } from './components/ResourceRegistryPanel'
 import { RecipeEditorProvider } from './RecipeEditorContext'
 import { EndpointEditorProvider } from './EndpointEditorContext'
 import { NodeDataProvider } from './NodeDataContext'
@@ -49,6 +50,7 @@ export default function App() {
   } = useCanvasState(initialNodes, initialEdges)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const { theme, toggleTheme } = useTheme()
+  const [showRegistry, setShowRegistry] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const reactFlowRef = useRef<ReactFlowInstance | null>(null)
   const menuRef = useRef<HTMLDivElement | null>(null)
@@ -202,6 +204,7 @@ export default function App() {
           onClose={handleCloseEndpointEditor}
           onSave={handleSaveEndpoint}
         />
+        {showRegistry && <ResourceRegistryPanel onClose={() => setShowRegistry(false)} />}
         <SystemHUD
           systemInputs={systemInputs}
           systemOutputs={systemOutputs}
@@ -245,6 +248,7 @@ export default function App() {
           handleAutoFillSelected={handleAutoFillSelected}
           handleFitView={handleFitView}
           handleCalculate={handleCalculate}
+          onOpenRegistry={() => setShowRegistry(true)}
         />
 
         <RecipeEditorProvider value={{ onEdit: handleEditNode, onAutoFill: autoFillEndpoints }}>
@@ -265,6 +269,7 @@ export default function App() {
               onNodeClick={handleCloseMenus}
               defaultEdgeOptions={defaultEdgeOptions}
               nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
               onInit={(instance) => {
                 reactFlowRef.current = instance
               }}

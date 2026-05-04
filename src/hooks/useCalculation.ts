@@ -53,10 +53,10 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       shapedRecipeByNodeId.set(n.id, shaped)
 
       for (const port of shaped.base_inputs ?? []) {
-        if (port.routing_mode === 'global') globalInputSet.add(port.id)
+        if (port.routing_mode === 'global') globalInputSet.add(`${port.category}:${port.id}`)
       }
       for (const port of shaped.base_outputs ?? []) {
-        if (port.routing_mode === 'global') globalOutputSet.add(port.id)
+        if (port.routing_mode === 'global') globalOutputSet.add(`${port.category}:${port.id}`)
       }
     }
 
@@ -67,13 +67,13 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       const srcGlobal =
         e.sourceHandle
           ? (shapedRecipeByNodeId.get(e.source)?.base_outputs ?? []).some(
-              (p) => p.id === e.sourceHandle && p.routing_mode === 'global'
+              (p) => p.id && `${p.category}:${p.id}` === e.sourceHandle && p.routing_mode === 'global'
             )
           : false
       const tgtGlobal =
         e.targetHandle
           ? (shapedRecipeByNodeId.get(e.target)?.base_inputs ?? []).some(
-              (p) => p.id === e.targetHandle && p.routing_mode === 'global'
+              (p) => p.id && `${p.category}:${p.id}` === e.targetHandle && p.routing_mode === 'global'
             )
           : false
       return !srcGlobal && !tgtGlobal
@@ -94,12 +94,14 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
         if (!shaped) continue
         for (const port of shaped.base_inputs ?? []) {
           if (!port.id) continue
-          const translated = netLookup.get(`${n.id}|${port.id}`) ?? `Void_${n.id}_${port.id}`
+          const qualifiedId = `${port.category}:${port.id}`
+          const translated = netLookup.get(`${n.id}|${qualifiedId}`) ?? `Void_${n.id}_${qualifiedId}`
           namespaceAlias.set(translated, port.id)
         }
         for (const port of shaped.base_outputs ?? []) {
           if (!port.id) continue
-          const translated = netLookup.get(`${n.id}|${port.id}`) ?? `Void_${n.id}_${port.id}`
+          const qualifiedId = `${port.category}:${port.id}`
+          const translated = netLookup.get(`${n.id}|${qualifiedId}`) ?? `Void_${n.id}_${qualifiedId}`
           namespaceAlias.set(translated, port.id)
         }
         continue
@@ -107,7 +109,9 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
 
       if (n.type === 'sourceNode' || n.type === 'targetNode') {
         const resourceId: string = n.data?.id ?? n.id
-        const translated = netLookup.get(`${n.id}|${resourceId}`) ?? `Void_${n.id}_${resourceId}`
+        const itemType: string = n.data?.item_type ?? 'item'
+        const qualifiedId = `${itemType}:${resourceId}`
+        const translated = netLookup.get(`${n.id}|${qualifiedId}`) ?? `Void_${n.id}_${qualifiedId}`
         namespaceAlias.set(translated, resourceId)
       }
     }
@@ -119,8 +123,10 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       // otherwise the backend can't match the edge to the node port.
       if (n.type === 'sourceNode' || n.type === 'targetNode') {
         const resourceId: string = n.data?.id ?? n.id
-        const key = `${n.id}|${resourceId}`
-        const netName = netLookup.get(key) ?? resourceId
+        const itemType: string = n.data?.item_type ?? 'item'
+        const qualifiedId = `${itemType}:${resourceId}`
+        const key = `${n.id}|${qualifiedId}`
+        const netName = netLookup.get(key) ?? qualifiedId
         return { id: n.id, type: n.type, data: { ...n.data, id: netName } }
       }
 
@@ -173,7 +179,8 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
     for (const [nodeId, shaped] of shapedRecipeByNodeId.entries()) {
       for (const port of shaped.base_inputs ?? []) {
         if (port.routing_mode !== 'global' || !port.id) continue
-        const globalNet = `Global_${port.id}`
+        const qualifiedId = `${port.category}:${port.id}`
+        const globalNet = `Global_${qualifiedId}`
         implicitEdges.push({
           source: VIRTUAL_GLOBAL_SOURCE,
           target: nodeId,
@@ -183,7 +190,8 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       }
       for (const port of shaped.base_outputs ?? []) {
         if (port.routing_mode !== 'global' || !port.id) continue
-        const globalNet = `Global_${port.id}`
+        const qualifiedId = `${port.category}:${port.id}`
+        const globalNet = `Global_${qualifiedId}`
         implicitEdges.push({
           source: nodeId,
           target: VIRTUAL_GLOBAL_TARGET,

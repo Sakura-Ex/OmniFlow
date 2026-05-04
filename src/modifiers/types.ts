@@ -11,13 +11,16 @@ export interface ModifierUIConfig {
 }
 
 export interface ModifierEffect {
-  /** Multiply all I/O amounts by this factor (parallel processing) */
+  /** Phase 1 — Parallel: multiply ALL resources (inputs, outputs, utilities) uniformly */
   parallelMultiplier?: number
-  /** Per-resource output multipliers (e.g. probability) */
+  /** Phase 2 — Targeted Overclocking: per-utility-type multipliers.
+   *  Only utilities whose utility_type matches a key are multiplied. */
+  utilityMultipliers?: Record<string, number>
+  /** Phase 3 — Per-resource output multipliers (e.g. probability) */
   outputMultipliers?: Record<string, number>
-  /** Scale recipe duration by this factor (e.g. overclock) */
+  /** Phase 4 — Scale recipe duration globally */
   durationMultiplier?: number
-  /** Override gt:eu energy amount to this exact value */
+  /** @deprecated Absolute override of gt:eu energy. Prefer utilityMultipliers. */
   energyAmount?: number
   /** If true, all outputs become zero regardless of other effects */
   machineStopped?: boolean

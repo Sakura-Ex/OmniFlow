@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
 import { useNodeData } from '../NodeDataContext'
 import { useEndpointEditor } from '../EndpointEditorContext'
+import { useResourceRegistry } from '../registry/resourceRegistry'
 import type { SourceNodeData, SourceNodeMode } from '../types/recipe'
 import './SourceNode.css'
 
@@ -15,10 +16,13 @@ function formatValue(value: number | undefined) {
 export function SourceNode({ id, data }: NodeProps<SourceNodeData>) {
   const { updateNodeData } = useNodeData()
   const { onEdit } = useEndpointEditor()
+  const registryCategories = useResourceRegistry((state) => state.categories)
+  const itemType = data.item_type ?? 'item'
+  const catDef = registryCategories[itemType]
+  const unit = catDef?.unit ?? itemType
   // mode 优先；回退到 is_auto / is_virtual 字段（兼容旧存档）
   const mode: SourceNodeMode = data.mode ?? ((data.is_auto ?? data.is_virtual ?? true) ? 'infinite' : 'limit')
   const isLimit = mode === 'limit'
-  const isFluid = (data.item_type ?? 'item') === 'fluid'
   const [draftId, setDraftId] = useState(data.label ?? data.id)
   const [draftAmount, setDraftAmount] = useState(String(data.amount))
 
@@ -133,7 +137,7 @@ export function SourceNode({ id, data }: NodeProps<SourceNodeData>) {
         </div>
         <div className="source-node__row">
           <span className="source-node__row-label">
-            {isLimit ? `供给上限 (${isFluid ? 'mB/s' : '/s'})` : `实际消耗量 (${isFluid ? 'mB/s' : '/s'})`}
+            {isLimit ? `供给上限 (${unit})` : `实际消耗量 (${unit})`}
           </span>
           <input
             type="number"
@@ -149,7 +153,7 @@ export function SourceNode({ id, data }: NodeProps<SourceNodeData>) {
       </div>
 
       <Handle
-        id={data.id}
+        id={`${itemType}:${data.id}`}
         type="source"
         position={Position.Right}
         className="source-node__handle"

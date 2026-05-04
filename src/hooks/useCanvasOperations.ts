@@ -31,18 +31,12 @@ export function useCanvasOperations({
 }: UseCanvasOperationsParams) {
   const isValidConnection = useCallback((connection: Connection) => {
     return connection.sourceHandle === connection.targetHandle
+      && typeof connection.sourceHandle === 'string'
+      && connection.sourceHandle.length > 0
   }, [])
 
   const onConnect = useCallback((params: Connection) => {
     takeSnapshot()
-    const sourceNode = nodesRef.current.find((n) => n.id === params.source)
-    const sourcePort = sourceNode?.data?.outputs?.find((o: { id: string; category?: string; type?: string }) => o.id === params.sourceHandle)
-
-    const sourcePortCategory = sourcePort?.category ?? sourcePort?.type
-    const isFluid = sourcePortCategory === 'fluid' || params.sourceHandle === 'water'
-    const strokeColor = isFluid ? '#4ddcff' : '#e5e7eb'
-    const edgeClass = isFluid ? 'custom-edge-fluid' : 'custom-edge-item'
-
     const edge: Edge = {
       id: `e-${params.source}-${params.sourceHandle || ''}-${params.target}-${params.targetHandle || ''}-${Date.now()}`,
       source: params.source!,
@@ -50,11 +44,9 @@ export function useCanvasOperations({
       target: params.target!,
       targetHandle: params.targetHandle,
       type: 'default',
-      className: edgeClass,
-      style: { stroke: strokeColor, strokeWidth: 2 },
     }
     setEdges((eds) => addEdge(edge, eds))
-  }, [nodesRef, setEdges, takeSnapshot])
+  }, [setEdges, takeSnapshot])
 
   const onEdgeDoubleClick = useCallback((_: MouseEvent, edge: Edge) => {
     takeSnapshot()

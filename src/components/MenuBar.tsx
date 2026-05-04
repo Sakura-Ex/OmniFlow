@@ -35,6 +35,7 @@ type MenuBarProps = {
   // View / Solve
   handleFitView: () => void
   handleCalculate: () => Promise<void>
+  onOpenRegistry: () => void
 }
 
 export function MenuBar({
@@ -67,6 +68,7 @@ export function MenuBar({
   handleAutoFillSelected,
   handleFitView,
   handleCalculate,
+  onOpenRegistry,
 }: MenuBarProps) {
   return (
     <div className="menu-bar" ref={menuRef}>
@@ -194,6 +196,16 @@ export function MenuBar({
             <button className="menu-item" onClick={() => handleMenuAction(handleCalculate)}>🚀 执行矩阵求解</button>
           </div>
         )}
+      </div>
+
+      <div className="menu-group menu-group--theme">
+        <button
+          className="menu-button menu-button--theme"
+          type="button"
+          onClick={() => handleMenuAction(onOpenRegistry)}
+        >
+          ⚙️ 全局资源字典
+        </button>
       </div>
 
       <div className="menu-group menu-group--theme">

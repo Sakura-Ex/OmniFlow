@@ -5,7 +5,6 @@ import { getModifierById } from './registry'
 import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArchetype } from '../data/archetypes/index'
 
 const MAX_INSTANT_RATE = 1e9
-const LEGACY_PORT_CATEGORIES: ResourceCategory[] = ['item', 'fluid']
 const TICKS_PER_SECOND = 20
 
 function deepCloneResources(resources: Resource[]): Resource[] {
@@ -30,9 +29,7 @@ function normalizeDurationSeconds(data: RecipeNodeData): number {
 }
 
 function normalizeCategory(raw: unknown): ResourceCategory {
-  if (typeof raw === 'string' && (['item', 'fluid', 'energy', 'stress', 'heat'] as string[]).includes(raw)) {
-    return raw as ResourceCategory
-  }
+  if (typeof raw === 'string' && raw.length > 0) return raw
   return 'item'
 }
 
@@ -60,12 +57,12 @@ export function toResource(port: Partial<RecipePort> | Partial<Resource>): Resou
 }
 
 export function toLegacyPort(resource: Resource): RecipePort {
-  const category = LEGACY_PORT_CATEGORIES.includes(resource.category) ? resource.category : 'item'
+  const type = resource.category.toLowerCase().includes('fluid') ? 'fluid' : 'item'
   return {
     id: resource.id,
     amount: resource.amount,
     category: resource.category,
-    type: category as 'item' | 'fluid',
+    type,
     probability: resource.probability,
   }
 }
@@ -142,12 +139,13 @@ export function getCalculatedRates(nodeData: RecipeNodeData): CalculatedRates {
   const inputs = deepCloneResources(baseInputs)
   const outputs = deepCloneResources(baseOutputs)
 
-  // Phase 1: collect effects from all modifiers evaluated against base data
+  // ═══ Phase 1: collect effects from all modifiers evaluated against base data ═══
   let machineStopped = false
   let totalParallelMultiplier = 1
   let totalDurationMultiplier = 1
   const combinedOutputMultipliers: Record<string, number> = {}
-  let energyAmount: number | undefined
+  const combinedUtilityMultipliers: Record<string, number> = {}
+  let legacyEnergyAmount: number | undefined
 
   for (const modifierId of normalized.active_modifiers ?? []) {
     const modifier = getModifierById(modifierId)
@@ -159,7 +157,12 @@ export function getCalculatedRates(nodeData: RecipeNodeData): CalculatedRates {
     if (effect.machineStopped) machineStopped = true
     if (effect.parallelMultiplier !== undefined) totalParallelMultiplier *= effect.parallelMultiplier
     if (effect.durationMultiplier !== undefined) totalDurationMultiplier *= effect.durationMultiplier
-    if (effect.energyAmount !== undefined) energyAmount = effect.energyAmount
+    if (effect.energyAmount !== undefined) legacyEnergyAmount = effect.energyAmount
+    if (effect.utilityMultipliers) {
+      for (const [typeId, mult] of Object.entries(effect.utilityMultipliers)) {
+        combinedUtilityMultipliers[typeId] = (combinedUtilityMultipliers[typeId] ?? 1) * mult
+      }
+    }
     if (effect.outputMultipliers) {
       for (const [id, mult] of Object.entries(effect.outputMultipliers)) {
         combinedOutputMultipliers[id] = (combinedOutputMultipliers[id] ?? 1) * mult
@@ -167,26 +170,39 @@ export function getCalculatedRates(nodeData: RecipeNodeData): CalculatedRates {
     }
   }
 
-  // Phase 2: apply combined effects in deterministic order
+  // ═══ Phase 2: Parallel — multiply ALL resources uniformly ═══
   for (const res of inputs) {
     res.amount *= totalParallelMultiplier
   }
-
-  if (energyAmount !== undefined) {
-    const euInput = inputs.find((r) => r.id === 'gt:eu' && r.is_utility)
-    if (euInput) euInput.amount = energyAmount
-  }
-
   for (const res of outputs) {
     if (machineStopped) {
       res.amount = 0
       continue
     }
     res.amount *= totalParallelMultiplier
+  }
+
+  // ═══ Phase 3: Targeted Overclocking — only matched utility types are scaled ═══
+  for (const res of inputs) {
+    if (res.is_utility && res.utility_type) {
+      const mult = combinedUtilityMultipliers[res.utility_type]
+      if (mult !== undefined) res.amount *= mult
+    }
+  }
+
+  // Backwards-compat fallback: legacy energyAmount still supported for simple overrides
+  if (legacyEnergyAmount !== undefined) {
+    const euInput = inputs.find((r) => r.id === 'gt:eu' && r.is_utility)
+    if (euInput) euInput.amount = legacyEnergyAmount
+  }
+
+  // ═══ Phase 4: Output modifiers (probability) ═══
+  for (const res of outputs) {
     const outputMult = combinedOutputMultipliers[res.id]
     if (outputMult !== undefined) res.amount *= outputMult
   }
 
+  // ═══ Phase 5: Duration and rate calculation ═══
   const duration = Math.max(0.05, baseDuration * totalDurationMultiplier)
   const divisor = duration > 0 ? duration : null
 

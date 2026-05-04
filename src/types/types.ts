@@ -1,4 +1,5 @@
-export type ResourceCategory = 'item' | 'fluid' | 'energy' | 'stress' | 'heat'
+export type ResourceCategory = string
+
 export type RoutingMode = 'global' | 'wired'
 
 export interface Resource {

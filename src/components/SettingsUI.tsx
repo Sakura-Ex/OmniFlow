@@ -1,9 +1,12 @@
 import { useMemo, useState, useEffect, useRef, type Dispatch, type SetStateAction } from 'react'
-import type { Resource, ResourceCategory } from '../types/types'
+import type { Resource } from '../types/types'
 import { GT_VOLTAGE_TIERS, evaluateGtMultiblockState } from '../modifiers/gtMultiblock'
 import { listModifiers } from '../modifiers/registry'
 import { createDefaultModifierState, patchModifierSchemaWithNodeResources } from '../modifiers/state'
 import { getMachineArchetype, machineArchetypes } from '../data/archetypes/index'
+import { useResourceRegistry } from '../registry/resourceRegistry'
+import { FALLBACK_CATEGORY } from '../registry/defaults'
+import type { ResourceCategoryDef } from '../registry/types'
 
 type SettingsUIProps = {
   machineName: string
@@ -26,8 +29,6 @@ type SettingsUIProps = {
   previewOutputRates: Resource[]
   previewPowerActualEu: number
 }
-
-const categories: ResourceCategory[] = ['item', 'fluid']
 
 const emptyResource = (): Resource => ({
   category: 'item',
@@ -72,14 +73,6 @@ function formatPower(value: number): string {
   return value.toFixed(0)
 }
 
-function getUtilityDisplayName(resource: Resource): string {
-  if (resource.id.includes('eu') || resource.utility_type?.includes('eu')) return '电力'
-  if (resource.category === 'fluid') return '流体公用'
-  if (resource.category === 'heat') return '热能'
-  if (resource.category === 'stress') return '应力'
-  return '公用设施'
-}
-
 function buildRateMap(rates: Resource[]): Map<string, number> {
   const map = new Map<string, number>()
   for (const rate of rates) {
@@ -98,6 +91,22 @@ function normalizeGtHatches(state: Record<string, unknown>): Array<{ tier: strin
     }))
     .filter((row: { amps: number }) => row.amps > 0)
   return rows.length > 0 ? rows : [{ tier: 'LV', amps: 1 }]
+}
+
+function resolveCategoryDef(
+  categories: Record<string, ResourceCategoryDef>,
+  typeId?: string | null
+): ResourceCategoryDef {
+  if (!typeId) return FALLBACK_CATEGORY
+  const exact = categories[typeId]
+  if (exact) return exact
+  const colonIdx = typeId.indexOf(':')
+  if (colonIdx > 0) {
+    const ns = typeId.slice(0, colonIdx)
+    const nsMatch = categories[ns]
+    if (nsMatch) return nsMatch
+  }
+  return FALLBACK_CATEGORY
 }
 
 export function SettingsUI(props: SettingsUIProps) {
@@ -125,6 +134,11 @@ export function SettingsUI(props: SettingsUIProps) {
 
   const modifiers = listModifiers()
   const archetype = getMachineArchetype(archetypeId)
+  const registryCategories = useResourceRegistry((state) => state.categories)
+  const categoryOptions = useMemo(
+    () => Object.values(registryCategories).map((cat) => ({ id: cat.id, displayName: cat.displayName })),
+    [registryCategories]
+  )
   const [dropdownOpen, setDropdownOpen] = useState<Record<string, boolean>>({})
   const [modifierPopoverOpen, setModifierPopoverOpen] = useState(false)
   const modifierPopoverRef = useRef<HTMLDivElement | null>(null)
@@ -237,10 +251,10 @@ export function SettingsUI(props: SettingsUIProps) {
               />
               <select
                 value={input.category}
-                onChange={(e) => updateResourceAtIndex(setBaseInputs, index, { category: e.target.value as ResourceCategory })}
+                onChange={(e) => updateResourceAtIndex(setBaseInputs, index, { category: e.target.value })}
               >
-                {categories.map((category) => (
-                  <option key={category} value={category}>{category}</option>
+                {categoryOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>{opt.displayName}</option>
                 ))}
               </select>
               <button
@@ -310,15 +324,14 @@ export function SettingsUI(props: SettingsUIProps) {
             const isLockedRoute = utilityDef?.routing_locked ?? input.routing_locked
             const isAmountMutable = utilityDef?.amount_mutable ?? input.amount_mutable ?? true
             const isReadOnlyTag = !isAmountMutable
-            const displayName = getUtilityDisplayName(input)
-            const isGtEu = input.utility_type === 'gt:eu' || input.id === 'gt:eu'
-            const suffix = isGtEu ? 'EU/t' : (input.utility_type ?? input.category)
+            const typeId = input.utility_type ?? input.id
+            const catDef = resolveCategoryDef(registryCategories, typeId)
 
             if (isReadOnlyTag) {
               return (
                 <div className="recipe-settings__utility-label" key={input._uid ?? `utility-${index}`}>
                   <span className="recipe-settings__utility-label-text">
-                    {displayName} ({input.id}) : {isGtEu ? `${input.amount} EU/t` : formatPower(input.amount)}
+                    {catDef.displayName} ({input.id}) : {input.amount} {catDef.unit}
                   </span>
                   <span className="recipe-settings__utility-badges">
                     <span className="recipe-settings__utility-badge">{input.routing_mode === 'global' ? '🌐' : '🔌'}</span>
@@ -328,11 +341,13 @@ export function SettingsUI(props: SettingsUIProps) {
               )
             }
 
-            const actualPowerText = isGtEu ? `${formatPower(previewPowerActualEu)} EU/t` : ''
+            const actualText = catDef.id !== '_fallback'
+              ? `${formatPower(previewPowerActualEu)} ${catDef.unit}`
+              : ''
 
             return (
               <div className="recipe-editor__row recipe-editor__row--utility" key={input._uid ?? `utility-${index}`}>
-                <span className="recipe-editor__row-label">{isGtEu ? '功率' : displayName}</span>
+                <span className="recipe-editor__row-label">{catDef.displayName}</span>
                 <div className="recipe-editor__input-wrap">
                   <input
                     type="number"
@@ -341,7 +356,7 @@ export function SettingsUI(props: SettingsUIProps) {
                     disabled={!isAmountMutable}
                     onChange={(e) => updateResourceAtIndex(setBaseInputs, index, { amount: Number(e.target.value) })}
                   />
-                  <span className="recipe-editor__input-suffix">{suffix}</span>
+                  <span className="recipe-editor__input-suffix">{catDef.unit}</span>
                 </div>
                 <span></span>
                 <button
@@ -354,7 +369,7 @@ export function SettingsUI(props: SettingsUIProps) {
                   🌐
                 </button>
                 <button className="recipe-editor__icon-action" disabled title="范式固定槽位不可删除" aria-label="范式固定槽位不可删除" type="button">🔒</button>
-                <span className="recipe-editor__row-rate">{actualPowerText}</span>
+                <span className="recipe-editor__row-rate">{actualText}</span>
               </div>
             )
           })}
@@ -566,7 +581,7 @@ export function SettingsUI(props: SettingsUIProps) {
                 </label>
 
                 <div className="recipe-settings__multiblock-summary">
-                  <span>⚡ 机器总能量池: {formatPower(summary.totalEuPerTick)} EU/t</span>
+                  <span>⚡ 机器总能量池: {formatPower(summary.totalEuPerTick)} {resolveCategoryDef(registryCategories, 'gt:eu').unit}</span>
                   <span>👑 最高运行层级: {summary.highestTier}</span>
                   {!summary.canStart && baseEuPerTick > 0 && (
                     <span style={{ color: 'var(--color-danger, #f87171)' }}>⛔ 能量池不足，无法启动</span>
@@ -575,7 +590,7 @@ export function SettingsUI(props: SettingsUIProps) {
                     <>
                       <span>🔁 实际并行: ×{summary.actualParallel}</span>
                       <span>🔁 实际超频: {summary.actualOverclockCount} 次</span>
-                      <span>⚡ 最终功耗: {formatPower(summary.finalEuPerTick)} EU/t</span>
+                      <span>⚡ 最终功耗: {formatPower(summary.finalEuPerTick)} {resolveCategoryDef(registryCategories, 'gt:eu').unit}</span>
                       <span>⏱️ 时间缩放: ×{summary.finalDurationScale.toFixed(4)}</span>
                     </>
                   )}
@@ -700,10 +715,10 @@ export function SettingsUI(props: SettingsUIProps) {
               />
               <select
                 value={output.category}
-                onChange={(e) => updateResourceAtIndex(setBaseOutputs, index, { category: e.target.value as ResourceCategory })}
+                onChange={(e) => updateResourceAtIndex(setBaseOutputs, index, { category: e.target.value })}
               >
-                {categories.map((category) => (
-                  <option key={category} value={category}>{category}</option>
+                {categoryOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>{opt.displayName}</option>
                 ))}
               </select>
               <button

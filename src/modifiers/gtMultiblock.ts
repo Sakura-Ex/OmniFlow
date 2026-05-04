@@ -232,10 +232,12 @@ export const gtMultiblockModifier: IMachineModifier = {
       return { machineStopped: true }
     }
 
+    const ocPowerMultiplier = Math.pow(4, summary.actualOverclockCount)
+
     return {
       parallelMultiplier: summary.actualParallel,
       durationMultiplier: summary.finalDurationScale,
-      energyAmount: summary.finalEuPerTick,
+      utilityMultipliers: { 'gt:eu': ocPowerMultiplier },
     }
   },
 }
