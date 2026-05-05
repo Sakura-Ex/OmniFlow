@@ -11,7 +11,7 @@ from scipy.optimize import linprog
 # 1. 基础环境与 FastAPI 实例初始化
 # =====================================================================
 app = FastAPI(
-    title="ComputeFlow Backend",
+    title="OmniFlow Backend",
     description="Backend calculation engine for the production line calculator",
     version="0.1.0"
 )

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 export type ThemeMode = 'dark' | 'light'
 
-const DEFAULT_STORAGE_KEY = 'computeflow.theme.v1'
+const DEFAULT_STORAGE_KEY = 'omniflow.theme.v1'
 
 export function useTheme(storageKey: string = DEFAULT_STORAGE_KEY) {
   const [theme, setTheme] = useState<ThemeMode>(() => {

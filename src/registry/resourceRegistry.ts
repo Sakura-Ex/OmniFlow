@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { ResourceCategoryDef, ResourceRegistryState } from './types'
 import { DEFAULT_RESOURCE_CATEGORIES } from './defaults'
 
-const STORAGE_KEY = 'computeflow.resource_registry.v1'
+const STORAGE_KEY = 'omniflow.resource_registry.v1'
 
 function loadPersisted(): Record<string, ResourceCategoryDef> {
   try {

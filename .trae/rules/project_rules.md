@@ -1,8 +1,8 @@
-# ComputeFlow 项目规则
+# OmniFlow 项目规则
 
 ## 项目简介
 
-ComputeFlow 是一个专为硬核自动化游戏（如《我的世界》格雷科技、异星工厂等）设计的可视化产线矩阵求解器。它将 React Flow 节点编辑器与 SciPy 线性规划矩阵求解相结合，提供所见即所得的产线解算体验。
+OmniFlow 是一个专为硬核自动化游戏（如《我的世界》格雷科技、异星工厂等）设计的可视化产线矩阵求解器。它将 React Flow 节点编辑器与 SciPy 线性规划矩阵求解相结合，提供所见即所得的产线解算体验。
 
 ## 技术栈
 
@@ -62,7 +62,7 @@ uvicorn main:app --reload
 ## 项目结构
 
 ```
-ComputeFlow/
+OmniFlow/
 ├── src/                        # 前端源码
 │   ├── App.tsx                 # 主应用组件，React Flow 画布
 │   ├── main.tsx                # 入口文件
@@ -155,4 +155,4 @@ ComputeFlow/
 - 后端 API 运行在 `http://localhost:8000`，计算接口为 `POST /api/calculate`
 - 后端 CORS 已配置允许 `localhost:5173` 的跨域请求
 - `backend/` 目录下尚无 `requirements.txt`，依赖为 `fastapi`, `uvicorn`, `numpy`, `scipy`, `pydantic`
-- 画布数据通过 `localStorage` 持久化，key 为 `computeflow.canvas.v1`
+- 画布数据通过 `localStorage` 持久化，key 为 `omniflow.canvas.v1`

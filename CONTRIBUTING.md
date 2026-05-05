@@ -1,6 +1,6 @@
-# 参与贡献 ComputeFlow
+# 参与贡献 OmniFlow
 
-首先，非常感谢你对 ComputeFlow 感兴趣！ComputeFlow 致力于为硬核游戏整合包（如 GregTech、GTNH 等）提供最优雅、最高效的复杂产线矩阵求解体验。
+首先，非常感谢你对 OmniFlow 感兴趣！OmniFlow 致力于为硬核游戏整合包（如 GregTech、GTNH 等）提供最优雅、最高效的复杂产线矩阵求解体验。
 
 我们非常欢迎社区的贡献，无论是修复 Bug、增加新模组的配方支持、优化前端交互，还是提升后端的求解算法性能。这份指南将帮助你快速了解项目的协作流程与开发规范。
 
@@ -114,4 +114,4 @@ uvicorn main:app --reload
 7. 在 GitHub 页面点击 **New Pull Request**。
 8. 详细填写 PR 描述，说明你的改动动机、实现思路以及是否有不向下兼容的 API 变动。
 
-我们将尽快 Review 你的代码，并与你探讨可能的优化方案。再次感谢你让 ComputeFlow 变得更好！
+我们将尽快 Review 你的代码，并与你探讨可能的优化方案。再次感谢你让 OmniFlow 变得更好！

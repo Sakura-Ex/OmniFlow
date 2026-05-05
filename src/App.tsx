@@ -1,4 +1,4 @@
-﻿﻿import { useCallback, useEffect, useRef, useState } from 'react'
+﻿import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -35,7 +35,7 @@ const defaultEdgeOptions = {
 }
 const fitViewOptions = { padding: 0.2 }
 const proOptions = { hideAttribution: true }
-const STORAGE_KEY = 'computeflow.canvas.v1'
+const STORAGE_KEY = 'omniflow.canvas.v1'
 
 export default function App() {
   const {
