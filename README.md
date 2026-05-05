@@ -1,125 +1,331 @@
 # OmniFlow
 
-**OmniFlow** 是一个专为硬核自动化游戏（如《我的世界》格雷科技、异星工厂等）设计的可视化产线矩阵求解器。
+<div align="center">
 
-传统的产线计算器往往缺乏直观的拓扑连线，而纯节点编辑器又难以处理复杂的多入多出与环形死结（如水-氢气-燃烧循环）。OmniFlow 将**现代化的节点交互 UI**与**底层的运筹学矩阵求解**完美融合，提供所见即所得的硬核解算体验。
+[English](README.md) | [中文](README_CN.md)
 
----
+**Game-Agnostic Industrial Line Solver — Visual Node Editor × SciPy Linear Programming**
 
-## ✨ 核心特性
+[![React](https://img.shields.io/badge/React-19.2-61DAFB?logo=react)](https://react.dev/)
+[![React Flow](https://img.shields.io/badge/React_Flow-11.11-ff0072?logo=reactflow)](https://reactflow.dev/)
+[![Zustand](https://img.shields.io/badge/Zustand-5.0-433e38)](https://zustand.docs.pmnd.rs/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-8.0-646CFF?logo=vite)](https://vite.dev/)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-latest-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
+[![SciPy](https://img.shields.io/badge/SciPy-linprog-8CAAE6?logo=scipy)](https://scipy.org/)
+[![Pydantic](https://img.shields.io/badge/Pydantic-2.x-E92063?logo=pydantic)](https://docs.pydantic.dev/)
+[![Pure CSS](https://img.shields.io/badge/CSS-Dark_Industrial-1a1a2e)]()
 
-* **全解耦节点编辑器：** 基于 React Flow 构建，支持平滑缩放、端点吸附与严格的端口级物料校验。
-* **多态数据渲染：** 针对不同游戏模组（GregTech, Vanilla, EnderIO 等）动态切换机器 UI 控制面板（如电压、超频开关）。
-* **无状态解算架构：** 后端采用 FastAPI 构建无状态计算引擎，不依赖任何本地静态配方库，彻底释放自定义产线潜力。
-* **速率配平引擎：** 引入时间维度（Tick），将离散的合成配方自动转化为精确的“次/秒”基础产率，并利用矩阵运算推导机器数量最优解。
-
----
-
-## 🛠️ 技术栈
-
-### 前端 (Frontend)
-
-* React 18 + TypeScript
-* React Flow (节点图表渲染)
-* Vite (极速构建工具)
-* Tailwind CSS (工业风暗色主题绘制)
-
-### 后端 (Backend)
-
-* Python 3.10+
-* FastAPI (高性能 RESTful API 框架)
-* Pydantic (严格的数据契约校验)
-* SciPy / NumPy (线性代数与单纯形法矩阵求解)
+</div>
 
 ---
 
-## 🚀 本地开发指南
+## Introduction
 
-项目采用前后端分离架构，请确保本地已安装 Node.js 与 Python 环境。
+The complexity of industrial automation games has long surpassed the limits of human mental calculation. When your Minecraft GregTech production line involves 40+ multiblock machines, cross-dimensional fluid supply, multiple energy hatch parallels, and directed overclocking, any spreadsheet or dedicated calculator collapses under the following dilemmas:
 
-### 1. 启动前端服务
+> **Hardcoded Hell** — Existing tools are deeply tied to specific mod versions, unable to adapt to custom modpacks or cross-game scenarios.
+>
+> **Contextual Ambiguity** — The same resource (like water) is consumed per-cycle as a recipe ingredient, yet consumed per-tick as a coolant in machine bases. Traditional single-dimensional data models cannot express this orthogonal relationship between nature and usage.
+>
+> **Computational Bottleneck** — Manual enumeration or iterative approximation either diverges or yields unacceptable precision when facing multi-objective coupling such as nonlinear overclocking, probabilistic byproducts, and global bus sharing.
 
-前端运行在本地 5173 端口。
+**OmniFlow** combines simplex matrix solving from operations research with the node graph paradigm of industrial control consoles, providing a WYSIWYG, game-agnostic, math-driven industrial production line scheduling engine.
 
-```bash
-cd frontend
-npm install
-npm run dev
+---
+
+## Core Design Philosophy
+
+### 1. Game-Agnostic
+
+OmniFlow's foundation **contains no hardcoded game logic**. The system maps all physical entities through a configurable **Global Resource Registry** (powered by Zustand). Switching from Minecraft to Factorio or Dyson Sphere Program only requires changing the resource configuration — the core solving pipeline needs zero code modification.
+
+```
+Resource Registry  →  Category: 'gt:eu'  |  DisplayName: 'Greg Power'  |  Unit: 'EU/t'  |  Routing: global
+                    →  Category: 'item'   |  DisplayName: 'Item'        |  Unit: 'pcs'   |  Routing: wired
+                    →  Category: 'fluid'  |  DisplayName: 'Fluid'       |  Unit: 'mB'    |  Routing: wired
 ```
 
-### 2. 启动后端解算服务
+### 2. Nature vs. Context — Orthogonal Decoupling
 
-后端运行在本地 8000 端口，并自动开启 Swagger API 文档。
+This is OmniFlow's core data modeling breakthrough:
 
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # Windows 用户使用 venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --reload
+| Dimension | Storage Location | Description |
+|-----------|------------------|-------------|
+| **Nature** | `ResourceRegistry` global dictionary | Physical identity of matter: water, EU power, iron ingots; UI color and base unit |
+| **Context** | Machine Archetype's `fixed_utilities` and recipe port's `measure_mode` | How this resource is **measured** in the current business flow: per-cycle (`per_cycle`), per-tick (`rate_per_tick`), per-second (`rate_per_sec`), and whether it's a read-only catalyst (`consumable: false`) |
+
+This design completely solves the industry modeling pain point of "the same water being both a recipe ingredient and a coolant" — the material nature is defined once, while usage semantics attach to the machine base and recipe slots, orthogonally decoupled.
+
+### 3. Math-First
+
+The frontend handles all business logic (overclock cascading, parallelism, threshold judgment, probabilistic output). Before the request reaches the backend, a **Pre-compilation Pipeline** normalizes all discrete cycle amounts and continuous rate amounts into pure **Rate/s (per-second rate)**. The backend only needs to solve a standard form linear programming problem with `scipy.optimize.linprog`:
+
+```
+minimize  c^T x
+subject to  A_ub x ≤ b_ub
+            A_eq x = b_eq
+            x ≥ 0
 ```
 
-> **联调说明：** 前端默认将计算请求发送至 `http://localhost:8000/api/calculate`。请确保后端 FastAPI 的 `CORSMiddleware` 已允许前端的跨域请求。
+> The backend is stateless, mod-agnostic, receiving only normalized vectors and matrices, returning optimal solutions within 30ms.
 
 ---
 
-## 🌍 生产环境部署方案
+## Key Architecture
 
-推荐采用**前后端分离部署**策略，以兼顾前端的 CDN 加速与后端的独立算力。
+### Machine Archetype & Slot System
 
-### 前端部署 (GitHub Pages / Vercel)
+Thoroughly separates **inherent machine properties** (energy type, cooling medium, routing lock) from **recipe I/O**:
 
-前端为纯静态应用，可直接通过 CI/CD 自动构建。
-部署前请将环境变量 `VITE_API_BASE_URL` 指向你的真实后端公网地址。
-使用命令 `npm run build` 生成的 `dist` 目录可直接托管至任何静态服务。
-
-### 后端部署 (Ubuntu 服务器 + Docker + Nginx)
-
-对于后端引擎，推荐在 Ubuntu 环境下使用 Docker 容器化部署，并通过 Nginx 反向代理暴露服务。
-
-**1. 准备 `docker-compose.yml`**
-在 backend 目录下构建应用镜像并运行容器：
-
-```yaml
-version: '3.8'
-services:
-  api:
-    build: .
-    container_name: omniflow-api
-    restart: always
-    ports:
-      - "8000:8000"
-    environment:
-      - ALLOWED_ORIGINS=https://your-frontend-domain.com
-```
-
-**2. 配置 Nginx 反向代理**
-在 `/etc/nginx/sites-available/` 下配置代理节点，将外网请求转发至本地容器：
-
-```nginx
-server {
-    listen 80;
-    server_name api.yourdomain.com;
-
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+```typescript
+// gtElectric.ts — GregTech Electric Machine Archetype
+{
+  id: 'gt_electric',
+  fixed_utilities: {
+    'gt:eu': {
+      type: 'gt:eu',
+      routing_mode: 'global',      // Power goes through global bus, no manual wiring
+      routing_locked: true,        // User cannot change routing type
+      measure_mode: 'rate_per_tick' // EU consumed per tick
     }
+  },
+  default_modifiers: ['gt_multiblock']  // Activate multiblock energy hatch modifier by default
 }
 ```
 
+Fixed utilities reference the `ResourceRegistry` via foreign keys, enabling **dynamic suffix splicing** (e.g., `EU/t`, `mB/s`) and **visual noise reduction** (globally-routed ports auto-hide connection lines) in the UI.
+
+### Smart Topology & Implicit Routing
+
+Abandons tedious full-manual wiring, supporting two routing paradigms:
+
+| Routing Mode | Semantics | Example |
+|--------------|-----------|---------|
+| `wired` | Must establish physical topology connections | Items, fluid pipes |
+| `global` | Global implicit shared network | Power bus (gt:eu), Stress network (create:su) |
+
+When building topological networks, the calculation engine automatically generates virtual source nodes (`Virtual_Global_Source`) and virtual sink nodes (`Virtual_Global_Target`) for `global` routed resources, eliminating the need for manual power input nodes and drastically reducing canvas complexity.
+
+### Targeted Modifier Pipeline
+
+Implements strict multi-stage modifier scope isolation, perfectly compatible with cross-mod hybrid energy machines:
+
+```
+Phase 1: Collect Effects     — Iterate activated modifiers, gather their ModifierEffects
+Phase 2: Parallel             — Lossless parallel first: uniformly multiply by parallelMultiplier
+Phase 3: Targeted Overclock   — Targeted exponential overclock: only matching utility_type gets multiplied
+          Example: Hybrid machine consuming both gt:eu and create:su
+              • gt:eu gets overclock-multiplied (×4^n)
+              • create:su remains unaffected by overclock
+Phase 4: Output Probability   — Probabilistic output (e.g., 5% byproduct chance)
+Phase 5: Duration & Rate      — Normalize to Rate/s
+```
+
+For GregTech multiblocks, the `gt_multiblock` modifier strictly executes:
+1. Calculate total input EU/t based on energy hatch configuration
+2. Lossless parallel = `min(floor(total_eu / recipe_eu), parallelLimit)`
+3. If remaining power is sufficient, execute overclocking (voltage ×4, perfect overclock duration ÷4, normal overclock ÷2)
+
+### Zustand-Powered Resource Registry
+
+The global resource category registry uses Zustand for fine-grained subscription. React components only re-render when the specific resource category they reference changes, avoiding the full-update disaster of React Context. Combined with React Flow's built-in `useNodesState` / `useEdgesState` for canvas state management, it ensures smooth 60fps dragging experience.
+
+### Deterministic Pre-compilation
+
+Full data normalization pipeline executed before every request:
+
+1. **`normalizeCanvasNode`** — Compatible with legacy field migration (`is_virtual` → `is_auto`), fill default mode
+2. **`ensureRecipeDataShape`** — Apply Archetype, filter incompatible modifiers, fill default UI state
+3. **`buildTopologicalNets`** — Build topological networks, separate wired/global edges, generate implicit routing
+4. **`getCalculatedRates`** — Execute modifier pipeline, normalize all resources to Rate/s
+
 ---
 
-## 🤝 参与贡献
+## How It Works
 
-我们非常欢迎社区提交 Issue 或 Pull Request！
-在开始编写代码之前，请务必阅读我们的 [CONTRIBUTING.md](./CONTRIBUTING.md) 以了解详细的数据契约规范和多态渲染约束。
+```
+┌─────────────────────────────────────────────────┐
+│                  React Flow Canvas               │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐   │
+│  │ Source   │───▶│ Recipe   │───▶│ Target   │   │
+│  │ water ∞  │    │ Electrolyzer│ │ H₂ 1.0   │   │
+│  └──────────┘    └──────────┘    └──────────┘   │
+│       │               │                           │
+│  Physical Wires    Global Bus (gt:eu)             │
+└───────┼───────────────┼───────────────────────────┘
+        │               │
+        ▼               ▼
+┌─────────────────────────────────────────────────┐
+│           Pre-compilation Pipeline               │
+│  normalizeCanvasNode → ensureRecipeDataShape     │
+│  → buildTopologicalNets → getCalculatedRates     │
+│                                                  │
+│  All amounts → Rate/s  (pure float vector)       │
+└──────────────────────┬──────────────────────────┘
+                       │ POST /api/calculate
+                       ▼
+┌─────────────────────────────────────────────────┐
+│          FastAPI + SciPy LP Solver               │
+│                                                  │
+│  Pydantic validation → Node classification       │
+│  → Stoichiometric matrix A construction          │
+│  → Constraints c, bounds construction            │
+│  → scipy.optimize.linprog (highs method)         │
+│  → Result aggregation & rounding                 │
+└──────────────────────┬──────────────────────────┘
+                       │ Results
+                       ▼
+┌─────────────────────────────────────────────────┐
+│          Result Mapping & UI Update              │
+│                                                  │
+│  machines_exact / machines_actual / utilization  │
+│  actual_amounts per node / per port              │
+│  system_inputs / system_outputs summary          │
+│  total_eu_tick                                   │
+└─────────────────────────────────────────────────┘
+```
+
+### Backend LP Formulation
+
+**Variable vector**: `x = [x_recipes | x_sources | x_sinks]`
+
+**Stoichiometric matrix**: Columns = Recipes, Rows = Items. Outputs positive, inputs negative.
+
+**Objective modes**:
+
+| Target Mode | Objective Coefficient | Constraint |
+|-------------|----------------------|------------|
+| `demand` | `c = 0` | `b_eq = amount` (exact demand) |
+| `maximize` | `c = -10000` | `b_ub ≥ 0` (strong maximization) |
+| `overflow` | `c = 0.001` | `b_eq = 0` (overflow discharge) |
+
+**Constraints**: `Ax >= b` for non-target items (allow byproduct overflow). Target items enforce strict mass conservation.
 
 ---
 
-## 📄 开源协议
+## Development & Setup
 
-MIT License
+### Prerequisites
+
+- **Node.js** >= 18
+- **Python** >= 3.10
+
+### Frontend
+
+```bash
+# Install dependencies
+npm install
+
+# Start dev server (http://localhost:5173)
+npm run dev
+
+# Type-check & build
+npm run build
+
+# Lint
+npm run lint
+
+# Preview production build
+npm run preview
+```
+
+### Backend
+
+```bash
+cd backend
+
+# Create & activate virtual environment (Windows)
+python -m venv venv
+venv\Scripts\activate
+
+# Install dependencies
+pip install fastapi uvicorn numpy scipy pydantic
+
+# Start backend (http://localhost:8000)
+uvicorn main:app --reload
+```
+
+API docs available at [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI).
+
+### Persistence
+
+Canvas state is persisted to `localStorage` under key `omniflow.canvas.v1`. Export/import as `.json` files is supported via the file I/O controls.
+
+---
+
+## Project Structure
+
+```
+OmniFlow/
+├── src/
+│   ├── App.tsx                     # Root — React Flow canvas
+│   ├── main.tsx                    # Entry point
+│   ├── index.css                   # Dark industrial global styles (pure CSS)
+│   ├── flowConfig.ts               # Node type registration (recipeNode / sourceNode / targetNode)
+│   ├── components/                 # React UI components
+│   │   ├── RecipeNode.tsx          # Polymorphic recipe node (gregtech / vanilla / enderio)
+│   │   ├── SourceNode.tsx          # Input source node
+│   │   ├── TargetNode.tsx          # Output target node
+│   │   ├── RecipeEditorModal.tsx   # Recipe editor modal
+│   │   ├── EndpointEditorModal.tsx # Endpoint editor modal
+│   │   ├── SystemHUD.tsx           # System status heads-up display
+│   │   ├── MenuBar.tsx             # Top menu bar
+│   │   └── SegmentedControl.tsx    # Segmented control primitive
+│   ├── hooks/                      # Custom React hooks
+│   │   ├── useCanvasState.ts       # Nodes/edges state (React Flow)
+│   │   ├── useCanvasOperations.ts  # Add / delete / connect operations
+│   │   ├── useCalculation.ts       # Pre-compile → POST → result mapping pipeline
+│   │   ├── useClipboard.ts         # Copy / paste / duplicate
+│   │   ├── useFileIO.ts            # File import / export + localStorage
+│   │   ├── useKeyboardShortcuts.ts # Global keyboard shortcuts
+│   │   ├── useNodeEditor.ts        # Node editing modal state
+│   │   ├── useNodeOperations.ts    # Auto-fill endpoints, node data updates
+│   │   ├── useUndoRedo.ts          # Snapshot-based undo / redo (max 20)
+│   │   └── useTheme.ts             # Dark / light theme toggle
+│   ├── domain/canvas/
+│   │   ├── initialState.ts         # Demo canvas (GregTech steel line)
+│   │   └── validators.ts           # Data normalization & migration
+│   ├── modifiers/                  # Modifier engine
+│   │   ├── calculate.ts            # Core 5-phase modifier pipeline + rate normalization
+│   │   ├── gtMultiblock.ts         # GT multiblock energy hatch & overclock logic
+│   │   ├── chanceOutput.ts         # Probabilistic output modifier
+│   │   ├── registry.ts             # Modifier registry (ID → IMachineModifier)
+│   │   ├── state.ts                # Default UI state factory
+│   │   ├── types.ts                # IMachineModifier & ModifierEffect interfaces
+│   │   └── index.ts                # Barrel export
+│   ├── data/archetypes/            # Machine archetype definitions
+│   │   ├── index.ts                # Registry + applyArchetypeToInputs
+│   │   ├── gtElectric.ts           # GT electric (fixed gt:eu utility + global routing)
+│   │   ├── fluidNetworked.ts       # Fluid-cooled (utility:water per second)
+│   │   ├── customGeneric.ts        # Blank archetype
+│   │   └── shared.ts               # Utility amount derivation helpers
+│   ├── registry/                   # Global resource category registry
+│   │   ├── resourceRegistry.ts     # Zustand store (categories CRUD + localStorage)
+│   │   ├── defaults.ts             # Built-in categories (item / fluid / energy / gt:eu / create:su …)
+│   │   ├── types.ts                # ResourceCategoryDef type
+│   │   ├── units.ts                # Unit definitions
+│   │   └── index.ts                # Barrel export
+│   ├── types/
+│   │   ├── recipe.ts               # RecipeNodeData / SourceNodeData / TargetNodeData
+│   │   ├── api.ts                  # CalculateResponse type
+│   │   └── types.ts                # Resource / MachineArchetype / UtilityDef / RoutingMode
+│   └── utils/
+│       └── topologicalNets.ts      # Topological network analysis + global routing
+├── backend/
+│   └── main.py                     # FastAPI app + Pydantic models + SciPy LP solver
+├── public/                         # Static assets
+├── vite.config.ts
+├── tsconfig.json                   # TypeScript project references root
+├── tsconfig.app.json               # Frontend TS config
+├── tsconfig.node.json              # Node-side TS config (vite.config)
+├── eslint.config.js                # ESLint 10 flat config
+└── package.json
+```
+
+---
+
+## License
+
+MIT
