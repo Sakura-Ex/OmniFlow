@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[English](README.md) | [中文](README_CN.md)
+[English](README.md) | 中文
 
 **游戏无关的工业产线求解器 — 可视化节点编辑器 × SciPy 线性规划**
 
