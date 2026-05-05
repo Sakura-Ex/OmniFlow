@@ -1,6 +1,6 @@
 # 参与贡献 OmniFlow
 
-[English](CONTRIBUTING.md) | 中文
+[English](../CONTRIBUTING.md) | 中文
 
 感谢你对 OmniFlow 的关注！OmniFlow 致力于成为下一代泛用型（Game-Agnostic）工业排程求解器。无论你是想修复一个 Bug、增加一个硬核模组的修饰器逻辑，还是优化底层的单纯形矩阵算法，我们都极其欢迎你的加入。
 
