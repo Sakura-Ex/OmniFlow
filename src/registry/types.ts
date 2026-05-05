@@ -12,4 +12,26 @@ export interface ResourceRegistryState {
   updateCategory: (id: string, patch: Partial<ResourceCategoryDef>) => void
   removeCategory: (id: string) => void
   getCategory: (id: string) => ResourceCategoryDef | undefined
+  dimensions: Record<string, DimensionDef>
+  overrides: Record<string, ResourceOverride>
+  setDimension: (id: string, def: DimensionDef) => void
+  setOverride: (id: string, def: ResourceOverride) => void
+  removeOverride: (id: string) => void
+}
+
+export interface DimensionDef {
+  default_unit: string
+  display_mode: 'rate_per_sec' | 'rate_per_tick' | 'per_cycle'
+  themeColor: string
+}
+
+export interface ResourceOverride {
+  unit_override?: string
+  display_mode_override?: 'rate_per_sec' | 'rate_per_tick' | 'per_cycle'
+}
+
+export interface ResolvedResourceProps {
+  unit: string
+  display_mode: 'rate_per_sec' | 'rate_per_tick' | 'per_cycle'
+  themeColor: string
 }

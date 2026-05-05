@@ -1,8 +1,9 @@
-﻿import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactFlow, {
   Background,
   BackgroundVariant,
   Controls,
+  useUpdateNodeInternals,
   type ReactFlowInstance,
 } from 'reactflow'
 import { nodeTypes, edgeTypes } from './flowConfig'
@@ -37,6 +38,14 @@ const fitViewOptions = { padding: 0.2 }
 const proOptions = { hideAttribution: true }
 const STORAGE_KEY = 'omniflow.canvas.v1'
 
+function UpdateInternalsBridge({ onReady }: { onReady: (fn: (nodeId: string) => void) => void }) {
+  const updateNodeInternals = useUpdateNodeInternals()
+  useEffect(() => {
+    onReady(updateNodeInternals)
+  }, [updateNodeInternals, onReady])
+  return null
+}
+
 export default function App() {
   const {
     nodes,
@@ -54,6 +63,10 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const reactFlowRef = useRef<ReactFlowInstance | null>(null)
   const menuRef = useRef<HTMLDivElement | null>(null)
+  const updateNodeInternalsRef = useRef<((nodeId: string) => void) | null>(null)
+  const updateNodeInternals = useCallback((nodeId: string) => {
+    updateNodeInternalsRef.current?.(nodeId)
+  }, [])
 
   const { takeSnapshot, undo, redo } = useUndoRedo({ nodesRef, edgesRef, setNodes, setEdges })
 
@@ -118,7 +131,7 @@ export default function App() {
     handleEditEndpoint,
     handleCloseEndpointEditor,
     handleSaveEndpoint,
-  } = useNodeEditor({ setNodes, takeSnapshot })
+  } = useNodeEditor({ setNodes, takeSnapshot, updateNodeInternals })
 
   const { updateNodeData, autoFillEndpoints, handleAutoFillSelected } = useNodeOperations({
     nodesRef,
@@ -193,13 +206,13 @@ export default function App() {
     <main className="app-shell" data-theme={theme}>
       <section className="canvas-shell">
         <RecipeEditorModal
-          key={editingNode?.id ?? 'closed'}
+          key={editingNode?.id ?? 'editor-closed'}
           node={editingNode}
           onClose={handleCloseEditor}
           onSave={handleSaveEditor}
         />
         <EndpointEditorModal
-          key={editingEndpoint?.id ?? 'closed'}
+          key={editingEndpoint?.id ?? 'endpoint-closed'}
           node={editingEndpoint}
           onClose={handleCloseEndpointEditor}
           onSave={handleSaveEndpoint}
@@ -268,6 +281,7 @@ export default function App() {
               onPaneClick={handleCloseMenus}
               onNodeClick={handleCloseMenus}
               defaultEdgeOptions={defaultEdgeOptions}
+              connectionLineStyle={{ stroke: 'rgba(148, 163, 184, 0.6)', strokeWidth: 2 }}
               nodeTypes={nodeTypes}
               edgeTypes={edgeTypes}
               onInit={(instance) => {
@@ -277,6 +291,7 @@ export default function App() {
               fitViewOptions={fitViewOptions}
               proOptions={proOptions}
             >
+              <UpdateInternalsBridge onReady={(fn) => { updateNodeInternalsRef.current = fn }} />
               <Background variant={BackgroundVariant.Dots} gap={24} size={1} color={backgroundDotColor} />
               <Controls position="bottom-right" showInteractive={false} />
             </ReactFlow>

@@ -21,6 +21,13 @@
     var(--panel);
 }
 
+/* 输出全部为 0 → 红色虚线警示 */
+.recipe-node--zero-output {
+  border-color: rgba(239, 68, 68, 0.6) !important;
+  border-style: dashed !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18), 0 14px 30px rgba(2, 6, 23, 0.3);
+}
+
 .react-flow__node.selected .recipe-node {
   border-color: #68e1fd;
   box-shadow: 0 16px 34px rgba(2, 6, 23, 0.34);

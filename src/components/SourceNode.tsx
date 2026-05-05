@@ -17,7 +17,8 @@ function formatValue(value: number | undefined) {
 export function SourceNode({ id, data }: NodeProps<SourceNodeData>) {
   const { updateNodeData } = useNodeData()
   const { onEdit } = useEndpointEditor()
-  const registryCategories = useResourceRegistry((state) => state.categories)
+  const userDims = useResourceRegistry((state) => state.dimensions)
+  const userOverrides = useResourceRegistry((state) => state.overrides)
   const ports = normalizeEndpointPorts(data)
   const mode: SourceNodeMode = data.mode ?? ((data.is_auto ?? data.is_virtual ?? true) ? 'infinite' : 'limit')
   const isEditable = mode === 'limit'
@@ -88,7 +89,7 @@ export function SourceNode({ id, data }: NodeProps<SourceNodeData>) {
         <ul className="recipe-node__port-list recipe-node__port-list--right">
           {ports.map((port, index) => {
             const itemType = port.item_type ?? 'item'
-            const catDef = resolveCategoryDef(registryCategories, itemType)
+            const catDef = resolveCategoryDef(itemType, userDims, userOverrides)
             const unit = buildUnitSuffix(catDef.base_unit, 'rate_per_sec')
             const hexColor = catDef.themeColor
             const glowColor = hexColor.startsWith('#')

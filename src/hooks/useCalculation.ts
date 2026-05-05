@@ -48,17 +48,31 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
     const globalOutputSet = new Set<string>()
 
     // ── Step 1: shape all recipe nodes so we know routing_mode per port ──────
+    const zeroOutputNodeNames: string[] = []
+
     for (const n of nodesRef.current) {
       if (n.type !== 'recipeNode') continue
       const shaped = ensureRecipeDataShape(n.data as RecipeNodeData)
       shapedRecipeByNodeId.set(n.id, shaped)
 
       for (const port of shaped.base_inputs ?? []) {
-        if (port.routing_mode === 'global') globalInputSet.add(`${port.category}:${port.id}`)
+        if (port.routing_mode === 'global') globalInputSet.add(port.category)
       }
       for (const port of shaped.base_outputs ?? []) {
-        if (port.routing_mode === 'global') globalOutputSet.add(`${port.category}:${port.id}`)
+        if (port.routing_mode === 'global') globalOutputSet.add(port.category)
       }
+
+      const rates = getCalculatedRates(shaped)
+      const materialOutputs = rates.transformedOutputs.filter((r) => !r.is_utility)
+      if (materialOutputs.length === 0 || materialOutputs.every((r) => r.amount === 0)) {
+        zeroOutputNodeNames.push(shaped.machine_name || n.id)
+      }
+    }
+
+    if (zeroOutputNodeNames.length > 0) {
+      const names = zeroOutputNodeNames.join('、')
+      alert(`⚠️ 以下配方节点的输出全部为 0，请先配置有效的输出资源：\n${names}`)
+      return
     }
 
     // ── Step 2: build topological net table (Task 1) ─────────────────────────
@@ -86,7 +100,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       shapedRecipeByNodeId
     )
 
-    // Build translated-id -> original-id alias map so HUD totals can merge
+    // Build translated-id -> qualified-id alias map so HUD totals can merge
     // namespaced keys (Net_/Global_/Void_) back into the same resource bucket.
     const namespaceAlias = new Map<string, string>()
     for (const n of nodesRef.current) {
@@ -97,13 +111,13 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
           if (!port.id) continue
           const qualifiedId = `${port.category}:${port.id}`
           const translated = netLookup.get(`${n.id}|${qualifiedId}`) ?? `Void_${n.id}_${qualifiedId}`
-          namespaceAlias.set(translated, port.id)
+          namespaceAlias.set(translated, qualifiedId)
         }
         for (const port of shaped.base_outputs ?? []) {
           if (!port.id) continue
           const qualifiedId = `${port.category}:${port.id}`
           const translated = netLookup.get(`${n.id}|${qualifiedId}`) ?? `Void_${n.id}_${qualifiedId}`
-          namespaceAlias.set(translated, port.id)
+          namespaceAlias.set(translated, qualifiedId)
         }
         continue
       }
@@ -115,7 +129,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
           const itemType = port.item_type ?? 'item'
           const qualifiedId = `${itemType}:${port.id}`
           const translated = netLookup.get(`${n.id}|${qualifiedId}`) ?? `Void_${n.id}_${qualifiedId}`
-          namespaceAlias.set(translated, port.id)
+          namespaceAlias.set(translated, qualifiedId)
         }
       }
     }
@@ -219,8 +233,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
     for (const [nodeId, shaped] of shapedRecipeByNodeId.entries()) {
       for (const port of shaped.base_inputs ?? []) {
         if (port.routing_mode !== 'global' || !port.id) continue
-        const qualifiedId = `${port.category}:${port.id}`
-        const globalNet = `Global_${qualifiedId}`
+        const globalNet = `Global_${port.category}`
         implicitEdges.push({
           source: VIRTUAL_GLOBAL_SOURCE,
           target: nodeId,
@@ -230,8 +243,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       }
       for (const port of shaped.base_outputs ?? []) {
         if (port.routing_mode !== 'global' || !port.id) continue
-        const qualifiedId = `${port.category}:${port.id}`
-        const globalNet = `Global_${qualifiedId}`
+        const globalNet = `Global_${port.category}`
         implicitEdges.push({
           source: nodeId,
           target: VIRTUAL_GLOBAL_TARGET,

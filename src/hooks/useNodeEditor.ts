@@ -7,9 +7,10 @@ import type { EndpointEditorTarget } from '../EndpointEditorContext'
 type UseNodeEditorParams = {
   setNodes: Dispatch<SetStateAction<Node[]>>
   takeSnapshot: () => void
+  updateNodeInternals: (nodeId: string) => void
 }
 
-export function useNodeEditor({ setNodes, takeSnapshot }: UseNodeEditorParams) {
+export function useNodeEditor({ setNodes, takeSnapshot, updateNodeInternals }: UseNodeEditorParams) {
   const [editingNode, setEditingNode] = useState<{ id: string; data: RecipeNodeData } | null>(null)
   const [editingEndpoint, setEditingEndpoint] = useState<EndpointEditorTarget | null>(null)
 
@@ -27,7 +28,8 @@ export function useNodeEditor({ setNodes, takeSnapshot }: UseNodeEditorParams) {
       node.id === id ? { ...node, data: { ...node.data, ...data } } : node
     ))
     setEditingNode(null)
-  }, [setNodes, takeSnapshot])
+    updateNodeInternals(id)
+  }, [setNodes, takeSnapshot, updateNodeInternals])
 
   const handleEditEndpoint = useCallback((id: string, role: 'source' | 'target', data: SourceNodeData | TargetNodeData) => {
     setEditingEndpoint({ id, role, data })
@@ -43,7 +45,8 @@ export function useNodeEditor({ setNodes, takeSnapshot }: UseNodeEditorParams) {
       node.id !== id ? node : { ...node, data: { ...node.data, ...patch } }
     ))
     setEditingEndpoint(null)
-  }, [setNodes, takeSnapshot])
+    updateNodeInternals(id)
+  }, [setNodes, takeSnapshot, updateNodeInternals])
 
   return {
     editingNode,

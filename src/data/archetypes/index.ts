@@ -43,8 +43,15 @@ export function applyArchetypeToInputs(
   const existingById = new Map(inputs.map((entry) => [entry.id, entry]))
 
   const normalizedUtilities = utilityEntries.map(([utilityId, def]) => {
-    const existing = existingById.get(utilityId)
-    const defaultAmount = deriveUtilityAmount(utilityId, metadata, existing?.amount ?? 0)
+    let existing = existingById.get(utilityId)
+    if (!existing) {
+      existing = inputs.find((entry) => entry.is_utility && (
+        entry.category === def.type
+        || (def.type === 'energy:gt_eu' && entry.category === 'gt:eu')
+        || (def.type === 'fluid:water' && entry.category === 'utility:water')
+      )) ?? undefined
+    }
+    const defaultAmount = deriveUtilityAmount(def.type, metadata, existing?.amount ?? 0)
     const routingMode: RoutingMode = existing?.routing_mode ?? def.routing_mode
 
     return {

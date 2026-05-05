@@ -4,17 +4,11 @@ import type { RecipeNodeData, RecipeNodeMode } from '../types/recipe'
 import { useRecipeEditor } from '../RecipeEditorContext'
 import { useNodeData } from '../NodeDataContext'
 import { ensureRecipeDataShape, getCalculatedRates } from '../modifiers/calculate'
-import { resolveRecipePowerProfile } from '../modifiers/gtMultiblock'
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { resolveCategoryDef } from '../utils/endpointNorm'
-import { buildUnitSuffix } from '../registry/units'
 import type { ResourceCategoryDef } from '../registry/types'
 import type { MeasureMode, Resource } from '../types/types'
 import './RecipeNode.css'
-
-function resolveUnit(catDef: ResourceCategoryDef, mMode?: MeasureMode): string {
-  return buildUnitSuffix(catDef.base_unit, mMode)
-}
 
 function formatPortAmount(
   amount: number,
@@ -22,19 +16,22 @@ function formatPortAmount(
   mMode?: MeasureMode,
   durationSeconds?: number
 ) {
-  const fluidCatIds = new Set(['fluid', 'utility:water'])
-  if (fluidCatIds.has(catDef.id)) {
-    const unit = resolveUnit(catDef, mMode)
-    return `x${amount}${unit}`
-  }
   if (mMode === 'rate_per_tick' || mMode === 'rate_per_sec') {
     const ticks = typeof durationSeconds === 'number' && durationSeconds > 0 ? durationSeconds * 20 : 1
     const total = amount * ticks
     const rounded = parseFloat(total.toPrecision(6))
-    const unit = resolveUnit(catDef, mMode)
-    return `${rounded} ${unit}`
+    return `${rounded} ${catDef.base_unit}`
   }
-  return `x${amount}`
+  return `x${amount} ${catDef.base_unit}`
+}
+
+function formatRateValue(value: number | undefined, mMode?: MeasureMode): string {
+  if (typeof value !== 'number' || Number.isNaN(value)) return ''
+  const displayValue = mMode === 'rate_per_tick' ? value / 20 : value
+  const suffix = mMode === 'rate_per_tick' ? '/t' : '/s'
+  const fixed = displayValue.toFixed(2)
+  const trimmed = fixed.replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1')
+  return `${trimmed}${suffix}`
 }
 
 function formatDisplayValue(value: number | undefined) {
@@ -50,13 +47,12 @@ function formatPercent(value: number) {
 export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   const { onEdit, onAutoFill } = useRecipeEditor()
   const { updateNodeData } = useNodeData()
-  const registryCategories = useResourceRegistry((state) => state.categories)
-  const gtEuCatDef = resolveCategoryDef(registryCategories, 'gt:eu')
-  const thermalRfCatDef = resolveCategoryDef(registryCategories, 'thermal:rf')
-  const gtEuUnit = buildUnitSuffix(gtEuCatDef.base_unit, 'rate_per_tick')
-  const thermalRfUnit = buildUnitSuffix(thermalRfCatDef.base_unit, 'rate_per_tick')
+  const userDims = useResourceRegistry((state) => state.dimensions)
+  const userOverrides = useResourceRegistry((state) => state.overrides)
   const normalizedData = ensureRecipeDataShape(data)
   const calculated = getCalculatedRates(normalizedData)
+  const materialOutputs = calculated.transformedOutputs.filter((r) => !r.is_utility)
+  const hasZeroOutput = materialOutputs.length === 0 || materialOutputs.every((r) => r.amount === 0)
   const mode: RecipeNodeMode = normalizedData.mode ?? ((normalizedData.is_auto ?? true) ? 'auto' : 'limit')
   const isLimit = mode === 'limit'
   const manualCap = typeof normalizedData.manual_machines === 'number' ? normalizedData.manual_machines : null
@@ -64,18 +60,6 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   const machinesExact = typeof normalizedData.machines_exact === 'number' ? normalizedData.machines_exact : null
   const runtimeMachines = machinesExact ?? machinesActual
   const [draftManualMachines, setDraftManualMachines] = useState(String(normalizedData.manual_machines ?? ''))
-  
-  const calculatedForPower = getCalculatedRates(normalizedData)
-  const powerProfile = resolveRecipePowerProfile(normalizedData, calculatedForPower.transformedInputs)
-  const machineCountForPower = runtimeMachines ?? machinesActual ?? null
-  const totalEu =
-    machineCountForPower !== null && powerProfile.hasPowerSetting
-      ? powerProfile.actualEuPerTick * machineCountForPower
-      : null
-  const totalRf =
-    machinesActual !== null && typeof normalizedData.metadata.rf_per_tick === 'number'
-      ? normalizedData.metadata.rf_per_tick * machinesActual
-      : null
 
   const handleSetMode = (nextMode: RecipeNodeMode) => {
     if (nextMode === mode) return
@@ -100,21 +84,17 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
     side: 'input' | 'output'
   ) => resources.map((res, index) => {
     const typeId = res.utility_type ?? res.category
-    const catDef = resolveCategoryDef(registryCategories, typeId)
+    const catDef = resolveCategoryDef(typeId, userDims, userOverrides)
     const mMode: MeasureMode | undefined = res.measure_mode
     const hexColor = catDef.themeColor
     const glowColor = hexColor.startsWith('#')
       ? `${hexColor}${Math.round(0.38 * 255).toString(16).padStart(2, '0')}`
       : hexColor.replace(')', ', 0.38)').replace('rgb', 'rgba')
 
-    const unit = resolveUnit(catDef, mMode)
-    const isRate = mMode === 'rate_per_tick' || mMode === 'rate_per_sec'
     const rate = rates[index]
     const portRate = calculated.isInstant
       ? 'Instant'
-      : isRate
-        ? `${formatDisplayValue(res.amount)} ${unit}`
-        : `${formatDisplayValue(rate?.amount)}/s`
+      : formatRateValue(rate?.amount, mMode)
     const handleId = `${res.category}:${res.id || res._uid || `${side}-${index}`}`
 
     const isLeft = side === 'input'
@@ -159,7 +139,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   })
 
   return (
-    <article className={`recipe-node recipe-node--${mode}`}>
+    <article className={`recipe-node recipe-node--${mode}${hasZeroOutput ? ' recipe-node--zero-output' : ''}`}>
       <header className="recipe-node__header">
         <div className="recipe-node__header-main">
           <div>
@@ -228,24 +208,6 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
             )}
           </div>
         </div>
-
-        {powerProfile.hasPowerSetting && (
-          <div className="recipe-node__footer-line">
-            <span className="recipe-node__footer-label">⚡ 总功耗</span>
-            <strong className="recipe-node__footer-value">
-              {totalEu !== null ? `${formatDisplayValue(totalEu)} ${gtEuUnit}` : '待计算...'}
-            </strong>
-          </div>
-        )}
-
-        {normalizedData.metadata.rf_per_tick && (
-          <div className="recipe-node__footer-line">
-            <span className="recipe-node__footer-label">⚡ 总能耗</span>
-            <strong className="recipe-node__footer-value">
-              {totalRf !== null ? `${totalRf} ${thermalRfUnit}` : '待计算...'}
-            </strong>
-          </div>
-        )}
       </footer>
     </article>
   )

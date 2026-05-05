@@ -140,7 +140,7 @@ export function buildTopologicalNets(
         const qualifiedId = `${port.category}:${port.id}`
         const key = portKey(nid, qualifiedId)
         if (port.routing_mode === 'global') {
-          addToNet(`Global_${qualifiedId}`, key)
+          addToNet(`Global_${port.category}`, key)
         } else if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
           // Port appears in a wired edge: assign to its connected-component net
           addToNet(getNetName(uf.find(key)), key)
@@ -154,7 +154,7 @@ export function buildTopologicalNets(
         const qualifiedId = `${port.category}:${port.id}`
         const key = portKey(nid, qualifiedId)
         if (port.routing_mode === 'global') {
-          addToNet(`Global_${qualifiedId}`, key)
+          addToNet(`Global_${port.category}`, key)
         } else if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
           addToNet(getNetName(uf.find(key)), key)
         } else {

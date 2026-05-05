@@ -4,8 +4,8 @@ export const gtElectricArchetype: MachineArchetype = {
   id: 'gt_electric',
   name: '格雷电力机器范式',
   fixed_utilities: {
-    'gt:eu': {
-      type: 'gt:eu',
+    gt_energy: {
+      type: 'energy:gt_eu',
       amount_mutable: true,
       routing_mode: 'global',
       routing_locked: true,

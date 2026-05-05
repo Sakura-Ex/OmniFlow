@@ -48,6 +48,7 @@ export function toResource(port: Partial<RecipePort> | Partial<Resource>): Resou
     category: normalizeCategory((port as Partial<Resource>).category ?? (port as Partial<RecipePort>).type),
     id: String((port as Partial<Resource>).id ?? ''),
     amount: normalizeAmount((port as Partial<Resource>).amount),
+    measure_mode: (port as Partial<Resource>).measure_mode,
     probability: typeof (port as Partial<Resource>).probability === 'number' ? (port as Partial<Resource>).probability : undefined,
     routing_mode,
     routing_locked: Boolean((port as Partial<Resource>).routing_locked),
@@ -194,7 +195,7 @@ export function getCalculatedRates(nodeData: RecipeNodeData): CalculatedRates {
 
   // Backwards-compat fallback: legacy energyAmount still supported for simple overrides
   if (legacyEnergyAmount !== undefined) {
-    const euInput = inputs.find((r) => r.id === 'gt:eu' && r.is_utility)
+    const euInput = inputs.find((r) => r.category === 'energy:gt_eu' && r.is_utility)
     if (euInput) euInput.amount = legacyEnergyAmount
   }
 

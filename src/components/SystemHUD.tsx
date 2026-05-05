@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useResourceRegistry } from '../registry/resourceRegistry'
+import { resolveResourceProps } from '../utils/endpointNorm'
 import './SystemHUD.css'
 
 type SystemHUDProps = {
@@ -10,6 +12,32 @@ type SystemHUDProps = {
 
 function formatAmount(value: number) {
   return value.toFixed(2)
+}
+
+function parseItemKey(item: string): { category: string; name: string } {
+  const idx = item.lastIndexOf(':')
+  if (idx > 0) return { category: item.slice(0, idx), name: item.slice(idx + 1) }
+  return { category: 'item', name: item }
+}
+
+function HUDResourceRow({ item, value, isGlobal }: { item: string; value: number; isGlobal: boolean }) {
+  const userDims = useResourceRegistry((state) => state.dimensions)
+  const userOverrides = useResourceRegistry((state) => state.overrides)
+  const { category, name } = parseItemKey(item)
+  const props = resolveResourceProps(item, userDims, userOverrides)
+  const hexColor = props.themeColor
+
+  return (
+    <div className={`system-hud__row${isGlobal ? ' system-hud__row--global' : ''}`}>
+      <span className="system-hud__item">
+        <span className="system-hud__badge" style={{ color: hexColor, borderColor: hexColor }}>
+          {category}
+        </span>
+        <span className="system-hud__name">{name}</span>
+      </span>
+      <span className="system-hud__value">{formatAmount(value)}</span>
+    </div>
+  )
 }
 
 export function SystemHUD({
@@ -53,10 +81,7 @@ export function SystemHUD({
           <div className="system-hud__list">
             {wiredInputEntries.length > 0 ? (
               wiredInputEntries.map(([item, value]) => (
-                <div className="system-hud__row" key={item}>
-                  <span className="system-hud__item">{item}</span>
-                  <span className="system-hud__value">{formatAmount(value)}</span>
-                </div>
+                <HUDResourceRow key={item} item={item} value={value} isGlobal={false} />
               ))
             ) : (
               <div className="system-hud__empty">有线输入暂无数据</div>
@@ -67,10 +92,7 @@ export function SystemHUD({
 
             {globalInputEntries.length > 0 ? (
               globalInputEntries.map(([item, value]) => (
-                <div className="system-hud__row system-hud__row--global" key={`g-in-${item}`}>
-                  <span className="system-hud__item">{item}</span>
-                  <span className="system-hud__value">{formatAmount(value)}</span>
-                </div>
+                <HUDResourceRow key={`g-in-${item}`} item={item} value={value} isGlobal={true} />
               ))
             ) : (
               <div className="system-hud__empty">全局管网输入暂无数据</div>
@@ -97,10 +119,7 @@ export function SystemHUD({
           <div className="system-hud__list">
             {wiredOutputEntries.length > 0 ? (
               wiredOutputEntries.map(([item, value]) => (
-                <div className="system-hud__row" key={item}>
-                  <span className="system-hud__item">{item}</span>
-                  <span className="system-hud__value">{formatAmount(value)}</span>
-                </div>
+                <HUDResourceRow key={item} item={item} value={value} isGlobal={false} />
               ))
             ) : (
               <div className="system-hud__empty">有线输出暂无数据</div>
@@ -111,10 +130,7 @@ export function SystemHUD({
 
             {globalOutputEntries.length > 0 ? (
               globalOutputEntries.map(([item, value]) => (
-                <div className="system-hud__row system-hud__row--global" key={`g-out-${item}`}>
-                  <span className="system-hud__item">{item}</span>
-                  <span className="system-hud__value">{formatAmount(value)}</span>
-                </div>
+                <HUDResourceRow key={`g-out-${item}`} item={item} value={value} isGlobal={true} />
               ))
             ) : (
               <div className="system-hud__empty">全局管网输出暂无数据</div>

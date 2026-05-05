@@ -43,6 +43,10 @@ export function useKeyboardShortcuts({
         return
       }
 
+      if (document.querySelector('.recipe-editor__overlay, .ep-editor__overlay, .resource-registry__overlay')) {
+        return
+      }
+
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
         e.preventDefault()
         handleSelectAll()

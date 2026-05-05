@@ -4,8 +4,8 @@ export const fluidNetworkedArchetype: MachineArchetype = {
   id: 'fluid_networked',
   name: '流体公用范式',
   fixed_utilities: {
-    'utility:water': {
-      type: 'utility:water',
+    cooling_water: {
+      type: 'fluid:water',
       amount_mutable: true,
       routing_mode: 'global',
       routing_locked: false,

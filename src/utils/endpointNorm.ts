@@ -1,21 +1,26 @@
 import type { EndpointPort, SourceNodeData, TargetNodeData } from '../types/recipe'
-import type { ResourceCategoryDef } from '../registry/types'
-import { FALLBACK_CATEGORY } from '../registry/defaults'
+import type { ResourceCategoryDef, DimensionDef, ResourceOverride } from '../registry/types'
+import { FALLBACK_CATEGORY, resolveResourceProps, DimensionRegistry } from '../registry/defaults'
+
+export { resolveResourceProps } from '../registry/defaults'
 
 export function resolveCategoryDef(
-  categories: Record<string, ResourceCategoryDef>,
-  typeId?: string | null
+  typeId?: string | null,
+  userDimensions?: Record<string, DimensionDef>,
+  userOverrides?: Record<string, ResourceOverride>,
 ): ResourceCategoryDef {
   if (!typeId) return FALLBACK_CATEGORY
-  const exact = categories[typeId]
-  if (exact) return exact
-  const colonIdx = typeId.indexOf(':')
-  if (colonIdx > 0) {
-    const ns = typeId.slice(0, colonIdx)
-    const nsMatch = categories[ns]
-    if (nsMatch) return nsMatch
+  const idx = typeId.lastIndexOf(':')
+  const dimensionId = idx > 0 ? typeId.slice(0, idx) : typeId
+  const dimDef = userDimensions?.[dimensionId] ?? DimensionRegistry[dimensionId]
+  const props = resolveResourceProps(typeId, userDimensions, userOverrides)
+  return {
+    id: typeId,
+    displayName: dimDef ? dimensionId : typeId,
+    base_unit: props.unit,
+    themeColor: props.themeColor,
+    defaultRouting: 'wired',
   }
-  return FALLBACK_CATEGORY
 }
 
 export function normalizeEndpointPorts(

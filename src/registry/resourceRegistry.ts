@@ -1,10 +1,16 @@
 import { create } from 'zustand'
-import type { ResourceCategoryDef, ResourceRegistryState } from './types'
-import { DEFAULT_RESOURCE_CATEGORIES } from './defaults'
+import type { ResourceCategoryDef, ResourceRegistryState, DimensionDef, ResourceOverride } from './types'
+import { DEFAULT_RESOURCE_CATEGORIES, DimensionRegistry, ResourceOverrideRegistry } from './defaults'
 
-const STORAGE_KEY = 'omniflow.resource_registry.v1'
+const STORAGE_KEY = 'omniflow.resource_registry.v2'
 
-function loadPersisted(): Record<string, ResourceCategoryDef> {
+type PersistedState = {
+  categories: Record<string, ResourceCategoryDef>
+  dimensions: Record<string, DimensionDef>
+  overrides: Record<string, ResourceOverride>
+}
+
+function loadPersisted(): Partial<PersistedState> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
@@ -17,36 +23,53 @@ function loadPersisted(): Record<string, ResourceCategoryDef> {
   return {}
 }
 
-function persist(categories: Record<string, ResourceCategoryDef>) {
+function persist(state: PersistedState) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(categories))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   } catch {
     // ignore quota errors
   }
 }
 
-function buildInitial(): Record<string, ResourceCategoryDef> {
+function buildInitial(): PersistedState {
   const persisted = loadPersisted()
-  const merged: Record<string, ResourceCategoryDef> = {}
 
+  const categories: Record<string, ResourceCategoryDef> = {}
   for (const def of DEFAULT_RESOURCE_CATEGORIES) {
-    merged[def.id] = persisted[def.id] ?? def
+    categories[def.id] = persisted.categories?.[def.id] ?? def
+  }
+  for (const [id, def] of Object.entries(persisted.categories ?? {})) {
+    if (!categories[id]) categories[id] = def
   }
 
-  for (const [id, def] of Object.entries(persisted)) {
-    if (!merged[id]) merged[id] = def
+  const dimensions: Record<string, DimensionDef> = { ...DimensionRegistry }
+  for (const [id, def] of Object.entries(persisted.dimensions ?? {})) {
+    dimensions[id] = def
   }
 
-  return merged
+  const overrides: Record<string, ResourceOverride> = { ...ResourceOverrideRegistry }
+  for (const [id, def] of Object.entries(persisted.overrides ?? {})) {
+    overrides[id] = def
+  }
+
+  return { categories, dimensions, overrides }
+}
+
+function saveAll(
+  categories: Record<string, ResourceCategoryDef>,
+  dimensions: Record<string, DimensionDef>,
+  overrides: Record<string, ResourceOverride>,
+) {
+  persist({ categories, dimensions, overrides })
 }
 
 export const useResourceRegistry = create<ResourceRegistryState>((set, get) => ({
-  categories: buildInitial(),
+  ...buildInitial(),
 
   addCategory: (def) => {
     set((state) => {
       const next = { ...state.categories, [def.id]: def }
-      persist(next)
+      saveAll(next, state.dimensions, state.overrides)
       return { categories: next }
     })
   },
@@ -56,7 +79,7 @@ export const useResourceRegistry = create<ResourceRegistryState>((set, get) => (
       const existing = state.categories[id]
       if (!existing) return state
       const next = { ...state.categories, [id]: { ...existing, ...patch } }
-      persist(next)
+      saveAll(next, state.dimensions, state.overrides)
       return { categories: next }
     })
   },
@@ -65,12 +88,35 @@ export const useResourceRegistry = create<ResourceRegistryState>((set, get) => (
     set((state) => {
       const next = { ...state.categories }
       delete next[id]
-      persist(next)
+      saveAll(next, state.dimensions, state.overrides)
       return { categories: next }
     })
   },
 
-  getCategory: (id) => {
-    return get().categories[id]
+  getCategory: (id) => get().categories[id],
+
+  setDimension: (id, def) => {
+    set((state) => {
+      const next = { ...state.dimensions, [id]: def }
+      saveAll(state.categories, next, state.overrides)
+      return { dimensions: next }
+    })
+  },
+
+  setOverride: (id, def) => {
+    set((state) => {
+      const next = { ...state.overrides, [id]: def }
+      saveAll(state.categories, state.dimensions, next)
+      return { overrides: next }
+    })
+  },
+
+  removeOverride: (id) => {
+    set((state) => {
+      const next = { ...state.overrides }
+      delete next[id]
+      saveAll(state.categories, state.dimensions, next)
+      return { overrides: next }
+    })
   },
 }))

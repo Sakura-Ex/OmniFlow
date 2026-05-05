@@ -6,7 +6,7 @@ import { createDefaultModifierState, patchModifierSchemaWithNodeResources } from
 import { getMachineArchetype, machineArchetypes } from '../data/archetypes/index'
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { buildUnitSuffix } from '../registry/units'
-import { resolveCategoryDef } from '../utils/endpointNorm'
+import { resolveCategoryDef, resolveResourceProps } from '../utils/endpointNorm'
 
 type SettingsUIProps = {
   machineName: string
@@ -120,6 +120,8 @@ export function SettingsUI(props: SettingsUIProps) {
   const modifiers = listModifiers()
   const archetype = getMachineArchetype(archetypeId)
   const registryCategories = useResourceRegistry((state) => state.categories)
+  const userDims = useResourceRegistry((state) => state.dimensions)
+  const userOverrides = useResourceRegistry((state) => state.overrides)
   const categoryOptions = useMemo(
     () => Object.values(registryCategories).map((cat) => ({ id: cat.id, displayName: cat.displayName })),
     [registryCategories]
@@ -325,7 +327,7 @@ export function SettingsUI(props: SettingsUIProps) {
             const isAmountMutable = utilityDef?.amount_mutable ?? input.amount_mutable ?? true
             const isReadOnlyTag = !isAmountMutable
             const typeId = input.utility_type ?? input.id
-            const catDef = resolveCategoryDef(registryCategories, typeId)
+            const catDef = resolveCategoryDef(typeId, userDims, userOverrides)
 
             if (isReadOnlyTag) {
               const utilSuffix = buildUnitSuffix(catDef.base_unit, input.measure_mode)
@@ -419,7 +421,7 @@ export function SettingsUI(props: SettingsUIProps) {
 
           if (modifierId === 'gt_multiblock') {
             const hatchRows = normalizeGtHatches(state)
-            const baseEuInput = baseInputs.find((r) => r.id === 'gt:eu' && r.is_utility)
+            const baseEuInput = baseInputs.find((r) => r.category === 'energy:gt_eu' && r.is_utility)
             const baseEuPerTick = baseEuInput ? baseEuInput.amount : 0
             const summary = evaluateGtMultiblockState(
               { ...state, energyHatches: hatchRows },
@@ -583,7 +585,7 @@ export function SettingsUI(props: SettingsUIProps) {
                 </label>
 
                 <div className="recipe-settings__multiblock-summary">
-                  <span>⚡ 机器总能量池: {formatPower(summary.totalEuPerTick)} {buildUnitSuffix(resolveCategoryDef(registryCategories, 'gt:eu').base_unit, 'rate_per_tick')}</span>
+                  <span>⚡ 机器总能量池: {formatPower(summary.totalEuPerTick)} {buildUnitSuffix(resolveResourceProps('energy:gt_eu').unit, 'rate_per_tick')}</span>
                   <span>👑 最高运行层级: {summary.highestTier}</span>
                   {!summary.canStart && baseEuPerTick > 0 && (
                     <span style={{ color: 'var(--color-danger, #f87171)' }}>⛔ 能量池不足，无法启动</span>
@@ -592,7 +594,7 @@ export function SettingsUI(props: SettingsUIProps) {
                     <>
                       <span>🔁 实际并行: ×{summary.actualParallel}</span>
                       <span>🔁 实际超频: {summary.actualOverclockCount} 次</span>
-                      <span>⚡ 最终功耗: {formatPower(summary.finalEuPerTick)} {buildUnitSuffix(resolveCategoryDef(registryCategories, 'gt:eu').base_unit, 'rate_per_tick')}</span>
+                      <span>⚡ 最终功耗: {formatPower(summary.finalEuPerTick)} {buildUnitSuffix(resolveResourceProps('energy:gt_eu').unit, 'rate_per_tick')}</span>
                       <span>⏱️ 时间缩放: ×{summary.finalDurationScale.toFixed(4)}</span>
                     </>
                   )}

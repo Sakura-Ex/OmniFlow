@@ -15,13 +15,13 @@ export function inferUtilityCategory(type: string): string {
 }
 
 export function deriveUtilityAmount(
-  utilityId: string,
+  type: string,
   metadata: RecipeNodeData['metadata'],
   fallback: number
 ): number {
-  const parts = utilityId.split(':')
-  if (parts.length === 2) {
-    const resourceKey = parts[1]
+  const typeParts = type.split(':')
+  if (typeParts.length === 2) {
+    const resourceKey = typeParts[1]
     const metaValue = metadata[`${resourceKey}_per_tick`]
     if (typeof metaValue === 'number') return metaValue
   }

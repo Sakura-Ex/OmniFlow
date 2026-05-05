@@ -171,13 +171,13 @@ export function resolveRecipePowerProfile(
 ): ResolvedPowerProfile {
   const metadataEu = Number(data.metadata?.eu_per_tick ?? 0)
   const utilityEu = Number(
-    data.base_inputs?.find((resource) => resource.id === 'gt:eu' && resource.is_utility)?.amount ?? 0
+    data.base_inputs?.find((resource) => resource.category === 'energy:gt_eu' && resource.is_utility)?.amount ?? 0
   )
   const baseEuPerTick = utilityEu > 0 ? utilityEu : metadataEu
 
   const actualEuPerTick = transformedInputs
     ? Math.max(0, Number(
-        transformedInputs.find((resource) => resource.id === 'gt:eu' && resource.is_utility)?.amount ?? baseEuPerTick
+        transformedInputs.find((resource) => resource.category === 'energy:gt_eu' && resource.is_utility)?.amount ?? baseEuPerTick
       ))
     : Math.max(0, baseEuPerTick)
 
@@ -223,7 +223,7 @@ export const gtMultiblockModifier: IMachineModifier = {
     },
   ],
   evaluate: (baseInputs, _baseOutputs, _baseDuration, uiState) => {
-    const baseEuInput = baseInputs.find((r) => r.id === 'gt:eu' && r.is_utility)
+    const baseEuInput = baseInputs.find((r) => r.category === 'energy:gt_eu' && r.is_utility)
     const baseEuPerTick = baseEuInput ? baseEuInput.amount : 0
 
     const summary = evaluateGtMultiblockState(uiState, baseEuPerTick)
@@ -237,7 +237,7 @@ export const gtMultiblockModifier: IMachineModifier = {
     return {
       parallelMultiplier: summary.actualParallel,
       durationMultiplier: summary.finalDurationScale,
-      utilityMultipliers: { 'gt:eu': ocPowerMultiplier },
+      utilityMultipliers: { 'energy:gt_eu': ocPowerMultiplier },
     }
   },
 }

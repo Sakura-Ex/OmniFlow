@@ -260,7 +260,6 @@ async def calculate_flow(request: CalculateRequest):
     if total_vars == 0:
         return {
             "status": "success",
-            "total_eu_tick": 0,
             "node_results": {},
             "system_inputs": {},
             "system_outputs": {},
@@ -289,7 +288,6 @@ async def calculate_flow(request: CalculateRequest):
 
     # 步骤 6：格式化结果并返回
     node_results: Dict[str, Dict[str, float]] = {}
-    total_eu_tick = 0.0
     rounding_eps = 1e-8
     for idx, recipe in enumerate(recipe_nodes):
         recipe_data: RecipeNodeData = recipe["data"]
@@ -307,18 +305,12 @@ async def calculate_flow(request: CalculateRequest):
             "utilization": utilization,
         }
 
-        if recipe_data.metadata.eu_per_tick is not None:
-            total_eu_tick += machines_actual * float(recipe_data.metadata.eu_per_tick)
-
-    system_inputs: Dict[str, float] = {}
-    system_outputs: Dict[str, float] = {}
     for source_spec in source_specs:
         raw_value = float(res.x[source_spec["col"]])
         actual_value = 0.0 if abs(raw_value) <= 1e-6 else raw_value
         node_results[source_spec["node_id"]] = {
             "actual_amount": actual_value,
         }
-        system_inputs[source_spec["item_id"]] = system_inputs.get(source_spec["item_id"], 0.0) + actual_value
 
     for sink_spec in sink_specs:
         raw_value = float(res.x[sink_spec["col"]])
@@ -326,18 +318,22 @@ async def calculate_flow(request: CalculateRequest):
         node_results[sink_spec["node_id"]] = {
             "actual_amount": actual_value,
         }
-        system_outputs[sink_spec["item_id"]] = system_outputs.get(sink_spec["item_id"], 0.0) + actual_value
 
-    for item_id in items:
-        if item_id in target_items:
-            continue
-        residual = float(np.dot(item_rows[item_id], res.x))
-        if residual > 1e-6:
-            system_outputs[item_id] = system_outputs.get(item_id, 0.0) + residual
+    # ── 全量矩阵回代清算 ──
+    full_matrix = np.array([item_rows[item_id] for item_id in items], dtype=float)
+    net_rates = full_matrix @ res.x
+
+    system_inputs: Dict[str, float] = {}
+    system_outputs: Dict[str, float] = {}
+    for i, item_id in enumerate(items):
+        net = float(net_rates[i])
+        if net > 1e-6:
+            system_outputs[item_id] = net
+        elif net < -1e-6:
+            system_inputs[item_id] = -net
 
     return {
         "status": "success",
-        "total_eu_tick": total_eu_tick,
         "node_results": node_results,
         "system_inputs": system_inputs,
         "system_outputs": system_outputs,
