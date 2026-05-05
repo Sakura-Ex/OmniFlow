@@ -1,117 +1,99 @@
-# 参与贡献 OmniFlow
+# Contributing to OmniFlow
 
-首先，非常感谢你对 OmniFlow 感兴趣！OmniFlow 致力于为硬核游戏整合包（如 GregTech、GTNH 等）提供最优雅、最高效的复杂产线矩阵求解体验。
+English | [中文](docs/CONTRIBUTING.zh-CN.md)
 
-我们非常欢迎社区的贡献，无论是修复 Bug、增加新模组的配方支持、优化前端交互，还是提升后端的求解算法性能。这份指南将帮助你快速了解项目的协作流程与开发规范。
+Thank you for your interest in OmniFlow! OmniFlow aims to be the next-generation, game-agnostic industrial scheduling solver. Whether you want to fix a bug, add a modifier for a hardcore mod, or optimize the underlying simplex matrix algorithm, your contributions are highly welcome.
 
----
+Before submitting a Pull Request (PR), please make sure to read the following architectural guidelines and development standards.
 
-## 目录
+## 🧠 Core Architecture Philosophy
 
-1. [报告 Bug 与建议](#报告-bug-与建议)
-2. [本地开发环境配置](#本地开发环境配置)
-3. [核心架构与开发规范](#核心架构与开发规范)
-4. [提交代码规范 (Commit Message)](#提交代码规范)
-5. [Pull Request 流程](#pull-request-流程)
+OmniFlow's underlying design follows an extremely strict decoupling of physics and mathematics. Before writing any code, please ensure you understand our three foundational pillars:
 
----
-
-## 报告 Bug 与建议
-
-如果你发现了计算错误、UI 渲染异常，或者有绝妙的新功能想法，请通过 GitHub Issues 提交。
-
-**提交 Bug 时，请尽量提供以下信息：**
-
-* 触发 Bug 的具体环境（浏览器版本、所使用的游戏配方）。
-* 复现步骤（最好能附带导出的 `nodes` & `edges` JSON 文件）。
-* 期望的计算结果 vs 实际的计算结果。
+1. **Game-Agnostic**:
+   The system does not "know" *Minecraft*, *Factorio*, or *Dyson Sphere Program*. Everything is mapped via a configuration-driven `Global Resource Registry`. **Never hardcode mod-specific resource IDs or physical logic in the core rendering or calculation pipelines.**
+2. **Nature vs. Context (Orthogonal Decoupling)**:
+   * The `Registry` is solely responsible for defining the "Nature" of a resource (e.g., base physical units, UI colors).
+   * The `Slot/Port` of a machine or recipe defines the "Context" or usage (e.g., measurement mode, whether it's a non-consumable catalyst, durability expectations).
+3. **Math-First (Pre-compilation Pipeline)**:
+   The frontend `Payload Compiler` handles all complex business logic (overclocking, lossless parallelism, durability conversion) and normalizes everything into a pure "Rate per second (Rate/s)". The backend SciPy solver acts entirely "blind" and focuses only on solving the $Ax = b$ matrix at maximum speed.
 
 ---
 
-## 本地开发环境配置
+## 🛠️ Directory Guide (Where to Contribute)
 
-本项目采用前后端分离架构，你需要分别启动两个服务。
+If you want to add new features, please strictly adhere to the existing domain-driven directory structure:
 
-### 1. 前端 (Frontend)
-
-前端使用 React + TypeScript + React Flow + Vite 构建。
-
-```bash
-cd frontend
-# 安装依赖 (推荐使用 npm 或 pnpm)
-npm install
-# 启动本地开发服务器 (默认端口: 5173)
-npm run dev
-```
-
-### 2. 后端 (Backend)
-
-后端核心求解器使用 Python + FastAPI + Pydantic 构建。
-
-```bash
-cd backend
-# 建议创建虚拟环境
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-# 安装依赖
-pip install -r requirements.txt
-# 启动 FastAPI 服务 (默认端口: 8000)
-uvicorn main:app --reload
-```
-
-后端启动后，可访问 `http://localhost:8000/docs` 查看并测试 API 契约文档。
+* **Adding a new global resource type?**
+  👉 Modify `src/registry/defaults.ts` (e.g., adding `factorio:watt`).
+* **Adding new machine archetype logic?**
+  👉 Create a new archetype definition in `src/data/archetypes/` and register it in `index.ts`.
+* **Adding mod-specific overclocking/mechanics?**
+  👉 Create a new modifier logic in `src/modifiers/`. You must adhere to the 5-phase pipeline standard and never pollute other scopes.
+* **Optimizing topological analysis or implicit routing?**
+  👉 Focus your changes in `src/utils/topologicalNets.ts`.
+* **Optimizing matrix solver performance?**
+  👉 Your battlefield is `backend/main.py`.
 
 ---
 
-## 核心架构与开发规范
+## 💻 Local Development Setup
 
-为了保持代码库的优雅和高性能，请在开发时遵循以下架构原则：
+This project uses a frontend/backend separated Monorepo structure.
 
-### 🎨 前端规范 (UI & Nodes)
+### Frontend (Vite + React + Zustand)
+1. Ensure Node.js (v18+ recommended) and a package manager (`pnpm` recommended) are installed.
+2. Enter the root directory:
+   ```bash
+   pnpm install
+   pnpm run dev
+   ```
 
-* **多态渲染 (Polymorphic UI):** 我们支持多模组的配方。如果你要添加新机器类型的 UI，请基于 `data.system` 字段（如 `gregtech`, `vanilla`, `enderio`）进行条件渲染，**不要**将特定模组的属性（如电压、超频）强加于所有节点。
-* **分离状态与渲染:** 画布的节点状态受 React Flow 接管，不要直接修改 DOM。
-* **样式:** 使用 Tailwind CSS 保持深色、极简的工业控制台风格。端口（Handles）请根据物品类型进行一致的颜色编码（Color Coding）。
-
-### ⚙️ 后端规范 (Solver & Matrix)
-
-* **无状态计算 (Stateless Backend):** 后端必须保持无状态！**严禁**在后端引入数据库或保存任何配方状态。后端的职责仅为：接收前端传来的含完整参数的拓扑图 -> 构建化学计量矩阵 -> 调用算法求解 -> 返回机器数量和功耗。
-* **数据契约:** 任何对请求体或响应体的修改，必须在 Pydantic Model (`main.py`) 和前端的 TypeScript Interface (`types.ts`) 中同步更新。
-
----
-
-## 提交代码规范
-
-我们遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范，这有助于自动生成清晰的 Changelog。提交格式如下：
-
-`<type>(<scope>): <subject>`
-
-**常用的 type：**
-* `feat`: 新增功能 (Feature)
-* `fix`: 修复 Bug
-* `docs`: 文档修改 (如 README, CONTRIBUTING)
-* `style`: 代码格式化 (不影响代码运行的变动)
-* `refactor`: 重构代码 (既没有新增功能，也没有修复 Bug)
-* `perf`: 性能优化
-* `test`: 增加测试用例
-* `chore`: 构建过程或辅助工具的变动
-
-**示例：**
-* `feat(ui): 增加源节点的最大供应速率输入框`
-* `fix(solver): 修复包含零耗时原版配方时的除零异常`
-* `refactor(nodes): 将机器元数据抽离为 metadata 对象`
+### Backend (FastAPI + SciPy)
+1. Ensure Python 3.10+ is installed.
+2. Navigate to the `backend` directory, create and activate a virtual environment:
+   ```bash
+   cd backend
+   python -m venv venv
+   source venv/bin/activate  # On Windows use: venv\Scripts\activate
+   ```
+3. Install dependencies and start the server:
+   ```bash
+   pip install -r requirements.txt
+   uvicorn main:app --reload --port 8000
+   ```
 
 ---
 
-## Pull Request 流程
+## 📝 Coding Standards
 
-1. **Fork** 本仓库到你的 GitHub 账号下。
-2. 从 `main` 分支拉取最新的代码。
-3. 创建一个新的特性分支进行开发：`git checkout -b feature/your-awesome-feature` 或 `fix/issue-number`。
-4. 在本地进行测试，确保前后端联调无误。
-5. 提交你的更改 (遵循 Commit 规范)。
-6. 推送分支到你的 Fork 仓库：`git push origin feature/your-awesome-feature`。
-7. 在 GitHub 页面点击 **New Pull Request**。
-8. 详细填写 PR 描述，说明你的改动动机、实现思路以及是否有不向下兼容的 API 变动。
+* **TypeScript**:
+  * Strict mode is enabled. **Do not use `any`**. Use `unknown` for unknown types or define specific Interfaces.
+  * For state management, prioritize Zustand to avoid React Context rendering hell.
+* **Python**:
+  * Follow PEP 8 guidelines.
+  * Type Hinting combined with Pydantic for data validation is mandatory.
+* **Styling (CSS)**:
+  * Global styles are contained in `index.css`.
+  * For component-level styling, use Tailwind CSS utility classes to maintain the unified "Dark Industrial" visual theme.
 
-我们将尽快 Review 你的代码，并与你探讨可能的优化方案。再次感谢你让 OmniFlow 变得更好！
+---
+
+## 🌿 Git Workflow
+
+1. **Fork the repository** and clone it locally.
+2. **Create a branch**: Create a feature branch based on `main`.
+   * Feature: `feat/add-create-mod-archetype`
+   * Bug fix: `fix/matrix-solver-division-by-zero`
+   * Documentation: `docs/update-readme`
+3. **Conventional Commits**:
+   Commit messages must be clear and formatted as follows:
+   * `feat: add support for probabilistic output modifiers`
+   * `fix(modifier): fix bug where non-consumable catalysts were not excluded during overclocking`
+   * `refactor(pipeline): optimize dimensional reduction logic in payload compiler`
+4. **Submit a Pull Request**:
+   * Clearly explain the problem you solved in the PR description.
+   * If it includes UI changes, please attach screenshots.
+   * If you modified the core calculation pipeline (`calculate.ts` or `main.py`), please explain the edge cases you tested.
+
+> *"The factory must grow, and the math must flow."* > We look forward to your code! Let's build the most resilient industrial scheduling engine together.
