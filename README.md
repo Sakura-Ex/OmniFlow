@@ -328,4 +328,4 @@ OmniFlow/
 
 ## License
 
-MIT
+GPL-3.0 license
