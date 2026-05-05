@@ -1,4 +1,30 @@
-# Logs
+# ==============================
+# 1. 操作系统与编辑器缓存
+# ==============================
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+!.vscode/extensions.json
+.trae/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+*.sw?
+
+# ==============================
+# 2. 前端 (React / Vite / Node)
+# ==============================
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# 日志文件
 logs
 *.log
 npm-debug.log*
@@ -7,29 +33,41 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Runtime files
+# TypeScript / ESLint 缓存
+.eslintcache
+*.tsbuildinfo
+
+# 运行时文件
 *.pid
 *.pid.lock
 
-node_modules
-dist
-dist-ssr
-*.local
+# 环境变量 (前端)
+.env
+.env.*
+!.env.example
 
-# Python
+# ==============================
+# 3. 后端 (Python / FastAPI)
+# ==============================
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+*$py.class
 .python-version
 
-# Python virtual environments
-.venv/
+# 虚拟环境
 venv/
 env/
 ENV/
+.venv/
+.env_python/
 
-# Python tool caches
+# Python 打包与日志
+pip-log.txt
+pip-delete-this-directory.txt
+
+# 测试与覆盖率
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -37,24 +75,8 @@ ENV/
 .coverage.*
 htmlcov/
 
-# Environment files
-.env
-.env.*
-!.env.example
-
-# Build/artifact folders
+# ==============================
+# 4. 构建产物
+# ==============================
 build/
 coverage/
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-Thumbs.db
-Desktop.ini
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
