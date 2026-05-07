@@ -1,42 +1,171 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useResourceRegistry } from '../registry/resourceRegistry'
-import type { DimensionDef, ResourceOverride } from '../registry/types'
-import { DimensionRegistry } from '../registry/defaults'
+import type { ResourceCategoryDef, ResourceOverride } from '../registry/types'
+import type { TimeBase } from '../types/types'
 import './ResourceRegistryPanel.css'
 
 type ResourceRegistryPanelProps = {
   onClose: () => void
 }
 
-function emptyDim(): DimensionDef {
-  return { default_unit: '', display_mode: 'rate_per_sec', themeColor: '#94a3b8' }
+const COLOR_PALETTE = [
+  '#e5e7eb', '#4ddcff', '#f59e0b', '#c084fc', '#fb7185',
+  '#fbbf24', '#38bdf8', '#ef4444', '#22c55e', '#a78bfa',
+  '#f472b6', '#34d399', '#818cf8', '#fb923c', '#2dd4bf',
+  '#f87171', '#a3e635', '#cbd5e1', '#67e8f9', '#d4d4d8',
+]
+
+function unusedColor(used: Set<string>): string {
+  for (const c of COLOR_PALETTE) {
+    if (!used.has(c)) return c
+  }
+  return `#${Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0')}`
 }
 
-function emptyOverride(): ResourceOverride {
-  return {}
+type DraftState = {
+  categories: Record<string, ResourceCategoryDef>
+  overrides: Record<string, ResourceOverride>
 }
 
 export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
-  const { dimensions, overrides, setDimension, setOverride, removeOverride } = useResourceRegistry()
-  const [tab, setTab] = useState<'dimensions' | 'overrides'>('dimensions')
-  const [newDimId, setNewDimId] = useState('')
-  const [newOverrideId, setNewOverrideId] = useState('')
+  const store = useResourceRegistry()
 
-  const dimEntries = Object.entries(dimensions)
-  const overrideEntries = Object.entries(overrides)
+  const [tab, setTab] = useState<'categories' | 'overrides'>('categories')
 
-  const handleAddDim = () => {
-    const id = newDimId.trim()
-    if (!id || id.includes(':')) return
-    setDimension(id, emptyDim())
-    setNewDimId('')
+  const [draft, setDraft] = useState<DraftState>(() => ({
+    categories: JSON.parse(JSON.stringify(store.categories)),
+    overrides: JSON.parse(JSON.stringify(store.overrides)),
+  }))
+
+  const [newCatIds, setNewCatIds] = useState<Record<string, string>>({})
+  const [overrideEdits, setOverrideEdits] = useState<Record<string, { cat: string; asset: string }>>({})
+
+  const categoryEntries = useMemo(() => Object.entries(draft.categories), [draft.categories])
+  const overrideEntries = useMemo(() => Object.entries(draft.overrides), [draft.overrides])
+  const categoryIds = useMemo(() => Object.keys(draft.categories), [draft.categories])
+  const usedColors = useMemo(() => new Set(categoryEntries.map(([, d]) => d.themeColor)), [categoryEntries])
+
+  const updateCat = (id: string, patch: Partial<ResourceCategoryDef>) => {
+    setDraft((prev) => ({
+      ...prev,
+      categories: { ...prev.categories, [id]: { ...prev.categories[id], ...patch } },
+    }))
+  }
+
+  const removeCat = (id: string) => {
+    setDraft((prev) => {
+      const next = { ...prev.categories }
+      delete next[id]
+      return { ...prev, categories: next }
+    })
+  }
+
+  const addCat = (def: ResourceCategoryDef) => {
+    setDraft((prev) => ({
+      ...prev,
+      categories: { ...prev.categories, [def.id]: def },
+    }))
+  }
+
+  const updateOv = (key: string, patch: Partial<ResourceOverride>) => {
+    setDraft((prev) => ({
+      ...prev,
+      overrides: { ...prev.overrides, [key]: { ...prev.overrides[key], ...patch } },
+    }))
+  }
+
+  const removeOv = (key: string) => {
+    setDraft((prev) => {
+      const next = { ...prev.overrides }
+      delete next[key]
+      return { ...prev, overrides: next }
+    })
+  }
+
+  const addOv = (key: string, def: ResourceOverride) => {
+    setDraft((prev) => ({
+      ...prev,
+      overrides: { ...prev.overrides, [key]: def },
+    }))
+  }
+
+  const handleAddCategory = () => {
+    const key = `__new_${crypto.randomUUID()}`
+    addCat({
+      id: key,
+      displayName: '',
+      base_unit: '',
+      themeColor: unusedColor(usedColors),
+      preferred_time_base: 'rate_per_sec',
+    })
   }
 
   const handleAddOverride = () => {
-    const id = newOverrideId.trim()
-    if (!id || id.includes(':')) return
-    setOverride(id, emptyOverride())
-    setNewOverrideId('')
+    const key = `__new_${crypto.randomUUID()}`
+    addOv(key, {})
+  }
+
+  const commitCategoryId = (tempKey: string) => {
+    const newId = newCatIds[tempKey]?.trim()
+    if (!newId || newId === tempKey) return
+    const def = draft.categories[tempKey]
+    if (!def) return
+    removeCat(tempKey)
+    addCat({ ...def, id: newId })
+    setNewCatIds((prev) => {
+      const next = { ...prev }
+      delete next[tempKey]
+      return next
+    })
+  }
+
+  const commitOverrideKey = (tempKey: string) => {
+    const edit = overrideEdits[tempKey]
+    if (!edit || !edit.cat.trim() || !edit.asset.trim()) return
+    const newKey = `${edit.cat.trim()}:${edit.asset.trim()}`
+    if (newKey === tempKey) return
+    const def = draft.overrides[tempKey]
+    if (!def) return
+    removeOv(tempKey)
+    addOv(newKey, { ...def })
+    setOverrideEdits((prev) => {
+      const next = { ...prev }
+      delete next[tempKey]
+      return next
+    })
+  }
+
+  // ── 按钮 ──
+  const handleApply = () => {
+    for (const id of Object.keys(store.categories)) {
+      if (!draft.categories[id]) store.removeCategory(id)
+    }
+    for (const id of Object.keys(store.overrides)) {
+      if (!draft.overrides[id]) store.removeOverride(id)
+    }
+    for (const [id, def] of Object.entries(draft.categories)) {
+      if (store.getCategory(id)) {
+        store.updateCategory(id, def)
+      } else {
+        store.addCategory(def)
+      }
+    }
+    for (const [id, def] of Object.entries(draft.overrides)) {
+      store.setOverride(id, def)
+    }
+    setDraft({
+      categories: JSON.parse(JSON.stringify(store.categories)),
+      overrides: JSON.parse(JSON.stringify(store.overrides)),
+    })
+  }
+
+  const handleConfirm = () => {
+    handleApply()
+    onClose()
+  }
+
+  const handleCancel = () => {
+    onClose()
   }
 
   return (
@@ -47,84 +176,100 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
             <p className="resource-registry__eyebrow">Global Settings</p>
             <h3 className="resource-registry__title">全局资源注册表</h3>
           </div>
-          <button className="resource-registry__icon-btn" onClick={onClose} title="关闭">✕</button>
         </header>
 
         <div className="resource-registry__tabs">
           <button
-            className={`resource-registry__tab${tab === 'dimensions' ? ' is-active' : ''}`}
-            onClick={() => setTab('dimensions')}
+            className={`resource-registry__tab${tab === 'categories' ? ' is-active' : ''}`}
+            onClick={() => setTab('categories')}
           >
-            量纲表 (Dimensions)
+            类别定义
           </button>
           <button
             className={`resource-registry__tab${tab === 'overrides' ? ' is-active' : ''}`}
             onClick={() => setTab('overrides')}
           >
-            特化覆盖表 (Overrides)
+            特化覆盖表
           </button>
         </div>
 
         <div className="resource-registry__body">
-          {tab === 'dimensions' && (
+          {tab === 'categories' && (
             <>
               <p className="resource-registry__hint">
-                量纲定义资源的基础物理单位与显示模式。新增量纲后，所有 <code>dimension:asset</code> 格式的资源将自动继承此处设定的默认值。
+                类别定义资源的默认单位、偏好基准与颜色标识。所有 <code>category:asset</code> 形式的资源继承此处的设定。
               </p>
-              <div className="resource-registry__add-section">
-                <h4>注册新量纲</h4>
-                <div className="resource-registry__add-row">
-                  <input
-                    type="text"
-                    placeholder="量纲 ID (如 mana)"
-                    value={newDimId}
-                    onChange={(e) => setNewDimId(e.target.value)}
-                  />
-                  <button className="resource-registry__btn resource-registry__btn--primary" onClick={handleAddDim}>
-                    添加
-                  </button>
-                </div>
-              </div>
 
               <div className="resource-registry__list-section">
-                <h4>已注册量纲 ({dimEntries.length})</h4>
-                <div className="resource-registry__table">
+                <div className="resource-registry__table resource-registry__table--cats">
                   <div className="resource-registry__table-row resource-registry__table-row--header">
-                    <span>量纲 ID</span>
+                    <span>类别 ID</span>
+                    <span>显示名</span>
                     <span>默认单位</span>
-                    <span>显示模式</span>
+                    <span>偏好基准</span>
                     <span>颜色</span>
-                    <span>来源</span>
+                    <span></span>
                   </div>
-                  {dimEntries.map(([id, def]) => {
-                    const isBuiltin = id in DimensionRegistry
+                  {categoryEntries.map(([id, def]) => {
+                    const isNew = id.startsWith('__new_')
+                    const draftId = newCatIds[id] ?? ''
                     return (
                       <div className="resource-registry__table-row" key={id}>
-                        <span className="resource-registry__mono">{id}</span>
+                        {isNew ? (
+                          <input
+                            type="text"
+                            placeholder="ID"
+                            value={draftId}
+                            onChange={(e) => setNewCatIds((prev) => ({ ...prev, [id]: e.target.value }))}
+                            onBlur={() => commitCategoryId(id)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') commitCategoryId(id) }}
+                            className="resource-registry__mono"
+                          />
+                        ) : (
+                          <span className="resource-registry__mono">{id}</span>
+                        )}
                         <input
                           type="text"
-                          value={def.default_unit}
-                          onChange={(e) => setDimension(id, { ...def, default_unit: e.target.value })}
+                          value={def.displayName}
+                          onChange={(e) => updateCat(id, { displayName: e.target.value })}
+                        />
+                        <input
+                          type="text"
+                          value={def.base_unit}
+                          onChange={(e) => updateCat(id, { base_unit: e.target.value })}
                           className="resource-registry__mono"
                         />
                         <select
-                          value={def.display_mode}
-                          onChange={(e) => setDimension(id, { ...def, display_mode: e.target.value as DimensionDef['display_mode'] })}
+                          value={def.preferred_time_base}
+                          onChange={(e) => updateCat(id, { preferred_time_base: e.target.value as TimeBase })}
                         >
-                          <option value="rate_per_sec">/s</option>
-                          <option value="rate_per_tick">/t</option>
-                          <option value="per_cycle">/次</option>
+                          <option value="rate_per_sec">/秒</option>
+                          <option value="rate_per_tick">/tick</option>
+                          <option value="per_cycle">/配方</option>
                         </select>
                         <input
                           type="color"
                           value={def.themeColor}
-                          onChange={(e) => setDimension(id, { ...def, themeColor: e.target.value })}
+                          onChange={(e) => updateCat(id, { themeColor: e.target.value })}
                           className="resource-registry__color-input"
                         />
-                        <span className="resource-registry__source-tag">{isBuiltin ? '内置' : '自定义'}</span>
+                        <button
+                          className="resource-registry__btn resource-registry__btn--danger"
+                          onClick={() => removeCat(id)}
+                        >
+                          删除
+                        </button>
                       </div>
                     )
                   })}
+
+                  <button
+                    className="resource-registry__btn resource-registry__btn--primary"
+                    onClick={handleAddCategory}
+                    style={{ justifySelf: 'start' }}
+                  >
+                    + 添加类别
+                  </button>
                 </div>
               </div>
             </>
@@ -133,68 +278,77 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
           {tab === 'overrides' && (
             <>
               <p className="resource-registry__hint">
-                特化覆盖表仅记录需要推翻默认量纲法则的具体资产。例如 <code>energy:gt_eu</code> 中的 <code>gt_eu</code> 在此处覆盖单位为 <code>EU</code>。
+                资源覆盖表为特定资产的单位提供覆盖值。对 <code>energy:thermal_rf</code> 覆盖单位为 <code>RF</code> 意味着：资源标识符为 <code>energy:thermal_rf</code> 时，不使用 <code>energy</code> 类别的默认单位，而使用此处的 <code>RF</code>。
               </p>
-              <div className="resource-registry__add-section">
-                <h4>注册新覆盖</h4>
-                <div className="resource-registry__add-row">
-                  <input
-                    type="text"
-                    placeholder="资产 ID (如 gt_eu)"
-                    value={newOverrideId}
-                    onChange={(e) => setNewOverrideId(e.target.value)}
-                  />
-                  <button className="resource-registry__btn resource-registry__btn--primary" onClick={handleAddOverride}>
-                    添加
-                  </button>
-                </div>
-              </div>
 
               <div className="resource-registry__list-section">
-                <h4>已注册覆盖 ({overrideEntries.length})</h4>
-                <div className="resource-registry__table resource-registry__table--override">
+                <div className="resource-registry__table resource-registry__table--overrides">
                   <div className="resource-registry__table-row resource-registry__table-row--header">
+                    <span>类别</span>
                     <span>资产 ID</span>
-                    <span>单位覆盖</span>
-                    <span>显示模式覆盖</span>
-                    <span>操作</span>
+                    <span>覆盖单位</span>
+                    <span></span>
                   </div>
-                  {overrideEntries.map(([id, def]) => (
-                      <div className="resource-registry__table-row" key={id}>
-                        <span className="resource-registry__mono">{id}</span>
+                  {overrideEntries.map(([fullId, def]) => {
+                    const idx = fullId.lastIndexOf(':')
+                    const cat = idx > 0 ? fullId.slice(0, idx) : ''
+                    const asset = idx > 0 ? fullId.slice(idx + 1) : fullId
+                    const edit = overrideEdits[fullId]
+                    const displayCat = edit?.cat ?? cat
+                    const displayAsset = edit?.asset ?? asset
+
+                    const setEditCat = (v: string) => {
+                      setOverrideEdits((prev) => ({ ...prev, [fullId]: { cat: v, asset: displayAsset } }))
+                    }
+                    const setEditAsset = (v: string) => {
+                      setOverrideEdits((prev) => ({ ...prev, [fullId]: { cat: displayCat, asset: v } }))
+                    }
+
+                    return (
+                      <div className="resource-registry__table-row" key={fullId}>
+                        <select
+                          value={displayCat}
+                          onChange={(e) => setEditCat(e.target.value)}
+                          onBlur={() => commitOverrideKey(fullId)}
+                        >
+                          <option value="">—</option>
+                          {categoryIds.map((cid) => (
+                            <option key={cid} value={cid}>{cid}</option>
+                          ))}
+                        </select>
                         <input
                           type="text"
-                          placeholder="继承量纲默认"
-                          value={def.unit_override ?? ''}
-                          onChange={(e) => {
-                            const val = e.target.value.trim()
-                            setOverride(id, { ...def, unit_override: val || undefined })
-                          }}
+                          placeholder="资产 ID"
+                          value={displayAsset}
+                          onChange={(e) => setEditAsset(e.target.value)}
+                          onBlur={() => commitOverrideKey(fullId)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') commitOverrideKey(fullId) }}
                           className="resource-registry__mono"
                         />
-                        <select
-                          value={def.display_mode_override ?? ''}
-                          onChange={(e) => {
-                            const val = e.target.value
-                            setOverride(id, {
-                              ...def,
-                              display_mode_override: (val || undefined) as DimensionDef['display_mode'] | undefined,
-                            })
-                          }}
-                        >
-                          <option value="">继承量纲</option>
-                          <option value="rate_per_sec">/s</option>
-                          <option value="rate_per_tick">/t</option>
-                          <option value="per_cycle">/次</option>
-                        </select>
+                        <input
+                          type="text"
+                          placeholder="(无覆盖)"
+                          value={def.unit_override ?? ''}
+                          onChange={(e) => updateOv(fullId, { unit_override: e.target.value || undefined })}
+                          className="resource-registry__mono"
+                        />
                         <button
                           className="resource-registry__btn resource-registry__btn--danger"
-                          onClick={() => removeOverride(id)}
+                          onClick={() => removeOv(fullId)}
                         >
                           删除
                         </button>
                       </div>
-                    ))}
+                    )
+                  })}
+
+                  <button
+                    className="resource-registry__btn resource-registry__btn--primary"
+                    onClick={handleAddOverride}
+                    style={{ justifySelf: 'start' }}
+                  >
+                    + 添加覆盖
+                  </button>
                 </div>
               </div>
             </>
@@ -202,7 +356,15 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
         </div>
 
         <footer className="resource-registry__footer">
-          <button className="resource-registry__btn" onClick={onClose}>关闭</button>
+          <button className="resource-registry__btn" onClick={handleCancel}>
+            取消
+          </button>
+          <button className="resource-registry__btn" onClick={handleApply}>
+            应用
+          </button>
+          <button className="resource-registry__btn resource-registry__btn--primary" onClick={handleConfirm}>
+            确定
+          </button>
         </footer>
       </div>
     </div>

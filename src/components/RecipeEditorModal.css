@@ -386,11 +386,11 @@
 }
 
 .recipe-editor__row--resource-route {
-  grid-template-columns: 114px 80px 48px 74px 48px 34px 34px 66px;
+  grid-template-columns: 114px 82px 48px 74px 48px 34px 34px 66px;
 }
 
 .recipe-editor__row--resource-route-header {
-  grid-template-columns: 114px 80px 48px 74px 48px 34px 34px 66px;
+  grid-template-columns: 114px 82px 48px 74px 48px 34px 34px 66px;
   padding: 0 0 4px;
 }
 
@@ -440,7 +440,8 @@
 
 .recipe-editor__row input {
   min-width: 0;
-  padding: 7px 8px;
+  height: 32px;
+  padding: 4px 6px;
   border-radius: 8px;
   border: 1px solid rgba(148, 163, 184, 0.2);
   background: rgba(3, 8, 16, 0.6);

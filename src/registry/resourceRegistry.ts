@@ -1,12 +1,11 @@
 import { create } from 'zustand'
-import type { ResourceCategoryDef, ResourceRegistryState, DimensionDef, ResourceOverride } from './types'
-import { DEFAULT_RESOURCE_CATEGORIES, DimensionRegistry, ResourceOverrideRegistry } from './defaults'
+import type { ResourceCategoryDef, ResourceRegistryState, ResourceOverride } from './types'
+import { DEFAULT_RESOURCE_CATEGORIES, ResourceOverrideRegistry } from './defaults'
 
-const STORAGE_KEY = 'omniflow.resource_registry.v2'
+const STORAGE_KEY = 'omniflow.resource_registry.v4'
 
 type PersistedState = {
   categories: Record<string, ResourceCategoryDef>
-  dimensions: Record<string, DimensionDef>
   overrides: Record<string, ResourceOverride>
 }
 
@@ -42,25 +41,19 @@ function buildInitial(): PersistedState {
     if (!categories[id]) categories[id] = def
   }
 
-  const dimensions: Record<string, DimensionDef> = { ...DimensionRegistry }
-  for (const [id, def] of Object.entries(persisted.dimensions ?? {})) {
-    dimensions[id] = def
-  }
-
   const overrides: Record<string, ResourceOverride> = { ...ResourceOverrideRegistry }
   for (const [id, def] of Object.entries(persisted.overrides ?? {})) {
     overrides[id] = def
   }
 
-  return { categories, dimensions, overrides }
+  return { categories, overrides }
 }
 
 function saveAll(
   categories: Record<string, ResourceCategoryDef>,
-  dimensions: Record<string, DimensionDef>,
   overrides: Record<string, ResourceOverride>,
 ) {
-  persist({ categories, dimensions, overrides })
+  persist({ categories, overrides })
 }
 
 export const useResourceRegistry = create<ResourceRegistryState>((set, get) => ({
@@ -69,7 +62,7 @@ export const useResourceRegistry = create<ResourceRegistryState>((set, get) => (
   addCategory: (def) => {
     set((state) => {
       const next = { ...state.categories, [def.id]: def }
-      saveAll(next, state.dimensions, state.overrides)
+      saveAll(next, state.overrides)
       return { categories: next }
     })
   },
@@ -79,7 +72,7 @@ export const useResourceRegistry = create<ResourceRegistryState>((set, get) => (
       const existing = state.categories[id]
       if (!existing) return state
       const next = { ...state.categories, [id]: { ...existing, ...patch } }
-      saveAll(next, state.dimensions, state.overrides)
+      saveAll(next, state.overrides)
       return { categories: next }
     })
   },
@@ -88,25 +81,17 @@ export const useResourceRegistry = create<ResourceRegistryState>((set, get) => (
     set((state) => {
       const next = { ...state.categories }
       delete next[id]
-      saveAll(next, state.dimensions, state.overrides)
+      saveAll(next, state.overrides)
       return { categories: next }
     })
   },
 
   getCategory: (id) => get().categories[id],
 
-  setDimension: (id, def) => {
-    set((state) => {
-      const next = { ...state.dimensions, [id]: def }
-      saveAll(state.categories, next, state.overrides)
-      return { dimensions: next }
-    })
-  },
-
   setOverride: (id, def) => {
     set((state) => {
       const next = { ...state.overrides, [id]: def }
-      saveAll(state.categories, state.dimensions, next)
+      saveAll(state.categories, next)
       return { overrides: next }
     })
   },
@@ -115,7 +100,7 @@ export const useResourceRegistry = create<ResourceRegistryState>((set, get) => (
     set((state) => {
       const next = { ...state.overrides }
       delete next[id]
-      saveAll(state.categories, state.dimensions, next)
+      saveAll(state.categories, next)
       return { overrides: next }
     })
   },

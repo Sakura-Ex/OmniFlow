@@ -3,7 +3,7 @@ import type { Resource, ResourceCategory, RoutingMode, ComputedNodePayload, Norm
 import { createDefaultModifierState } from './state'
 import { getModifierById } from './registry'
 import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArchetype } from '../data/archetypes/index'
-import { DimensionRegistry } from '../registry/defaults'
+import { DEFAULT_RESOURCE_CATEGORIES } from '../registry/defaults'
 import type { ModifierEffect } from './types'
 
 export const GAME_BASE_TPS = 20
@@ -50,7 +50,7 @@ export function toResource(port: Partial<RecipePort> | Partial<Resource>): Resou
     category: normalizeCategory((port as Partial<Resource>).category ?? (port as Partial<RecipePort>).type),
     id: String((port as Partial<Resource>).id ?? ''),
     amount: normalizeAmount((port as Partial<Resource>).amount),
-    measure_mode: (port as Partial<Resource>).measure_mode,
+    time_base: (port as Partial<Resource>).time_base,
     probability: typeof (port as Partial<Resource>).probability === 'number' ? (port as Partial<Resource>).probability : undefined,
     routing_mode,
     routing_locked: Boolean((port as Partial<Resource>).routing_locked),
@@ -275,11 +275,15 @@ export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayloa
   const dur = Math.max(0.05, ctx.durationSeconds)
 
   function normalizeRate(res: Resource): number {
-    if (res.consumable === false || res.consumable_probability === 0) return 0
-    const mMode = res.measure_mode ?? 'per_cycle'
-    if (mMode === 'rate_per_tick') return res.amount * GAME_BASE_TPS
-    if (mMode === 'rate_per_sec') return res.amount
-    return dur > 0 ? res.amount / dur : MAX_INSTANT_RATE
+    const probability = res.consumable_probability ?? 1
+    if (res.consumable === false || probability === 0) return 0
+    const mMode = res.time_base ?? 'per_cycle'
+    const baseRate = mMode === 'rate_per_tick'
+      ? res.amount * GAME_BASE_TPS
+      : mMode === 'rate_per_sec'
+        ? res.amount
+        : dur > 0 ? res.amount / dur : MAX_INSTANT_RATE
+    return baseRate * probability
   }
 
   const toNormalized = (resources: Resource[]): NormalizedResource[] =>
@@ -287,7 +291,7 @@ export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayloa
       category: res.category,
       id: res.id,
       amount: normalizeRate(res),
-      measure_mode: res.measure_mode ?? 'per_cycle',
+      time_base: res.time_base ?? 'per_cycle',
       consumable: res.consumable,
       consumable_probability: res.consumable_probability,
       probability: res.probability,
@@ -320,9 +324,11 @@ export function flattenForBackend(payload: ComputedNodePayload): {
   const inputs: Record<string, number> = {}
   const outputs: Record<string, number> = {}
 
+  const knownCategories = new Set(DEFAULT_RESOURCE_CATEGORIES.map((c) => c.id))
+
   const isUnknownResource = (category: string): boolean => {
     const dimensionId = category.includes(':') ? category.slice(0, category.lastIndexOf(':')) : category
-    return !DimensionRegistry[dimensionId]
+    return !knownCategories.has(dimensionId)
   }
 
   for (const r of [...payload.recipe_inputs, ...payload.utility_inputs]) {
@@ -358,7 +364,7 @@ export function getCalculatedRates(nodeData: RecipeNodeData): CalculatedRates {
     category: nr.category,
     id: nr.id,
     amount: nr.amount,
-    measure_mode: nr.measure_mode,
+    time_base: nr.time_base,
     consumable: nr.consumable,
     probability: nr.probability,
     routing_mode: nr.routing_mode,

@@ -2,13 +2,13 @@ export type ResourceCategory = string
 
 export type RoutingMode = 'global' | 'wired'
 
-export type MeasureMode = 'per_cycle' | 'rate_per_tick' | 'rate_per_sec'
+export type TimeBase = 'per_cycle' | 'rate_per_tick' | 'rate_per_sec'
 
 export interface Resource {
   category: ResourceCategory
   id: string
   amount: number
-  measure_mode?: MeasureMode
+  time_base?: TimeBase
   consumable?: boolean
   consumable_probability?: number
   probability?: number
@@ -25,7 +25,7 @@ export interface NormalizedResource {
   category: ResourceCategory
   id: string
   amount: number
-  measure_mode?: MeasureMode
+  time_base?: TimeBase
   consumable?: boolean
   consumable_probability?: number
   probability?: number
@@ -50,10 +50,11 @@ export interface ComputedNodePayload {
 
 export interface UtilityDef {
   type: string
+  resource_id?: string
   amount_mutable: boolean
   routing_mode: RoutingMode
   routing_locked: boolean
-  measure_mode?: MeasureMode
+  time_base?: TimeBase
 }
 
 export interface MachineArchetype {
@@ -61,4 +62,11 @@ export interface MachineArchetype {
   name: string
   fixed_utilities: Record<string, UtilityDef>
   default_modifiers: string[]
+}
+
+export interface ResourceDef {
+  fullId: string
+  displayName?: string
+  description?: string
+  tags?: string[]
 }

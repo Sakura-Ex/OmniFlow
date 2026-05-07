@@ -25,10 +25,10 @@ function parseItemKey(item: string): { dimension: string; name: string } {
 }
 
 function HUDResourceRow({ item, value, isGlobal }: { item: string; value: number; isGlobal: boolean }) {
-  const userDims = useResourceRegistry((state) => state.dimensions)
+  const userCategories = useResourceRegistry((state) => state.categories)
   const userOverrides = useResourceRegistry((state) => state.overrides)
   const { dimension, name } = parseItemKey(item)
-  const props = resolveResourceProps(item, userDims, userOverrides)
+  const props = resolveResourceProps(item, userCategories, userOverrides)
   const hexColor = props.themeColor
 
   return (

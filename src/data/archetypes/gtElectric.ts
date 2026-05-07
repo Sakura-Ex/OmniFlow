@@ -6,10 +6,11 @@ export const gtElectricArchetype: MachineArchetype = {
   fixed_utilities: {
     gt_energy: {
       type: 'energy:gt_eu',
+      resource_id: 'gt_eu',
       amount_mutable: true,
       routing_mode: 'global',
       routing_locked: true,
-      measure_mode: 'rate_per_tick',
+      time_base: 'rate_per_tick',
     },
   },
   default_modifiers: ['gt_multiblock'],

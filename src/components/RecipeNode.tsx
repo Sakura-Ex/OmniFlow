@@ -7,13 +7,13 @@ import { runModifierPipeline } from '../modifiers/calculate'
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { resolveCategoryDef } from '../utils/endpointNorm'
 import type { ResourceCategoryDef } from '../registry/types'
-import type { MeasureMode, NormalizedResource } from '../types/types'
+import type { TimeBase, NormalizedResource } from '../types/types'
 import './RecipeNode.css'
 
 function formatPortAmount(
   ratePerSec: number,
   catDef: ResourceCategoryDef,
-  mMode?: MeasureMode,
+  mMode?: TimeBase,
   durationSeconds?: number
 ) {
   const dur = typeof durationSeconds === 'number' && durationSeconds > 0 ? durationSeconds : 1
@@ -25,7 +25,7 @@ function formatPortAmount(
   return `${rounded} ${catDef.base_unit}`
 }
 
-function formatRateValue(value: number | undefined, mMode?: MeasureMode): string {
+function formatRateValue(value: number | undefined, mMode?: TimeBase): string {
   if (typeof value !== 'number' || Number.isNaN(value)) return ''
   const displayValue = mMode === 'rate_per_tick' ? value / 20 : value
   const suffix = mMode === 'rate_per_tick' ? '/t' : '/s'
@@ -47,7 +47,7 @@ function formatPercent(value: number) {
 export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   const { onEdit, onAutoFill } = useRecipeEditor()
   const { updateNodeData } = useNodeData()
-  const userDims = useResourceRegistry((state) => state.dimensions)
+  const userCategories = useResourceRegistry((state) => state.categories)
   const userOverrides = useResourceRegistry((state) => state.overrides)
   const payload = runModifierPipeline(data)
   const hasZeroOutput =
@@ -93,9 +93,9 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   ) =>
     resources.map((res, index) => {
       const typeId = res.utility_type ?? res.category
-      const catDef = resolveCategoryDef(typeId, userDims, userOverrides)
+      const catDef = resolveCategoryDef(typeId, userCategories, userOverrides)
       const isUnknown = catDef.id === '_fallback'
-      const mMode: MeasureMode | undefined = res.measure_mode
+      const mMode: TimeBase | undefined = res.time_base
       const hexColor = catDef.themeColor
       const glowColor = hexColor.startsWith('#')
         ? `${hexColor}${Math.round(0.38 * 255)

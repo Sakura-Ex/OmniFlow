@@ -1,5 +1,5 @@
-import { useMemo, useState, useEffect, useRef, type Dispatch, type SetStateAction } from 'react'
-import type { Resource, MeasureMode } from '../types/types'
+import { useMemo, useState, useEffect, useRef, useCallback, type Dispatch, type SetStateAction } from 'react'
+import type { Resource, TimeBase } from '../types/types'
 import { GT_VOLTAGE_TIERS, evaluateGtMultiblockState } from '../modifiers/gtMultiblock'
 import { listModifiers } from '../modifiers/registry'
 import { createDefaultModifierState, patchModifierSchemaWithNodeResources } from '../modifiers/state'
@@ -7,6 +7,8 @@ import { getMachineArchetype, machineArchetypes } from '../data/archetypes/index
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { buildUnitSuffix } from '../registry/units'
 import { resolveCategoryDef, resolveResourceProps } from '../utils/endpointNorm'
+import { useResourceIndex } from '../hooks/useResourceIndex'
+import { ResourceDefinitionList, RECIPE_INPUT_COLUMNS, RECIPE_OUTPUT_COLUMNS, MACHINE_UTILITY_COLUMNS } from './ResourceDefinitionList'
 
 type SettingsUIProps = {
   machineName: string
@@ -30,35 +32,6 @@ type SettingsUIProps = {
   previewPowerActualEu: number
 }
 
-const emptyResource = (): Resource => ({
-  category: 'item',
-  id: '',
-  amount: 1,
-  measure_mode: 'per_cycle',
-  routing_mode: 'wired',
-  routing_locked: false,
-  _uid: crypto.randomUUID(),
-})
-
-function updateResourceAtIndex(
-  setList: Dispatch<SetStateAction<Resource[]>>,
-  index: number,
-  patch: Partial<Resource>
-) {
-  setList((prev) => prev.map((entry, idx) => (idx === index ? { ...entry, ...patch } : entry)))
-}
-
-function addResource(setList: Dispatch<SetStateAction<Resource[]>>) {
-  setList((prev) => prev.concat(emptyResource()))
-}
-
-function removeResource(
-  setList: Dispatch<SetStateAction<Resource[]>>,
-  index: number
-) {
-  setList((prev) => prev.filter((_, idx) => idx !== index))
-}
-
 function formatRate(value: number | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '0.00'
   return value.toFixed(2)
@@ -78,7 +51,8 @@ function buildRateMap(rates: Resource[]): Map<string, number> {
   const map = new Map<string, number>()
   for (const rate of rates) {
     if (!rate.id) continue
-    map.set(rate.id, (map.get(rate.id) ?? 0) + rate.amount)
+    const key = `${rate.category}:${rate.id}`
+    map.set(key, (map.get(key) ?? 0) + rate.amount)
   }
   return map
 }
@@ -120,12 +94,25 @@ export function SettingsUI(props: SettingsUIProps) {
   const modifiers = listModifiers()
   const archetype = getMachineArchetype(archetypeId)
   const registryCategories = useResourceRegistry((state) => state.categories)
-  const userDims = useResourceRegistry((state) => state.dimensions)
   const userOverrides = useResourceRegistry((state) => state.overrides)
+  const { ensureEntry } = useResourceIndex()
+
+  const emptyResource = useCallback((): Resource => ({
+    category: 'item',
+    id: '',
+    amount: 1,
+    time_base: 'per_cycle',
+    routing_mode: 'wired',
+    routing_locked: false,
+    _uid: crypto.randomUUID(),
+  }), [])
+
   const categoryOptions = useMemo(
     () => Object.values(registryCategories).map((cat) => ({ id: cat.id, displayName: cat.displayName })),
     [registryCategories]
   )
+  const { entries: resourceIndex } = useResourceIndex()
+  const resourceSuggestions = useMemo(() => Object.keys(resourceIndex), [resourceIndex])
   const [dropdownOpen, setDropdownOpen] = useState<Record<string, boolean>>({})
   const [modifierPopoverOpen, setModifierPopoverOpen] = useState(false)
   const modifierPopoverRef = useRef<HTMLDivElement | null>(null)
@@ -139,10 +126,6 @@ export function SettingsUI(props: SettingsUIProps) {
     document.addEventListener('mousedown', handleClick, true)
     return () => document.removeEventListener('mousedown', handleClick, true)
   }, [modifierPopoverOpen])
-  const inputRows = baseInputs.map((resource, index) => ({ resource, index }))
-  const outputRows = baseOutputs.map((resource, index) => ({ resource, index }))
-  const materialInputRows = inputRows.filter(({ resource }) => !resource.is_utility)
-  const utilityInputRows = inputRows.filter(({ resource }) => resource.is_utility)
   const inputRateMap = useMemo(() => buildRateMap(previewInputRates), [previewInputRates])
   const outputRateMap = useMemo(() => buildRateMap(previewOutputRates), [previewOutputRates])
   const availableModifiers = useMemo(
@@ -156,17 +139,47 @@ export function SettingsUI(props: SettingsUIProps) {
   )
   const defaultModifierSet = useMemo(() => new Set(archetype.default_modifiers), [archetype.default_modifiers])
 
-  const toggleRoutingAtIndex = (
-    setList: Dispatch<SetStateAction<Resource[]>>,
-    index: number
-  ) => {
-    setList((prev) => prev.map((entry, idx) => {
-      if (idx !== index) return entry
-      if (entry.routing_locked) return entry
-      const nextMode = entry.routing_mode === 'global' ? 'wired' : 'global'
-      return { ...entry, routing_mode: nextMode }
+  const handleUpdateInput = useCallback((index: number, patch: Partial<Resource>) => {
+    setBaseInputs((prev) => prev.map((item, i) => {
+      if (i !== index) return item
+      const merged = { ...item, ...patch }
+      if (patch.category && patch.category !== item.category) {
+        const catDef = registryCategories[patch.category]
+        if (catDef?.preferred_time_base) {
+          merged.time_base = catDef.preferred_time_base
+        }
+      }
+      return merged
     }))
-  }
+  }, [setBaseInputs, registryCategories])
+  const handleUpdateOutput = useCallback((index: number, patch: Partial<Resource>) => {
+    setBaseOutputs((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)))
+  }, [setBaseOutputs])
+
+  const handleAddInput = useCallback(() => {
+    setBaseInputs((prev) => [...prev, emptyResource()])
+  }, [setBaseInputs, emptyResource])
+  const handleAddOutput = useCallback(() => {
+    setBaseOutputs((prev) => [...prev, emptyResource()])
+  }, [setBaseOutputs, emptyResource])
+  const handleRemoveInput = useCallback((index: number) => {
+    setBaseInputs((prev) => prev.filter((_, i) => i !== index))
+  }, [setBaseInputs])
+  const handleRemoveOutput = useCallback((index: number) => {
+    setBaseOutputs((prev) => prev.filter((_, i) => i !== index))
+  }, [setBaseOutputs])
+  const handleToggleInputRouting = useCallback((index: number) => {
+    setBaseInputs((prev) => prev.map((item, i) => {
+      if (i !== index || item.routing_locked) return item
+      return { ...item, routing_mode: item.routing_mode === 'global' ? 'wired' : 'global' }
+    }))
+  }, [setBaseInputs])
+  const handleToggleOutputRouting = useCallback((index: number) => {
+    setBaseOutputs((prev) => prev.map((item, i) => {
+      if (i !== index || item.routing_locked) return item
+      return { ...item, routing_mode: item.routing_mode === 'global' ? 'wired' : 'global' }
+    }))
+  }, [setBaseOutputs])
 
   const addModifier = (modifierId: string) => {
     setActiveModifiers((prev) => (prev.includes(modifierId) ? prev : [...prev, modifierId]))
@@ -202,101 +215,20 @@ export function SettingsUI(props: SettingsUIProps) {
   return (
     <div className="recipe-settings__layout">
       <section className="recipe-settings__column">
-        <div className="recipe-settings__column-header">
-          <h4>Inputs</h4>
-          <button className="recipe-editor__btn recipe-editor__btn--ghost" onClick={() => addResource(setBaseInputs)}>
-            + 添加输入
-          </button>
-        </div>
-        {materialInputRows.length === 0 && <p className="recipe-editor__empty">暂无输入资源</p>}
-        {materialInputRows.length > 0 && (
-          <div className="recipe-editor__row recipe-editor__row--resource-route-header">
-            <span className="recipe-editor__row-header-item">ID</span>
-            <span className="recipe-editor__row-header-item">数量</span>
-            <span className="recipe-editor__row-header-item">度量</span>
-            <span className="recipe-editor__row-header-item">类型</span>
-            <span className="recipe-editor__row-header-item">消耗几率</span>
-            <span className="recipe-editor__row-header-item"></span>
-            <span className="recipe-editor__row-header-item"></span>
-            <span className="recipe-editor__row-header-item">实际速率</span>
-          </div>
-        )}
-        {materialInputRows.map(({ resource: input, index }) => {
-          const rate = inputRateMap.get(input.id)
-          const catDef = registryCategories[input.category]
-          const suffix = catDef ? buildUnitSuffix(catDef.base_unit, input.measure_mode) : input.category
-          const rateText = rate !== undefined ? `${formatRate(rate)}/s` : ''
-
-          return (
-            <div className="recipe-editor__row recipe-editor__row--resource-route" key={input._uid ?? `input-${index}`}>
-              <input
-                type="text"
-                placeholder="资源 ID"
-                value={input.id}
-                onChange={(e) => updateResourceAtIndex(setBaseInputs, index, { id: e.target.value })}
-              />
-              <div className="recipe-editor__input-wrap">
-                <input
-                  type="number"
-                  min={0}
-                  value={input.amount}
-                  onChange={(e) => updateResourceAtIndex(setBaseInputs, index, { amount: Number(e.target.value) })}
-                />
-                <span className="recipe-editor__input-suffix">{suffix}</span>
-              </div>
-              <select
-                value={input.measure_mode ?? 'per_cycle'}
-                onChange={(e) => updateResourceAtIndex(setBaseInputs, index, { measure_mode: e.target.value as MeasureMode })}
-              >
-                <option value="per_cycle">/次</option>
-                <option value="rate_per_tick">/t</option>
-                <option value="rate_per_sec">/s</option>
-              </select>
-              <select
-                value={input.category}
-                onChange={(e) => updateResourceAtIndex(setBaseInputs, index, { category: e.target.value })}
-              >
-                {categoryOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>{opt.displayName}</option>
-                ))}
-              </select>
-              <div className="recipe-editor__input-wrap">
-                <input
-                  type="number"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={input.consumable === false ? 0 : (input.consumable_probability ?? 1)}
-                  onChange={(e) => {
-                    const v = Math.max(0, Math.min(1, Number(e.target.value) || 0))
-                    updateResourceAtIndex(setBaseInputs, index, {
-                      consumable: v === 0 ? false : undefined,
-                      consumable_probability: v,
-                    })
-                  }}
-                />
-              </div>
-              <button
-                className={`recipe-editor__route-btn${input.routing_mode === 'global' ? ' is-global' : ''}`}
-                onClick={() => toggleRoutingAtIndex(setBaseInputs, index)}
-                title={input.routing_mode === 'global' ? '当前：全局总线（点击切换到有线）' : '当前：有线连接（点击切换到全局总线）'}
-                type="button"
-              >
-                🌐
-              </button>
-              <button
-                className="recipe-editor__icon-action recipe-editor__icon-action--danger"
-                onClick={() => removeResource(setBaseInputs, index)}
-                title="删除该输入"
-                aria-label="删除该输入"
-                type="button"
-              >
-                ✕
-              </button>
-              <span className="recipe-editor__row-rate">{rateText}</span>
-            </div>
-          )
-        })}
+        <ResourceDefinitionList<Resource>
+          items={baseInputs.filter((r) => !r.is_utility)}
+          columns={RECIPE_INPUT_COLUMNS}
+          emptyMessage="暂无输入资源"
+          addLabel="添加输入"
+          onUpdateItem={handleUpdateInput}
+          onAddItem={handleAddInput}
+          onRemoveItem={handleRemoveInput}
+          onToggleRoutingItem={handleToggleInputRouting}
+          rateMap={inputRateMap}
+          suggestions={resourceSuggestions}
+          categoryOptions={categoryOptions}
+          probabilityLabel="消耗几率"
+        />
       </section>
 
       <section className="recipe-settings__column recipe-settings__column--core">
@@ -337,63 +269,18 @@ export function SettingsUI(props: SettingsUIProps) {
 
         <div className="recipe-settings__modifier-pool">
           <h5>Machine Utilities</h5>
-          {utilityInputRows.length === 0 && <p className="recipe-editor__empty">当前范式无固定公用设施</p>}
-          {utilityInputRows.map(({ resource: input, index }) => {
-            const utilityDef = archetype.fixed_utilities[input.id]
-            const isLockedRoute = utilityDef?.routing_locked ?? input.routing_locked
-            const isAmountMutable = utilityDef?.amount_mutable ?? input.amount_mutable ?? true
-            const isReadOnlyTag = !isAmountMutable
-            const typeId = input.utility_type ?? input.id
-            const catDef = resolveCategoryDef(typeId, userDims, userOverrides)
-
-            if (isReadOnlyTag) {
-              const utilSuffix = buildUnitSuffix(catDef.base_unit, input.measure_mode)
-              return (
-                <div className="recipe-settings__utility-label" key={input._uid ?? `utility-${index}`}>
-                  <span className="recipe-settings__utility-label-text">
-                    {catDef.displayName} ({input.id}) : {input.amount} {utilSuffix}
-                  </span>
-                  <span className="recipe-settings__utility-badges">
-                    <span className="recipe-settings__utility-badge">{input.routing_mode === 'global' ? '🌐' : '🔌'}</span>
-                    <span className="recipe-settings__utility-badge">🔒</span>
-                  </span>
-                </div>
-              )
-            }
-
-            const utilSuffix = buildUnitSuffix(catDef.base_unit, input.measure_mode)
-            const actualText = catDef.id !== '_fallback'
-              ? `${formatPower(previewPowerActualEu)} ${utilSuffix}`
-              : ''
-
-            return (
-              <div className="recipe-editor__row recipe-editor__row--utility" key={input._uid ?? `utility-${index}`}>
-                <span className="recipe-editor__row-label">{catDef.displayName}</span>
-                <div className="recipe-editor__input-wrap">
-                  <input
-                    type="number"
-                    min={0}
-                    value={input.amount}
-                    disabled={!isAmountMutable}
-                    onChange={(e) => updateResourceAtIndex(setBaseInputs, index, { amount: Number(e.target.value) })}
-                  />
-                  <span className="recipe-editor__input-suffix">{utilSuffix}</span>
-                </div>
-                <span></span>
-                <button
-                  className={`recipe-editor__route-btn${input.routing_mode === 'global' ? ' is-global' : ''}`}
-                  onClick={() => toggleRoutingAtIndex(setBaseInputs, index)}
-                  disabled={isLockedRoute}
-                  title={isLockedRoute ? '该范式锁定路由模式，不可切换' : input.routing_mode === 'global' ? '当前：全局总线（点击切换到有线）' : '当前：有线连接（点击切换到全局总线）'}
-                  type="button"
-                >
-                  🌐
-                </button>
-                <button className="recipe-editor__icon-action" disabled title="范式固定槽位不可删除" aria-label="范式固定槽位不可删除" type="button">🔒</button>
-                <span className="recipe-editor__row-rate">{actualText}</span>
-              </div>
-            )
-          })}
+          <ResourceDefinitionList<Resource>
+            items={baseInputs.filter((r) => r.is_utility)}
+            columns={MACHINE_UTILITY_COLUMNS}
+            emptyMessage="当前范式无固定公用设施"
+            addLabel="添加设施"
+            onUpdateItem={handleUpdateInput}
+            onAddItem={handleAddInput}
+            onRemoveItem={handleRemoveInput}
+            onToggleRoutingItem={handleToggleInputRouting}
+            rateMap={inputRateMap}
+            categoryOptions={categoryOptions}
+          />
         </div>
 
         <div className="recipe-settings__modifier-pool">
@@ -700,100 +587,20 @@ export function SettingsUI(props: SettingsUIProps) {
       </section>
 
       <section className="recipe-settings__column">
-        <div className="recipe-settings__column-header">
-          <h4>Outputs</h4>
-          <button className="recipe-editor__btn recipe-editor__btn--ghost" onClick={() => addResource(setBaseOutputs)}>
-            + 添加输出
-          </button>
-        </div>
-        {outputRows.length === 0 && <p className="recipe-editor__empty">暂无输出资源</p>}
-        {outputRows.length > 0 && (
-          <div className="recipe-editor__row recipe-editor__row--resource-route-header">
-            <span className="recipe-editor__row-header-item">ID</span>
-            <span className="recipe-editor__row-header-item">数量</span>
-            <span className="recipe-editor__row-header-item">度量</span>
-            <span className="recipe-editor__row-header-item">类型</span>
-            <span className="recipe-editor__row-header-item">产出几率</span>
-            <span className="recipe-editor__row-header-item"></span>
-            <span className="recipe-editor__row-header-item"></span>
-            <span className="recipe-editor__row-header-item">实际速率</span>
-          </div>
-        )}
-        {outputRows.map(({ resource: output, index }) => {
-          const rate = outputRateMap.get(output.id)
-          const catDef = registryCategories[output.category]
-          const suffix = catDef ? buildUnitSuffix(catDef.base_unit, output.measure_mode) : output.category
-          const rateText = rate !== undefined ? `${formatRate(rate)}/s` : ''
-          return (
-            <div className="recipe-editor__row recipe-editor__row--resource-route" key={output._uid ?? `output-${index}`}>
-              <input
-                type="text"
-                placeholder="资源 ID"
-                value={output.id}
-                onChange={(e) => updateResourceAtIndex(setBaseOutputs, index, { id: e.target.value })}
-              />
-              <div className="recipe-editor__input-wrap">
-                <input
-                  type="number"
-                  min={0}
-                  value={output.amount}
-                  onChange={(e) => updateResourceAtIndex(setBaseOutputs, index, { amount: Number(e.target.value) })}
-                />
-                <span className="recipe-editor__input-suffix">{suffix}</span>
-              </div>
-              <select
-                value={output.measure_mode ?? 'per_cycle'}
-                onChange={(e) => updateResourceAtIndex(setBaseOutputs, index, { measure_mode: e.target.value as MeasureMode })}
-              >
-                <option value="per_cycle">/次</option>
-                <option value="rate_per_tick">/t</option>
-                <option value="rate_per_sec">/s</option>
-              </select>
-              <select
-                value={output.category}
-                onChange={(e) => updateResourceAtIndex(setBaseOutputs, index, { category: e.target.value })}
-              >
-                {categoryOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>{opt.displayName}</option>
-                ))}
-              </select>
-              <div className="recipe-editor__input-wrap">
-                <input
-                  type="number"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={output.consumable === false ? 0 : (output.consumable_probability ?? 1)}
-                  onChange={(e) => {
-                    const v = Math.max(0, Math.min(1, Number(e.target.value) || 0))
-                    updateResourceAtIndex(setBaseOutputs, index, {
-                      consumable: v === 0 ? false : undefined,
-                      consumable_probability: v,
-                    })
-                  }}
-                />
-              </div>
-              <button
-                className={`recipe-editor__route-btn${output.routing_mode === 'global' ? ' is-global' : ''}`}
-                onClick={() => toggleRoutingAtIndex(setBaseOutputs, index)}
-                title={output.routing_mode === 'global' ? '当前：全局总线（点击切换到有线）' : '当前：有线连接（点击切换到全局总线）'}
-                type="button"
-              >
-                🌐
-              </button>
-              <button
-                className="recipe-editor__icon-action recipe-editor__icon-action--danger"
-                onClick={() => removeResource(setBaseOutputs, index)}
-                title="删除该输出"
-                aria-label="删除该输出"
-                type="button"
-              >
-                ✕
-              </button>
-              <span className="recipe-editor__row-rate">{rateText}</span>
-            </div>
-          )
-        })}
+        <ResourceDefinitionList<Resource>
+          items={baseOutputs}
+          columns={RECIPE_OUTPUT_COLUMNS}
+          emptyMessage="暂无输出资源"
+          addLabel="添加输出"
+          onUpdateItem={handleUpdateOutput}
+          onAddItem={handleAddOutput}
+          onRemoveItem={handleRemoveOutput}
+          onToggleRoutingItem={handleToggleOutputRouting}
+          rateMap={outputRateMap}
+          suggestions={resourceSuggestions}
+          categoryOptions={categoryOptions}
+          probabilityLabel="产出几率"
+        />
       </section>
 
     </div>

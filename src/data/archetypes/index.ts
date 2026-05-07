@@ -40,25 +40,20 @@ export function applyArchetypeToInputs(
   }
 
   const normalizedMaterials = inputs.filter((entry) => !entry.is_utility)
-  const existingById = new Map(inputs.map((entry) => [entry.id, entry]))
+  const existingByCategoryId = new Map(inputs.map((entry) => [`${entry.category}:${entry.id}`, entry]))
 
   const normalizedUtilities = utilityEntries.map(([utilityId, def]) => {
-    let existing = existingById.get(utilityId)
-    if (!existing) {
-      existing = inputs.find((entry) => entry.is_utility && (
-        entry.category === def.type
-        || (def.type === 'energy:gt_eu' && entry.category === 'gt:eu')
-        || (def.type === 'fluid:water' && entry.category === 'utility:water')
-      )) ?? undefined
-    }
+    const resourceId = def.resource_id ?? (def.type.includes(':') ? def.type.split(':').pop()! : utilityId)
+    const key = `${def.type}:${resourceId}`
+    const existing = existingByCategoryId.get(key)
     const defaultAmount = deriveUtilityAmount(def.type, metadata, existing?.amount ?? 0)
     const routingMode: RoutingMode = existing?.routing_mode ?? def.routing_mode
 
     return {
       category: def.type,
-      id: utilityId,
+      id: resourceId,
       amount: typeof existing?.amount === 'number' ? existing.amount : defaultAmount,
-      measure_mode: def.measure_mode ?? existing?.measure_mode ?? 'per_cycle',
+      time_base: def.time_base ?? existing?.time_base ?? 'per_cycle',
       probability: existing?.probability,
       _uid: existing?._uid ?? `utility-${utilityId}`,
       is_utility: true,
@@ -78,5 +73,7 @@ export function getUtilityDefForResource(
 ): UtilityDef | null {
   if (!resource.is_utility) return null
   const archetype = getMachineArchetype(archetypeId)
-  return archetype.fixed_utilities[resource.id] ?? null
+  return Object.values(archetype.fixed_utilities).find(
+    (def) => def.type === resource.category && (def.resource_id ?? def.type.split(':').pop()) === resource.id
+  ) ?? null
 }

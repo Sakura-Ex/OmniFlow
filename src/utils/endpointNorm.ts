@@ -1,25 +1,28 @@
 import type { EndpointPort, SourceNodeData, TargetNodeData } from '../types/recipe'
-import type { ResourceCategoryDef, DimensionDef, ResourceOverride } from '../registry/types'
-import { FALLBACK_CATEGORY, resolveResourceProps, DimensionRegistry } from '../registry/defaults'
+import type { ResourceCategoryDef, ResourceOverride } from '../registry/types'
+import { FALLBACK_CATEGORY, resolveResourceProps } from '../registry/defaults'
 
-export { resolveResourceProps } from '../registry/defaults'
+export { resolveResourceProps }
 
 export function resolveCategoryDef(
   typeId?: string | null,
-  userDimensions?: Record<string, DimensionDef>,
+  userCategories?: Record<string, ResourceCategoryDef>,
   userOverrides?: Record<string, ResourceOverride>,
 ): ResourceCategoryDef {
   if (!typeId) return FALLBACK_CATEGORY
   const idx = typeId.lastIndexOf(':')
-  const dimensionId = idx > 0 ? typeId.slice(0, idx) : typeId
-  const dimDef = userDimensions?.[dimensionId] ?? DimensionRegistry[dimensionId]
-  const props = resolveResourceProps(typeId, userDimensions, userOverrides)
+  const categoryId = idx > 0 ? typeId.slice(0, idx) : typeId
+
+  const catDef = userCategories?.[typeId] ?? userCategories?.[categoryId]
+  if (catDef) return catDef
+
+  const override = userOverrides?.[typeId]
   return {
     id: typeId,
-    displayName: dimDef ? dimensionId : typeId,
-    base_unit: props.unit,
-    themeColor: props.themeColor,
-    defaultRouting: 'wired',
+    displayName: typeId,
+    base_unit: override?.unit_override ?? '?',
+    themeColor: FALLBACK_CATEGORY.themeColor,
+    preferred_time_base: FALLBACK_CATEGORY.preferred_time_base,
   }
 }
 

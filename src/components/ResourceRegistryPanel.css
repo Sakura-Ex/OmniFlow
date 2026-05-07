@@ -11,7 +11,7 @@
 
 .resource-registry__modal {
   width: min(800px, calc(100vw - 40px));
-  max-height: calc(100vh - 64px);
+  height: min(560px, calc(100vh - 64px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -172,8 +172,16 @@
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
 
-.resource-registry__table--override .resource-registry__table-row {
-  grid-template-columns: 1fr 1fr 140px 64px;
+.resource-registry__table--cats .resource-registry__table-row {
+  grid-template-columns: 110px 1fr 80px 100px 40px 64px;
+}
+
+.resource-registry__table--overrides .resource-registry__table-row {
+  grid-template-columns: 110px 1fr 140px 64px;
+}
+
+.resource-registry__table--overrides .resource-registry__table-row--header {
+  grid-template-columns: 110px 1fr 140px 64px;
 }
 
 .resource-registry__source-tag {
