@@ -35,14 +35,6 @@ app.add_middleware(
 # =====================================================================
 # 2. Pydantic 数据模型定义 (API 契约)
 # =====================================================================
-class RecipePort(BaseModel):
-    id: str = Field(..., description="物品/流体 ID")
-    type: Optional[str] = Field(None, description="兼容旧字段: 端口类型 item/fluid")
-    category: Optional[str] = Field(None, description="统一资源类别 item/fluid/energy/stress/heat")
-    amount: float = Field(..., description="配方消耗/产出数量")
-    probability: Optional[float] = Field(None, description="概率产出权重")
-
-
 class RecipeMetadata(BaseModel):
     eu_per_tick: Optional[float] = Field(None, description="EU/t")
     rf_per_tick: Optional[float] = Field(None, description="RF/t")
@@ -57,9 +49,9 @@ class RecipeNodeData(BaseModel):
     recipe_id: str = Field(..., description="配方 ID")
     machine_name: str = Field(..., description="机器名称")
     system: Optional[str] = Field(None, description="所属模组")
-    duration_ticks: float = Field(..., description="配方耗时 ticks")
-    inputs: List[RecipePort] = Field(default_factory=list, description="输入端口")
-    outputs: List[RecipePort] = Field(default_factory=list, description="输出端口")
+    duration_ticks: float = Field(20.0, description="归一化后固定为 20 (所有速率为 /s)")
+    inputs: Dict[str, float] = Field(default_factory=dict, description="输入速率: {category:id → rate/s}")
+    outputs: Dict[str, float] = Field(default_factory=dict, description="输出速率: {category:id → rate/s}")
     mode: Optional[str] = Field(None, description="运行模式: auto|limit；None 时回退到 is_auto")
     is_auto: bool = Field(True, description="已弃用，由mode替代")
     manual_machines: Optional[float] = Field(None, description="手动设定产能上限机器数量")
@@ -144,10 +136,10 @@ async def calculate_flow(request: CalculateRequest):
 
     for recipe in recipe_nodes:
         recipe_data: RecipeNodeData = recipe["data"]
-        for port in recipe_data.inputs:
-            ensure_item(port.id)
-        for port in recipe_data.outputs:
-            ensure_item(port.id)
+        for item_id in recipe_data.inputs:
+            ensure_item(item_id)
+        for item_id in recipe_data.outputs:
+            ensure_item(item_id)
 
     # 额外补齐只在 source/target 中出现的物品，避免缺失行
     for source in source_nodes:
@@ -162,13 +154,6 @@ async def calculate_flow(request: CalculateRequest):
     source_start = recipe_count
     sink_start = recipe_count + source_count
     total_vars = recipe_count + source_count + sink_count
-    ticks_per_second = 20.0
-    max_instant_rate = 1e9
-
-    def safe_rate(amount: float, duration_ticks: float) -> float:
-        if duration_ticks and duration_ticks > 0:
-            return amount / (duration_ticks / ticks_per_second)
-        return max_instant_rate
 
     item_rows: Dict[str, np.ndarray] = {
         item_id: np.zeros(total_vars, dtype=float)
@@ -176,10 +161,10 @@ async def calculate_flow(request: CalculateRequest):
     }
     for col, recipe in enumerate(recipe_nodes):
         recipe_data: RecipeNodeData = recipe["data"]
-        for output in recipe_data.outputs:
-            item_rows[output.id][col] += safe_rate(output.amount, recipe_data.duration_ticks)
-        for input_port in recipe_data.inputs:
-            item_rows[input_port.id][col] -= safe_rate(input_port.amount, recipe_data.duration_ticks)
+        for item_id, rate in recipe_data.outputs.items():
+            item_rows[item_id][col] += rate
+        for item_id, rate in recipe_data.inputs.items():
+            item_rows[item_id][col] -= rate
 
     # 步骤 3：构建目标函数 c 与变量边界 bounds
     c = np.zeros(total_vars, dtype=float)

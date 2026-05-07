@@ -77,6 +77,7 @@ export default function App() {
     lastSystemOutputs,
     globalInputIds,
     globalOutputIds,
+    capexList,
     setSystemInputs,
     setSystemOutputs,
     setLastSystemInputs,
@@ -223,6 +224,7 @@ export default function App() {
           systemOutputs={systemOutputs}
           globalInputIds={globalInputIds}
           globalOutputIds={globalOutputIds}
+          capexList={capexList}
         />
         <input
           ref={fileInputRef}

@@ -10,7 +10,7 @@
 }
 
 .recipe-editor__modal {
-  width: min(1520px, calc(100vw - 40px));
+  width: min(1700px, calc(100vw - 40px));
   height: calc(100vh - 64px);
   max-height: calc(100vh - 64px);
   display: flex;
@@ -386,11 +386,11 @@
 }
 
 .recipe-editor__row--resource-route {
-  grid-template-columns: 114px 80px 48px 74px 34px 34px 66px;
+  grid-template-columns: 114px 80px 48px 74px 48px 34px 34px 66px;
 }
 
 .recipe-editor__row--resource-route-header {
-  grid-template-columns: 114px 80px 48px 74px 34px 34px 66px;
+  grid-template-columns: 114px 80px 48px 74px 48px 34px 34px 66px;
   padding: 0 0 4px;
 }
 

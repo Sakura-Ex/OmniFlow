@@ -215,6 +215,7 @@ export function SettingsUI(props: SettingsUIProps) {
             <span className="recipe-editor__row-header-item">数量</span>
             <span className="recipe-editor__row-header-item">度量</span>
             <span className="recipe-editor__row-header-item">类型</span>
+            <span className="recipe-editor__row-header-item">消耗几率</span>
             <span className="recipe-editor__row-header-item"></span>
             <span className="recipe-editor__row-header-item"></span>
             <span className="recipe-editor__row-header-item">实际速率</span>
@@ -259,6 +260,22 @@ export function SettingsUI(props: SettingsUIProps) {
                   <option key={opt.id} value={opt.id}>{opt.displayName}</option>
                 ))}
               </select>
+              <div className="recipe-editor__input-wrap">
+                <input
+                  type="number"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={input.consumable === false ? 0 : (input.consumable_probability ?? 1)}
+                  onChange={(e) => {
+                    const v = Math.max(0, Math.min(1, Number(e.target.value) || 0))
+                    updateResourceAtIndex(setBaseInputs, index, {
+                      consumable: v === 0 ? false : undefined,
+                      consumable_probability: v,
+                    })
+                  }}
+                />
+              </div>
               <button
                 className={`recipe-editor__route-btn${input.routing_mode === 'global' ? ' is-global' : ''}`}
                 onClick={() => toggleRoutingAtIndex(setBaseInputs, index)}
@@ -696,6 +713,7 @@ export function SettingsUI(props: SettingsUIProps) {
             <span className="recipe-editor__row-header-item">数量</span>
             <span className="recipe-editor__row-header-item">度量</span>
             <span className="recipe-editor__row-header-item">类型</span>
+            <span className="recipe-editor__row-header-item">产出几率</span>
             <span className="recipe-editor__row-header-item"></span>
             <span className="recipe-editor__row-header-item"></span>
             <span className="recipe-editor__row-header-item">实际速率</span>
@@ -739,6 +757,22 @@ export function SettingsUI(props: SettingsUIProps) {
                   <option key={opt.id} value={opt.id}>{opt.displayName}</option>
                 ))}
               </select>
+              <div className="recipe-editor__input-wrap">
+                <input
+                  type="number"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={output.consumable === false ? 0 : (output.consumable_probability ?? 1)}
+                  onChange={(e) => {
+                    const v = Math.max(0, Math.min(1, Number(e.target.value) || 0))
+                    updateResourceAtIndex(setBaseOutputs, index, {
+                      consumable: v === 0 ? false : undefined,
+                      consumable_probability: v,
+                    })
+                  }}
+                />
+              </div>
               <button
                 className={`recipe-editor__route-btn${output.routing_mode === 'global' ? ' is-global' : ''}`}
                 onClick={() => toggleRoutingAtIndex(setBaseOutputs, index)}

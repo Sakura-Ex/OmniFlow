@@ -57,9 +57,12 @@ export function resolveResourceProps(
   const dimDef = userDimensions?.[dimensionId] ?? DimensionRegistry[dimensionId] ?? FALLBACK_DIMENSION
   const override = userOverrides?.[assetId] ?? ResourceOverrideRegistry[assetId]
 
+  const isUnknown = !DimensionRegistry[dimensionId] && (idx <= 0 || !userDimensions?.[dimensionId])
+
   return {
     unit: override?.unit_override ?? dimDef.default_unit,
     display_mode: override?.display_mode_override ?? dimDef.display_mode,
     themeColor: dimDef.themeColor,
+    is_unknown_dimension: isUnknown,
   }
 }

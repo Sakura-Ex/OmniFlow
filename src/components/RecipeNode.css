@@ -188,21 +188,24 @@
 }
 
 .recipe-node__body {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   align-items: stretch;
-  justify-content: space-between;
 }
 
 .recipe-node__ports {
-  flex: 1 1 50%;
-  min-width: max-content;
   position: relative;
   min-height: 60px;
-  padding: 16px 0 16px;
+  padding: 16px 0;
 }
 
 .recipe-node__ports--inputs {
   border-right: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.recipe-node__ports--utility {
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+  background: linear-gradient(180deg, rgba(148, 163, 184, 0.04), transparent);
 }
 
 .recipe-node__section-label {
@@ -215,6 +218,12 @@
 
 .recipe-node__section-label--right {
   text-align: right;
+}
+
+.recipe-node__section-label--utility {
+  color: rgba(148, 163, 184, 0.55);
+  font-size: 10px;
+  letter-spacing: 0.18em;
 }
 
 .recipe-node__port-list {
@@ -486,4 +495,16 @@
 
 .recipe-node__machine-input--auto::placeholder {
   color: rgba(148, 163, 184, 0.82);
+}
+
+.recipe-node__port--unknown .recipe-node__port-core {
+  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.45);
+  border-radius: 6px;
+}
+
+.recipe-node__port-warn {
+  flex: 0 0 auto;
+  font-size: 11px;
+  opacity: 0.85;
+  cursor: help;
 }

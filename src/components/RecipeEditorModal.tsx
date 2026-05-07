@@ -2,7 +2,7 @@ import { useMemo, useState, useCallback } from 'react'
 import type { RecipeNodeData } from '../types/recipe'
 import type { Resource } from '../types/types'
 import { SettingsUI } from './SettingsUI'
-import { ensureRecipeDataShape, getCalculatedRates, toLegacyPort } from '../modifiers/calculate'
+import { ensureRecipeDataShape, runModifierPipeline } from '../modifiers/calculate'
 import { createDefaultModifierState } from '../modifiers/state'
 import { resolveRecipePowerProfile } from '../modifiers/gtMultiblock'
 import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArchetype } from '../data/archetypes/index'
@@ -83,10 +83,19 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
     modifierStates,
   ])
 
-  const liveCalculated = useMemo(() => {
+  const livePayload = useMemo(() => {
     if (!liveData) return null
-    return getCalculatedRates(liveData)
+    return runModifierPipeline(liveData)
   }, [liveData])
+
+  const allInputRates = useMemo(
+    () => livePayload ? ([...livePayload.recipe_inputs, ...livePayload.utility_inputs] as Resource[]) : [],
+    [livePayload]
+  )
+  const allOutputRates = useMemo(
+    () => livePayload ? ([...livePayload.recipe_outputs, ...livePayload.utility_outputs] as Resource[]) : [],
+    [livePayload]
+  )
 
   const livePowerPreview = useMemo(() => {
     if (!liveData) {
@@ -98,27 +107,24 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
       }
     }
 
-    return resolveRecipePowerProfile(liveData, liveCalculated?.transformedInputs)
-  }, [liveData, liveCalculated])
+    return resolveRecipePowerProfile(liveData, livePayload ? [...livePayload.recipe_inputs, ...livePayload.utility_inputs] as Resource[] : undefined)
+  }, [liveData, livePayload])
 
   const handleSave = () => {
     if (!node || !liveData) return
 
-    const calculated = liveCalculated ?? getCalculatedRates(liveData)
-
     onSave(node.id, {
       ...liveData,
-      // Legacy fields retained for backward compatibility with existing logic paths.
       duration_ticks: liveData.duration_ticks,
-      inputs: liveData.base_inputs?.map(toLegacyPort) ?? [],
-      outputs: liveData.base_outputs?.map(toLegacyPort) ?? [],
       metadata: {
         ...liveData.metadata,
-        _calculated_preview: {
-          duration: calculated.duration,
-          inputs: calculated.inputRates,
-          outputs: calculated.outputRates,
-        },
+        _calculated_preview: livePayload
+          ? {
+              duration: livePayload.duration_seconds,
+              inputs: allInputRates,
+              outputs: allOutputRates,
+            }
+          : undefined,
       },
     })
   }
@@ -155,9 +161,9 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
             setActiveModifiers={setActiveModifiers}
             modifierStates={modifierStates}
             setModifierStates={setModifierStates}
-            previewDurationSeconds={liveCalculated?.duration ?? baseDurationSeconds}
-            previewInputRates={liveCalculated?.inputRates ?? []}
-            previewOutputRates={liveCalculated?.outputRates ?? []}
+            previewDurationSeconds={livePayload?.duration_seconds ?? baseDurationSeconds}
+            previewInputRates={allInputRates}
+            previewOutputRates={allOutputRates}
             previewPowerActualEu={livePowerPreview.actualEuPerTick}
           />
         </div>

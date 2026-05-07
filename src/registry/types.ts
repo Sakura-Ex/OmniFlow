@@ -34,4 +34,5 @@ export interface ResolvedResourceProps {
   unit: string
   display_mode: 'rate_per_sec' | 'rate_per_tick' | 'per_cycle'
   themeColor: string
+  is_unknown_dimension: boolean
 }

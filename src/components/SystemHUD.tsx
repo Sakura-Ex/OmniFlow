@@ -8,22 +8,26 @@ type SystemHUDProps = {
   systemOutputs: Record<string, number>
   globalInputIds: string[]
   globalOutputIds: string[]
+  capexList: Record<string, number>
 }
 
 function formatAmount(value: number) {
   return value.toFixed(2)
 }
 
-function parseItemKey(item: string): { category: string; name: string } {
-  const idx = item.lastIndexOf(':')
-  if (idx > 0) return { category: item.slice(0, idx), name: item.slice(idx + 1) }
-  return { category: 'item', name: item }
+function parseItemKey(item: string): { dimension: string; name: string } {
+  const first = item.indexOf(':')
+  if (first <= 0) return { dimension: 'item', name: item }
+  const dimension = item.slice(0, first)
+  const rest = item.slice(first + 1)
+  const second = rest.indexOf(':')
+  return { dimension, name: second > 0 ? rest.slice(second + 1) : rest }
 }
 
 function HUDResourceRow({ item, value, isGlobal }: { item: string; value: number; isGlobal: boolean }) {
   const userDims = useResourceRegistry((state) => state.dimensions)
   const userOverrides = useResourceRegistry((state) => state.overrides)
-  const { category, name } = parseItemKey(item)
+  const { dimension, name } = parseItemKey(item)
   const props = resolveResourceProps(item, userDims, userOverrides)
   const hexColor = props.themeColor
 
@@ -31,7 +35,7 @@ function HUDResourceRow({ item, value, isGlobal }: { item: string; value: number
     <div className={`system-hud__row${isGlobal ? ' system-hud__row--global' : ''}`}>
       <span className="system-hud__item">
         <span className="system-hud__badge" style={{ color: hexColor, borderColor: hexColor }}>
-          {category}
+          {dimension}
         </span>
         <span className="system-hud__name">{name}</span>
       </span>
@@ -45,9 +49,11 @@ export function SystemHUD({
   systemOutputs,
   globalInputIds,
   globalOutputIds,
+  capexList,
 }: SystemHUDProps) {
   const [inputsCollapsed, setInputsCollapsed] = useState(false)
   const [outputsCollapsed, setOutputsCollapsed] = useState(false)
+  const [capexCollapsed, setCapexCollapsed] = useState(false)
   const globalInputSet = new Set(globalInputIds)
   const globalOutputSet = new Set(globalOutputIds)
 
@@ -63,6 +69,7 @@ export function SystemHUD({
 
   return (
     <div className="system-hud">
+      <div className="system-hud__left-col">
       <section className="system-hud__panel system-hud__panel--inputs">
         <header className="system-hud__header">
           <span className="system-hud__title system-hud__title--inputs">
@@ -100,6 +107,34 @@ export function SystemHUD({
           </div>
         )}
       </section>
+
+      <section className="system-hud__panel system-hud__panel--capex">
+        <header className="system-hud__header">
+          <span className="system-hud__title system-hud__title--capex">
+            🏗️ BUILD LIST (CapEx)
+          </span>
+          <button
+            className={`system-hud__toggle${capexCollapsed ? ' is-collapsed' : ''}`}
+            type="button"
+            onClick={() => setCapexCollapsed((prev) => !prev)}
+            aria-label="Toggle CapEx panel"
+          >
+            ▾
+          </button>
+        </header>
+        {!capexCollapsed && (
+          <div className="system-hud__list">
+            {Object.keys(capexList).length > 0 ? (
+              Object.entries(capexList).map(([item, value]) => (
+                <HUDResourceRow key={`capex-${item}`} item={item} value={value} isGlobal={false} />
+              ))
+            ) : (
+              <div className="system-hud__empty">暂无数据 / 请运行计算</div>
+            )}
+          </div>
+        )}
+      </section>
+      </div>
 
       <section className="system-hud__panel system-hud__panel--outputs">
         <header className="system-hud__header system-hud__header--right">

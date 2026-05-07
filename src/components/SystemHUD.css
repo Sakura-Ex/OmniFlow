@@ -22,13 +22,32 @@
 }
 
 .system-hud__panel--inputs {
-  left: 24px;
   border-left: 2px solid rgba(34, 211, 238, 0.8);
 }
 
 .system-hud__panel--outputs {
   right: 24px;
   border-right: 2px solid rgba(251, 146, 60, 0.8);
+}
+
+.system-hud__panel--capex {
+  border-left: 2px solid rgba(168, 85, 247, 0.7);
+}
+
+.system-hud__left-col {
+  position: absolute;
+  left: 24px;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 260px;
+  pointer-events: none;
+}
+
+.system-hud__left-col .system-hud__panel {
+  position: static;
+  pointer-events: auto;
 }
 
 .system-hud__title {
@@ -45,6 +64,10 @@
 .system-hud__title--outputs {
   color: #fb923c;
   text-align: right;
+}
+
+.system-hud__title--capex {
+  color: #a855f7;
 }
 
 .system-hud__header {

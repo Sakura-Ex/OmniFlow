@@ -10,6 +10,7 @@ export interface Resource {
   amount: number
   measure_mode?: MeasureMode
   consumable?: boolean
+  consumable_probability?: number
   probability?: number
   routing_mode?: RoutingMode
   routing_locked?: boolean
@@ -17,6 +18,34 @@ export interface Resource {
   utility_type?: string
   amount_mutable?: boolean
   _uid?: string
+}
+
+/** 管线归一化后的资源：amount 字段 = 纯每秒速率 (Rate/s) */
+export interface NormalizedResource {
+  category: ResourceCategory
+  id: string
+  amount: number
+  measure_mode?: MeasureMode
+  consumable?: boolean
+  consumable_probability?: number
+  probability?: number
+  routing_mode?: RoutingMode
+  routing_locked?: boolean
+  is_utility: boolean
+  utility_type?: string
+  amount_mutable?: boolean
+  _uid?: string
+}
+
+/** 修饰器管线最终输出：四维独立，供 UI 精准渲染上下半区 */
+export interface ComputedNodePayload {
+  nodeId: string
+  recipe_inputs: NormalizedResource[]
+  recipe_outputs: NormalizedResource[]
+  utility_inputs: NormalizedResource[]
+  utility_outputs: NormalizedResource[]
+  duration_seconds: number
+  is_instant: boolean
 }
 
 export interface UtilityDef {
