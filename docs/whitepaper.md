@@ -173,7 +173,7 @@ $$
 | 属性 | 语义 | 矩阵行为 |
 |------|------|----------|
 | `consumable: false` | 绝对不消耗（阈值型钥匙） | 剔除，不计入稳态计算 |
-| `probability: <float>` | 概率消耗（期望值转换） | $\text{effective}$_$\text{amount} = \text{amount} \times \text{probability}$ |
+| `probability: <float>` | 概率消耗（期望值转换） | effective_amount = amount $\times$ probability |
 
 ---
 
