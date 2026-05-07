@@ -245,6 +245,15 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       }
     }
 
+    // ── 收集有下游连线的物品（用于后端 equality 约束判定）──
+    const equalityItems = new Set<string>()
+    for (const e of wiredEdges) {
+      if (e.sourceHandle) equalityItems.add(e.sourceHandle)
+    }
+    for (const e of implicitEdges) {
+      if (e.sourceHandle) equalityItems.add(e.sourceHandle)
+    }
+
     const payload = {
       nodes: payloadNodes.concat([
         {
@@ -259,6 +268,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
         },
       ]),
       edges: wiredEdges.concat(implicitEdges),
+      equality_items: Array.from(equalityItems),
     }
 
     setGlobalInputIds(Array.from(globalInputSet))

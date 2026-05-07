@@ -94,6 +94,7 @@ class GraphEdge(BaseModel):
 class CalculateRequest(BaseModel):
     nodes: List[GraphNode] = Field(..., description="前端传递的所有工艺图节点")
     edges: List[GraphEdge] = Field(..., description="前端传递的所有工艺图连线")
+    equality_items: List[str] = Field(default_factory=list, description="需要等式约束（sum=0）的物品 ID 列表。前端通过 Edge 连通性判定：产出端有下游连线的物品进入此列表")
 
 
 # =====================================================================
@@ -216,21 +217,21 @@ async def calculate_flow(request: CalculateRequest):
             "col": sink_col,
         })
 
-    # 步骤 4：Target 物品严格守恒，其余物品允许隐式溢出
+    # 步骤 4：有下游连线（或 Target）的物品严格守恒，其余允许隐式溢出
     A_eq_rows: List[List[float]] = []
     b_eq: List[float] = []
     A_ub_rows: List[List[float]] = []
     b_ub: List[float] = []
-    target_items = {spec["item_id"] for spec in sink_specs}
+    equality_items = set(request.equality_items)
 
     for item_id in items:
         row = item_rows[item_id]
-        if item_id in target_items:
-            # 有 TargetNode：严格守恒等式（产出 + 源输入 - 消耗 - 靶输出 == 0）
+        if item_id in equality_items:
+            # 有下游连线：严格守恒等式（产出 + 源输入 - 消耗 - 靶输出 == 0）
             A_eq_rows.append(row.tolist())
             b_eq.append(0.0)
         else:
-            # 无 TargetNode：只有当该物品存在生产来源（正系数列）时才施加"净流量 >= 0"约束
+            # 无下游连线：只有当该物品存在生产来源（正系数列）时才施加"净流量 >= 0"约束
             # 若 row 全为 0 或全负（纯消耗、无 SourceNode 也无配方产出），则视为隐式无限供给，跳过约束
             if bool(np.any(row > 1e-12)):
                 A_ub_rows.append((-row).tolist())
