@@ -7,33 +7,10 @@ import { useRecipeStore } from '../stores/recipeStore'
 import { runModifierPipeline } from '../modifiers/calculate'
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { resolveCategoryDef } from '../utils/endpointNorm'
+import { formatPortAmount, formatRateValue } from '../utils/resourceFormat'
 import type { ResourceCategoryDef } from '../registry/types'
 import type { TimeBase, NormalizedResource, ComputedNodePayload } from '../types/types'
 import './RecipeNode.css'
-
-function formatPortAmount(
-  ratePerSec: number,
-  catDef: ResourceCategoryDef,
-  mMode?: TimeBase,
-  durationSeconds?: number
-) {
-  const dur = typeof durationSeconds === 'number' && durationSeconds > 0 ? durationSeconds : 1
-  const total = ratePerSec * dur
-  const rounded = parseFloat(total.toPrecision(6))
-  if (mMode === 'per_cycle') {
-    return `x${rounded} ${catDef.base_unit}`
-  }
-  return `${rounded} ${catDef.base_unit}`
-}
-
-function formatRateValue(value: number | undefined, mMode?: TimeBase): string {
-  if (typeof value !== 'number' || Number.isNaN(value)) return ''
-  const displayValue = mMode === 'rate_per_tick' ? value / 20 : value
-  const suffix = mMode === 'rate_per_tick' ? '/t' : '/s'
-  const fixed = displayValue.toFixed(2)
-  const trimmed = fixed.replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1')
-  return `${trimmed}${suffix}`
-}
 
 function formatDisplayValue(value: number | undefined) {
   if (typeof value !== 'number' || Number.isNaN(value)) return ''
@@ -125,7 +102,20 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
           >
             {isLeft ? (
               <>
-                {res.routing_mode !== 'global' && (
+                {res.routing_mode === 'global' ? (
+                  <svg
+                    className="recipe-node__global-icon recipe-node__global-icon--left"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke={hexColor}
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  >
+                    <circle cx="12" cy="8" r="6" fill={hexColor} stroke="none" />
+                    <path d="M-1 8 A 13 13 0 0 1 12 -5" />
+                    <path d="M3 8 A 9 9 0 0 1 12 -1" />
+                  </svg>
+                ) : (
                   <Handle
                     id={handleId}
                     type="target"
@@ -173,7 +163,20 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
                   {catDef.displayName}
                 </span>
                 {isUnknown && <span className="recipe-node__port-warn" title="未知量纲，已从矩阵排除">⚠️</span>}
-                {res.routing_mode !== 'global' && (
+                {res.routing_mode === 'global' ? (
+                  <svg
+                    className="recipe-node__global-icon recipe-node__global-icon--right"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke={hexColor}
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  >
+                    <circle cx="12" cy="8" r="6" fill={hexColor} stroke="none" />
+                    <path d="M25 8 A 13 13 0 0 0 12 -5" />
+                    <path d="M21 8 A 9 9 0 0 0 12 -1" />
+                  </svg>
+                ) : (
                   <Handle
                     id={handleId}
                     type="source"

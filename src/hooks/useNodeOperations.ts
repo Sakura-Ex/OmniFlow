@@ -101,13 +101,12 @@ export function useNodeOperations({
 
     if (handleChanged && handleUpdate) {
       const currentNode = nodesRef.current.find((n) => n.id === nodeId)
-      const nodeItemType: string = currentNode?.data?.item_type ?? 'item'
-      // Try multi-port format first — item_type may be per-port
+      const nodeCategory: string = currentNode?.data?.category ?? 'item'
       const ports: EndpointPort[] = currentNode?.data?.ports ?? []
       const oldPort = ports.find((p) => p.id === handleUpdate.previousId)
-      const portItemType = oldPort?.item_type ?? nodeItemType
-      const prevHandle = `${portItemType}:${handleUpdate.previousId}`
-      const nextHandle = `${portItemType}:${handleUpdate.nextId}`
+      const portCategory = oldPort?.category ?? nodeCategory
+      const prevHandle = `${portCategory}:${handleUpdate.previousId}`
+      const nextHandle = `${portCategory}:${handleUpdate.nextId}`
       const nextEdges = edgesRef.current.map((edge) => {
         if (
           handleUpdate.role === 'source' &&
@@ -195,8 +194,8 @@ export function useNodeOperations({
           amount: cachedAmount ?? 9999,
           is_auto: true,
           actual_amount: cachedAmount,
-          item_type: cat,
-          ports: [{ id: input.id, amount: cachedAmount ?? 9999, item_type: cat, _uid: crypto.randomUUID() }],
+          category: cat,
+          ports: [{ id: input.id, amount: cachedAmount ?? 9999, category: cat, _uid: crypto.randomUUID() }],
         },
       })
 
@@ -229,8 +228,8 @@ export function useNodeOperations({
           mode: 'overflow',
           is_auto: true,
           actual_amount: cachedAmount,
-          item_type: cat,
-          ports: [{ id: output.id, amount: cachedAmount ?? 0, item_type: cat, _uid: crypto.randomUUID() }],
+          category: cat,
+          ports: [{ id: output.id, amount: cachedAmount ?? 0, category: cat, _uid: crypto.randomUUID() }],
         },
       })
 

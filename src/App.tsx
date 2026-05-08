@@ -115,35 +115,11 @@ export default function App() {
     handleCalculate,
   } = useCalculation({ nodesRef, edgesRef, setNodes })
 
+  const recipeStoreSnapshot = useRecipeStore((state) => state.recipes)
   const usedResourceKeys = useMemo(() => {
     const keys = new Set<string>()
-    for (const node of nodes) {
-      const data = node.data as Record<string, unknown>
-      const extract = (list: unknown) => {
-        if (!Array.isArray(list)) return
-        for (const item of list as Array<Record<string, unknown>>) {
-          if (typeof item.category === 'string' && typeof item.id === 'string' && item.id) {
-            keys.add(`${item.category}:${item.id}`)
-          }
-        }
-      }
-      extract(data.inputs)
-      extract(data.outputs)
-      extract(data.base_inputs)
-      extract(data.base_outputs)
-      extract(data.base_utility_inputs)
-      extract(data.base_utility_outputs)
-      if (Array.isArray(data.ports)) {
-        for (const port of data.ports as Array<Record<string, unknown>>) {
-          if (typeof port.item_type === 'string' && typeof port.id === 'string' && port.id) {
-            keys.add(`${port.item_type}:${port.id}`)
-          }
-        }
-      }
-    }
 
-    const store = useRecipeStore.getState()
-    for (const recipe of Object.values(store.recipes)) {
+    for (const recipe of Object.values(recipeStoreSnapshot)) {
       const extract = (list: unknown) => {
         if (!Array.isArray(list)) return
         for (const item of list as Array<Record<string, unknown>>) {
@@ -158,8 +134,19 @@ export default function App() {
       extract(recipe.base_utility_outputs)
     }
 
+    for (const node of nodes) {
+      const data = node.data as Record<string, unknown>
+      if (Array.isArray(data.ports)) {
+        for (const port of data.ports as Array<Record<string, unknown>>) {
+          if (typeof port.category === 'string' && typeof port.id === 'string' && port.id) {
+            keys.add(`${port.category}:${port.id}`)
+          }
+        }
+      }
+    }
+
     return Array.from(keys)
-  }, [nodes])
+  }, [nodes, recipeStoreSnapshot])
 
   const {
     isValidConnection,

@@ -36,7 +36,7 @@ export function normalizeEndpointPorts(
     return [{
       id: data.id,
       amount: data.amount ?? 0,
-      item_type: data.item_type ?? 'item',
+      category: data.category ?? 'item',
     }]
   }
   return []
@@ -49,17 +49,19 @@ export function normalizeEndpointData<T extends SourceNodeData | TargetNodeData>
     const ports = normalizeEndpointPorts(data)
     return {
       ...data,
-      ports: ports.length > 0 ? ports : [{ id: '', amount: 0, item_type: 'item', _uid: crypto.randomUUID() }],
+      ports: ports.length > 0 ? ports : [{ id: '', amount: 0, category: 'item', _uid: crypto.randomUUID() }],
     }
   }
   return data
 }
 
-export function emptyEndpointPort(itemType?: string): EndpointPort {
+export function emptyEndpointPort(category?: string): EndpointPort {
   return {
     id: '',
     amount: 0,
-    item_type: itemType ?? 'item',
+    category: category ?? 'item',
+    routing_mode: 'wired',
+    routing_locked: false,
     _uid: crypto.randomUUID(),
   }
 }

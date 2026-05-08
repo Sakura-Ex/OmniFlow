@@ -96,30 +96,47 @@ export function TargetNode({ id, data }: NodeProps<TargetNodeData>) {
       <section className="recipe-node__ports">
         <ul className="recipe-node__port-list">
           {ports.map((port, index) => {
-            const itemType = port.item_type ?? 'item'
-            const catDef = resolveCategoryDef(itemType, userCategories, userOverrides)
+            const portCategory = port.category ?? 'item'
+            const catDef = resolveCategoryDef(portCategory, userCategories, userOverrides)
             const unit = buildUnitSuffix(catDef.base_unit, 'rate_per_sec')
             const hexColor = catDef.themeColor
             const glowColor = hexColor.startsWith('#')
               ? `${hexColor}${Math.round(0.38 * 255).toString(16).padStart(2, '0')}`
               : hexColor.replace(')', ', 0.38)').replace('rgb', 'rgba')
-            const handleId = `${itemType}:${port.id}`
+            const handleId = `${portCategory}:${port.id}`
             const actualAmt = data.actual_amounts?.[port.id]
             const draftAmount = draftAmounts[index]
             const displayValue = isEditable
               ? (draftAmount !== undefined ? draftAmount : formatValue(port.amount) || String(port.amount))
               : (actualAmt !== undefined ? formatValue(actualAmt) : '')
 
+            const isGlobal = port.routing_mode === 'global'
+
             return (
-              <li className="recipe-node__port recipe-node__port--left" key={port._uid ?? `${id}-port-${index}`}>
+              <li className={`recipe-node__port recipe-node__port--left${isGlobal ? ' recipe-node__port--global' : ''}`} key={port._uid ?? `${id}-port-${index}`}>
                 <div className="recipe-node__port-core recipe-node__port-core--left">
-                  <Handle
-                    id={handleId}
-                    type="target"
-                    position={Position.Left}
-                    className="recipe-node__handle"
-                    style={{ left: '-6px', backgroundColor: hexColor, borderColor: hexColor, boxShadow: `0 0 0 4px ${glowColor}` }}
-                  />
+                  {isGlobal ? (
+                    <svg
+                      className="recipe-node__global-icon recipe-node__global-icon--left"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke={hexColor}
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    >
+                      <circle cx="12" cy="8" r="6" fill={hexColor} stroke="none" />
+                      <path d="M-1 8 A 13 13 0 0 1 12 -5" />
+                      <path d="M3 8 A 9 9 0 0 1 12 -1" />
+                    </svg>
+                  ) : (
+                    <Handle
+                      id={handleId}
+                      type="target"
+                      position={Position.Left}
+                      className="recipe-node__handle"
+                      style={{ left: '-6px', backgroundColor: hexColor, borderColor: hexColor, boxShadow: `0 0 0 4px ${glowColor}` }}
+                    />
+                  )}
                   <span className="recipe-node__port-type" style={{ color: hexColor, borderColor: hexColor }}>
                     {catDef.displayName}
                   </span>

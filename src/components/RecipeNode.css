@@ -508,3 +508,21 @@
   opacity: 0.85;
   cursor: help;
 }
+
+.recipe-node__global-icon {
+  position: absolute;
+  top: calc(50% - 8px);
+  width: 16px;
+  height: 16px;
+  z-index: 4;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.recipe-node__global-icon--left {
+  left: -12px;
+}
+
+.recipe-node__global-icon--right {
+  right: -4px;
+}

@@ -355,7 +355,7 @@ export function SettingsUI(props: SettingsUIProps) {
 
         <div className="recipe-settings__modifier-pool">
           <h5>Machine Utilities</h5>
-          <ResourceDefinitionList<Resource>
+          <ResourceDefinitionList<Resource & Record<string, unknown>>
             items={utilityItems}
             columns={UTILITY_COLUMNS}
             emptyMessage="当前范式无固定公用设施"

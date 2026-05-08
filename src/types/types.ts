@@ -15,9 +15,11 @@ export interface Resource {
   routing_mode?: RoutingMode
   routing_locked?: boolean
   is_utility?: boolean
+  is_utility_output?: boolean
   utility_type?: string
   amount_mutable?: boolean
   _uid?: string
+  [key: string]: unknown
 }
 
 /** 管线归一化后的资源：amount 字段 = 纯每秒速率 (Rate/s) */

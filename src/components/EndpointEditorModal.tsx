@@ -3,6 +3,8 @@ import type { SourceNodeData, TargetNodeData, EndpointPort } from '../types/reci
 import type { EndpointEditorTarget } from '../EndpointEditorContext'
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { normalizeEndpointPorts, emptyEndpointPort } from '../utils/endpointNorm'
+import { ResourceDefinitionList, ENDPOINT_COLUMNS } from './ResourceDefinitionList'
+import { useResourceIndex } from '../hooks/useResourceIndex'
 import './EndpointEditorModal.css'
 
 type Props = {
@@ -17,6 +19,8 @@ export function EndpointEditorModal({ node, onClose, onSave }: Props) {
     () => Object.values(registryCategories).map((cat) => ({ id: cat.id, displayName: cat.displayName })),
     [registryCategories]
   )
+  const { entries: resourceIndex } = useResourceIndex()
+  const resourceSuggestions = useMemo(() => Object.keys(resourceIndex), [resourceIndex])
 
   const initialPorts = node ? normalizeEndpointPorts(node.data) : []
   const [ports, setPorts] = useState<EndpointPort[]>(
@@ -29,28 +33,33 @@ export function EndpointEditorModal({ node, onClose, onSave }: Props) {
 
   const isSource = node.role === 'source'
 
-  const updatePort = (index: number, patch: Partial<EndpointPort>) => {
+  const handleUpdatePort = (index: number, patch: Partial<EndpointPort>) => {
     setPorts((prev) => prev.map((p, i) => i === index ? { ...p, ...patch } : p))
   }
 
-  const addPort = () => {
-    setPorts((prev) => [...prev, emptyEndpointPort(prev[0]?.item_type ?? 'item')])
+  const handleAddPort = () => {
+    setPorts((prev) => [...prev, emptyEndpointPort(prev[0]?.category ?? 'item')])
   }
 
-  const removePort = (index: number) => {
-    setPorts((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)))
+  const handleRemovePort = (index: number) => {
+    setPorts((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleToggleRouting = (index: number) => {
+    setPorts((prev) => prev.map((p, i) => {
+      if (i !== index || p.routing_locked) return p
+      return { ...p, routing_mode: p.routing_mode === 'global' ? 'wired' : 'global' }
+    }))
   }
 
   const handleSave = () => {
     const validPorts = ports.filter((p) => p.id.trim().length > 0)
     const firstPort = validPorts[0]
     onSave(node.id, {
-      // Keep backward compat fields
       id: firstPort?.id ?? '',
       label: firstPort?.id ?? '',
       amount: firstPort?.amount ?? 0,
-      item_type: firstPort?.item_type ?? 'item',
-      // Main data shape
+      category: firstPort?.category ?? 'item',
       ports: validPorts.length > 0 ? validPorts : ports,
     })
   }
@@ -71,39 +80,20 @@ export function EndpointEditorModal({ node, onClose, onSave }: Props) {
         </header>
 
         <div className="ep-editor__body">
-          <div className="ep-editor__port-table">
-            <div className="ep-editor__port-table-header">
-              <span>资源 ID</span>
-              <span>类型</span>
-              <span></span>
-            </div>
-            {ports.map((port, index) => (
-              <div className="ep-editor__port-row" key={port._uid ?? index}>
-                  <input
-                    type="text"
-                    value={port.id}
-                    onChange={(e) => updatePort(index, { id: e.target.value })}
-                    spellCheck={false}
-                    placeholder="例：iron_ingot"
-                  />
-                  <select
-                    value={port.item_type}
-                    onChange={(e) => updatePort(index, { item_type: e.target.value })}
-                  >
-                    {categoryOptions.map((opt) => (
-                      <option key={opt.id} value={opt.id}>{opt.displayName}</option>
-                    ))}
-                  </select>
-                  <button
-                    className="ep-editor__port-remove-btn"
-                    onClick={() => removePort(index)}
-                    disabled={ports.length <= 1}
-                    title="删除此行"
-                  >✕</button>
-                </div>
-            ))}
-            <button className="ep-editor__add-port-btn" onClick={addPort}>+ 添加资源</button>
-          </div>
+          <ResourceDefinitionList<EndpointPort>
+            items={ports}
+            columns={ENDPOINT_COLUMNS}
+            emptyMessage="暂无资源"
+            addLabel="添加资源"
+            onUpdateItem={handleUpdatePort}
+            onAddItem={handleAddPort}
+            onRemoveItem={handleRemovePort}
+            onToggleRoutingItem={handleToggleRouting}
+            suggestions={resourceSuggestions}
+            categoryOptions={categoryOptions}
+            getCanDelete={(i) => ports.length > 1}
+            getRoutingLocked={(i) => ports[i]?.routing_locked ?? false}
+          />
         </div>
 
         <footer className="ep-editor__footer">

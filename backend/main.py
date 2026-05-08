@@ -1,11 +1,14 @@
 import math
+import logging
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from scipy.optimize import linprog
+
+logger = logging.getLogger("omniflow")
 
 # =====================================================================
 # 1. 基础环境与 FastAPI 实例初始化
@@ -35,19 +38,9 @@ app.add_middleware(
 # =====================================================================
 # 2. Pydantic 数据模型定义 (API 契约)
 # =====================================================================
-class RecipeMetadata(BaseModel):
-    eu_per_tick: Optional[float] = Field(None, description="EU/t")
-    rf_per_tick: Optional[float] = Field(None, description="RF/t")
-    base_voltage: Optional[str] = Field(None, description="电压档位")
-    can_overclock: Optional[bool] = Field(None, description="是否支持超频")
-
-    class Config:
-        extra = "allow"
-
-
 class RecipeNodeData(BaseModel):
-    recipe_id: str = Field(..., description="配方 ID")
-    machine_name: str = Field(..., description="机器名称")
+    recipe_id: str = Field("", description="配方 ID")
+    machine_name: str = Field("Recipe", description="机器名称")
     system: Optional[str] = Field(None, description="所属模组")
     duration_ticks: float = Field(20.0, description="归一化后固定为 20 (所有速率为 /s)")
     inputs: Dict[str, float] = Field(default_factory=dict, description="输入速率: {category:id → rate/s}")
@@ -55,7 +48,7 @@ class RecipeNodeData(BaseModel):
     mode: Optional[str] = Field(None, description="运行模式: auto|limit；None 时回退到 is_auto")
     is_auto: bool = Field(True, description="已弃用，由mode替代")
     manual_machines: Optional[float] = Field(None, description="手动设定产能上限机器数量")
-    metadata: RecipeMetadata = Field(default_factory=RecipeMetadata, description="机器元数据")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="机器元数据")
 
 
 class SourceNodeData(BaseModel):
@@ -118,13 +111,16 @@ async def calculate_flow(request: CalculateRequest):
     target_nodes: List[Dict[str, Any]] = []
 
     for node in nodes:
-        if node.type == "recipeNode":
-            recipe_data = parse_model(RecipeNodeData, node.data)
-            recipe_nodes.append({"node_id": node.id, "data": recipe_data})
-        elif node.type == "sourceNode":
-            source_nodes.append({"node_id": node.id, "data": parse_model(SourceNodeData, node.data)})
-        elif node.type == "targetNode":
-            target_nodes.append({"node_id": node.id, "data": parse_model(TargetNodeData, node.data)})
+        try:
+            if node.type == "recipeNode":
+                recipe_data = parse_model(RecipeNodeData, node.data)
+                recipe_nodes.append({"node_id": node.id, "data": recipe_data})
+            elif node.type == "sourceNode":
+                source_nodes.append({"node_id": node.id, "data": parse_model(SourceNodeData, node.data)})
+            elif node.type == "targetNode":
+                target_nodes.append({"node_id": node.id, "data": parse_model(TargetNodeData, node.data)})
+        except ValidationError as e:
+            logger.warning("Skipping invalid node %s: %s", node.id, e)
 
     # 步骤 1：解析网络，提取物品全集与变量映射
     items: List[str] = []

@@ -11,7 +11,7 @@ export const initialNodes: Node[] = [
       label: 'water',
       amount: 1000,
       is_auto: true,
-      item_type: 'fluid',
+      category: 'fluid',
     },
   },
   {

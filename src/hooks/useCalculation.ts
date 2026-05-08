@@ -2,10 +2,12 @@ import { useCallback, useState } from 'react'
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type { Edge, Node } from 'reactflow'
 import type { RecipeNodeData } from '../types/recipe'
+import type { ComputedNodePayload } from '../types/types'
 import type { CalculateResponse } from '../types/api'
-import { ensureRecipeDataShape, runModifierPipeline, flattenForBackend } from '../modifiers/calculate'
+import { runModifierPipeline, flattenForBackend } from '../modifiers/calculate'
 import { normalizeEndpointPorts } from '../utils/endpointNorm'
 import { buildTopologicalNets } from '../utils/topologicalNets'
+import { useRecipeStore } from '../stores/recipeStore'
 
 const VIRTUAL_GLOBAL_SOURCE = 'Virtual_Global_Source'
 const VIRTUAL_GLOBAL_TARGET = 'Virtual_Global_Target'
@@ -51,29 +53,48 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
 
     // ── Step 1: shape all recipe nodes, detect global ports & zero-output nodes ──
     const zeroOutputNodeNames: string[] = []
+    const endpointGlobalPorts: Array<{ nodeId: string; nodeType: string; port: { category: string; id: string } }> = []
 
     for (const n of nodesRef.current) {
-      if (n.type !== 'recipeNode') continue
-      const shaped = ensureRecipeDataShape(n.data as RecipeNodeData)
-      shapedRecipeByNodeId.set(n.id, shaped)
+      if (n.type === 'recipeNode') {
+        const stored = useRecipeStore.getState().recipes[n.id]
+        if (!stored) continue
+        shapedRecipeByNodeId.set(n.id, stored)
 
-      for (const port of shaped.base_inputs ?? []) {
-        if (port.routing_mode === 'global') globalInputSet.add(port.category)
-      }
-      for (const port of shaped.base_outputs ?? []) {
-        if (port.routing_mode === 'global') globalOutputSet.add(port.category)
-      }
-      for (const port of shaped.base_utility_inputs ?? []) {
-        if (port.routing_mode === 'global') globalInputSet.add(port.category)
-      }
-      for (const port of shaped.base_utility_outputs ?? []) {
-        if (port.routing_mode === 'global') globalOutputSet.add(port.category)
-      }
+        for (const port of stored.base_inputs ?? []) {
+          if (port.routing_mode === 'global') globalInputSet.add(port.category)
+        }
+        for (const port of stored.base_outputs ?? []) {
+          if (port.routing_mode === 'global') globalOutputSet.add(port.category)
+        }
+        for (const port of stored.base_utility_inputs ?? []) {
+          if (port.routing_mode === 'global') globalInputSet.add(port.category)
+        }
+        for (const port of stored.base_utility_outputs ?? []) {
+          if (port.routing_mode === 'global') globalOutputSet.add(port.category)
+        }
 
-      const rates = runModifierPipeline(shaped)
-      const materialOutputs = rates.recipe_outputs.filter((r) => !r.is_utility)
-      if (materialOutputs.length === 0 || materialOutputs.every((r) => r.amount === 0)) {
-        zeroOutputNodeNames.push(shaped.machine_name || n.id)
+        const rates = stored._computed ?? runModifierPipeline(stored)
+        const materialOutputs = rates.recipe_outputs.filter((r) => !r.is_utility)
+        if (materialOutputs.length === 0 || materialOutputs.every((r) => r.amount === 0)) {
+          zeroOutputNodeNames.push(stored.machine_name || n.id)
+        }
+      } else if (n.type === 'sourceNode' || n.type === 'targetNode') {
+        const ports = normalizeEndpointPorts(n.data)
+        for (const port of ports) {
+          if (port.routing_mode === 'global') {
+            if (n.type === 'sourceNode') {
+              globalOutputSet.add(port.category)
+            } else {
+              globalInputSet.add(port.category)
+            }
+            endpointGlobalPorts.push({
+              nodeId: n.id,
+              nodeType: n.type,
+              port: { category: port.category, id: port.id },
+            })
+          }
+        }
       }
     }
 
@@ -85,26 +106,43 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
 
     // ── Step 2: filter physical (non-global) wired edges ──
     const physicalEdges = edgesRef.current.filter((e) => {
-      const srcGlobal =
-        e.sourceHandle
-          ? (shapedRecipeByNodeId.get(e.source)?.base_outputs ?? []).some(
-              (p) => p.id && `${p.category}:${p.id}` === e.sourceHandle && p.routing_mode === 'global'
-            ) ||
-            (shapedRecipeByNodeId.get(e.source)?.base_utility_outputs ?? []).some(
-              (p) => p.id && `${p.category}:${p.id}` === e.sourceHandle && p.routing_mode === 'global'
-            )
-          : false
-      const tgtGlobal =
-        e.targetHandle
-          ? (shapedRecipeByNodeId.get(e.target)?.base_inputs ?? []).some(
-              (p) => p.id && `${p.category}:${p.id}` === e.targetHandle && p.routing_mode === 'global'
-            ) ||
-            (shapedRecipeByNodeId.get(e.target)?.base_utility_inputs ?? []).some(
-              (p) => p.id && `${p.category}:${p.id}` === e.targetHandle && p.routing_mode === 'global'
-            )
-          : false
+      const srcNode = nodesRef.current.find((n) => n.id === e.source)
+      const tgtNode = nodesRef.current.find((n) => n.id === e.target)
+
+      let srcGlobal = false
+      if (srcNode?.type === 'recipeNode') {
+        srcGlobal =
+          e.sourceHandle
+            ? (shapedRecipeByNodeId.get(e.source)?.base_outputs ?? []).some(
+                (p) => p.id && `${p.category}:${p.id}` === e.sourceHandle && p.routing_mode === 'global'
+              ) ||
+              (shapedRecipeByNodeId.get(e.source)?.base_utility_outputs ?? []).some(
+                (p) => p.id && `${p.category}:${p.id}` === e.sourceHandle && p.routing_mode === 'global'
+              )
+            : false
+      } else if (srcNode?.type === 'sourceNode') {
+        const ports = normalizeEndpointPorts(srcNode.data)
+        srcGlobal = ports.some((p) => `${p.category}:${p.id}` === e.sourceHandle && p.routing_mode === 'global')
+      }
+
+      let tgtGlobal = false
+      if (tgtNode?.type === 'recipeNode') {
+        tgtGlobal =
+          e.targetHandle
+            ? (shapedRecipeByNodeId.get(e.target)?.base_inputs ?? []).some(
+                (p) => p.id && `${p.category}:${p.id}` === e.targetHandle && p.routing_mode === 'global'
+              ) ||
+              (shapedRecipeByNodeId.get(e.target)?.base_utility_inputs ?? []).some(
+                (p) => p.id && `${p.category}:${p.id}` === e.targetHandle && p.routing_mode === 'global'
+              )
+            : false
+      } else if (tgtNode?.type === 'targetNode') {
+        const ports = normalizeEndpointPorts(tgtNode.data)
+        tgtGlobal = ports.some((p) => `${p.category}:${p.id}` === e.targetHandle && p.routing_mode === 'global')
+      }
+
       return !srcGlobal && !tgtGlobal
-    })
+    }
 
     // ── Step 2.5: Build topological nets for sub-graph isolation ──
     const topologicalNets = buildTopologicalNets(
@@ -145,8 +183,8 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
             : (isAuto ? 'maximize' : 'demand'))
 
         ports.forEach((port, pi) => {
-          const itemType = port.item_type ?? 'item'
-          const qualifiedId = `${itemType}:${port.id}`
+          const portCategory = port.category ?? 'item'
+          const qualifiedId = `${portCategory}:${port.id}`
           const key = `${n.id}|${qualifiedId}`
           const subId = `${n.id}__p${pi}`
 
@@ -176,9 +214,9 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
         continue
       }
 
-      // ── Recipe node: run 5-step pipeline, flatten for backend ──
+      // ── Recipe node: use cached _computed from Store, fall back to pipeline ──
       const shaped = shapedRecipeByNodeId.get(n.id)!
-      const payload = runModifierPipeline(shaped)
+      const payload = (shaped._computed as ComputedNodePayload | undefined) ?? runModifierPipeline(shaped)
       const flattened = flattenForBackend(payload)
 
       const translatedInputs = translateFlattenedKeys(n.id, flattened.inputs)
@@ -195,9 +233,9 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
         id: n.id,
         type: n.type,
         data: {
-          recipe_id: shaped.recipe_id,
-          machine_name: shaped.machine_name,
-          system: shaped.system,
+          recipe_id: shaped.recipe_id || n.id,
+          machine_name: shaped.machine_name || 'Recipe Machine',
+          system: shaped.system ?? 'custom',
           duration_ticks: 20,
           inputs: translatedInputs,
           outputs: translatedOutputs,
@@ -277,12 +315,36 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       }
     }
 
+    // ── Source / Target 全局端口的 implicit edges ──
+    // 注意：需要将原始节点 ID 转换为子节点 ID
+    for (const ep of endpointGlobalPorts) {
+      const key = `${ep.port.category}:${ep.port.id}`
+      const subNodeId = portHandleToSubNodeId.get(`${ep.nodeId}|${key}`) ?? ep.nodeId
+      if (ep.nodeType === 'sourceNode') {
+        implicitEdges.push({
+          source: subNodeId,
+          target: VIRTUAL_GLOBAL_TARGET,
+          sourceHandle: key,
+          targetHandle: key,
+        })
+      } else {
+        implicitEdges.push({
+          source: VIRTUAL_GLOBAL_SOURCE,
+          target: subNodeId,
+          sourceHandle: key,
+          targetHandle: key,
+        })
+      }
+    }
+
     // ── 收集有下游连线的物品（用于后端 equality 约束判定）──
+    // 全局总线物品（implicitEdges 源自虚拟节点）不进入 equality——它们由后端"隐式供给"逻辑处理
     const equalityItems = new Set<string>()
     for (const e of wiredEdges) {
       if (e.sourceHandle) equalityItems.add(e.sourceHandle)
     }
     for (const e of implicitEdges) {
+      if (e.source === VIRTUAL_GLOBAL_SOURCE) continue
       if (e.sourceHandle) equalityItems.add(e.sourceHandle)
     }
 
@@ -335,8 +397,8 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
           prev.map((node) => {
             let nextData = node.data
             const directNodeResult = nodeResults[node.id]
-            const recipeId =
-              typeof node.data?.recipe_id === 'string' ? node.data.recipe_id : null
+            const shaped = shapedRecipeByNodeId.get(node.id)
+            const recipeId = (shaped?.recipe_id && typeof shaped.recipe_id === 'string') ? shaped.recipe_id : null
             const nodeResult = directNodeResult ?? (recipeId ? nodeResults[recipeId] : undefined)
 
             if (nodeResult) nextData = { ...nextData, ...nodeResult }
@@ -348,8 +410,8 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
               const actualAmounts: Record<string, number> = {}
               let totalActual = 0
               for (const port of ports) {
-                const itemType = port.item_type ?? 'item'
-                const qualifiedId = `${itemType}:${port.id}`
+                const portCategory = port.category ?? 'item'
+                const qualifiedId = `${portCategory}:${port.id}`
                 const key = `${node.id}|${qualifiedId}`
                 const subNodeId = portHandleToSubNodeId.get(key)
                 if (subNodeId) {
@@ -373,8 +435,8 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
               const actualAmounts: Record<string, number> = {}
               let totalActual = 0
               for (const port of ports) {
-                const itemType = port.item_type ?? 'item'
-                const qualifiedId = `${itemType}:${port.id}`
+                const portCategory = port.category ?? 'item'
+                const qualifiedId = `${portCategory}:${port.id}`
                 const key = `${node.id}|${qualifiedId}`
                 const subNodeId = portHandleToSubNodeId.get(key)
                 if (subNodeId) {

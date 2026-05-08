@@ -61,7 +61,7 @@ export function useCanvasOperations({
       id,
       type: 'sourceNode',
       position: { x: 320 + Math.random() * 50, y: 180 + Math.random() * 50 },
-      data: { id: `item_${id.slice(-4)}`, label: `item_${id.slice(-4)}`, amount: 100, is_auto: true, item_type: 'item' },
+      data: { id: `item_${id.slice(-4)}`, label: `item_${id.slice(-4)}`, amount: 100, is_auto: true, category: 'item' },
     }
     setNodes((nds) => nds.concat(newNode))
   }, [setNodes, takeSnapshot])
@@ -119,7 +119,7 @@ export function useCanvasOperations({
       id,
       type: 'targetNode',
       position: { x: 320 + Math.random() * 50, y: 180 + Math.random() * 50 },
-      data: { id: `demand_${id.slice(-4)}`, label: `demand_${id.slice(-4)}`, amount: 100, is_auto: true, item_type: 'item' },
+      data: { id: `demand_${id.slice(-4)}`, label: `demand_${id.slice(-4)}`, amount: 100, is_auto: true, category: 'item' },
     }
     setNodes((nds) => nds.concat(newNode))
   }, [setNodes, takeSnapshot])

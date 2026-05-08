@@ -64,9 +64,10 @@ export const MACHINE_UTILITY_COLUMNS: ColumnDef[] = [
 ]
 
 export const ENDPOINT_COLUMNS: ColumnDef[] = [
-  { id: 'id', header: '资源 ID', width: '1fr' },
-  { id: 'category', header: '类别', width: 'auto' },
-  { id: 'delete', header: '', width: 'auto' },
+  { id: 'category', header: '类别', width: '1fr' },
+  { id: 'id', header: '资源 ID', width: '3fr' },
+  { id: 'routing', header: '', width: 'minmax(0, 34px)' },
+  { id: 'delete', header: '', width: 'minmax(0, 34px)' },
 ]
 
 export const TIME_BASE_OPTIONS: { value: TimeBase; label: string }[] = [

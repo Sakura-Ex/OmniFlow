@@ -189,8 +189,8 @@ export function buildTopologicalNets(
       const ports = normalizeEndpointPorts(node.data)
       for (const port of ports) {
         if (!port.id) continue
-        const itemType = port.item_type ?? 'item'
-        const qualifiedId = `${itemType}:${port.id}`
+        const portCategory = port.category ?? 'item'
+        const qualifiedId = `${portCategory}:${port.id}`
         const key = portKey(nid, qualifiedId)
         if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
           addToNet(getNetName(uf.find(key)), key)

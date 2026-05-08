@@ -10,8 +10,11 @@ export interface RecipePort extends Resource {
 export interface EndpointPort {
   id: string
   amount: number
-  item_type: string
+  category: string
+  routing_mode?: 'wired' | 'global'
+  routing_locked?: boolean
   _uid?: string
+  [key: string]: unknown
 }
 
 /** 供应源模式：limit=设定上限 | infinite=无限供应 */
@@ -28,7 +31,7 @@ export interface SourceNodeData {
   id?: string
   label?: string
   amount?: number
-  item_type?: string
+  category?: string
   mode?: SourceNodeMode
   /** @deprecated 由 mode 替代，保留以兼容旧存档 */
   is_auto?: boolean
@@ -44,7 +47,7 @@ export interface TargetNodeData {
   id?: string
   label?: string
   amount?: number
-  item_type?: string
+  category?: string
   mode?: TargetNodeMode
   /** @deprecated 由 mode 替代，保留以兼容旧存档 */
   is_auto?: boolean
