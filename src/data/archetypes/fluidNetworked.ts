@@ -11,6 +11,7 @@ export const fluidNetworkedArchetype: MachineArchetype = {
       routing_mode: 'global',
       routing_locked: false,
       time_base: 'rate_per_sec',
+      io: 'input',
     },
   },
   default_modifiers: [],

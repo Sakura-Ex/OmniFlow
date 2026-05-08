@@ -26,6 +26,8 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
   const [baseDurationSeconds, setBaseDurationSeconds] = useState(normalized?.base_duration_seconds ?? normalized?.duration_seconds ?? 0)
   const [baseInputs, setBaseInputs] = useState<Resource[]>((normalized?.base_inputs ?? []).map((item) => ({ ...item })))
   const [baseOutputs, setBaseOutputs] = useState<Resource[]>((normalized?.base_outputs ?? []).map((item) => ({ ...item })))
+  const [baseUtilityInputs, setBaseUtilityInputs] = useState<Resource[]>((normalized?.base_utility_inputs ?? []).map((item) => ({ ...item })))
+  const [baseUtilityOutputs, setBaseUtilityOutputs] = useState<Resource[]>((normalized?.base_utility_outputs ?? []).map((item) => ({ ...item })))
   const [archetypeId, setArchetypeId] = useState(normalized?.archetype_id ?? getDefaultArchetypeIdForSystem(normalized?.system ?? 'custom'))
   const metadata = useMemo(() => normalized?.metadata ? { ...normalized.metadata } : {}, [normalized])
   const [activeModifiers, setActiveModifiers] = useState<string[]>([...(normalized?.active_modifiers ?? [])])
@@ -33,7 +35,18 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
 
   const handleArchetypeChange = useCallback((nextArchetypeId: string) => {
     setArchetypeId(nextArchetypeId)
-    setBaseInputs((prev) => applyArchetypeToInputs(prev, nextArchetypeId, metadata))
+    setBaseInputs((prev) => {
+      const { materials, utilityInputs, utilityOutputs } = applyArchetypeToInputs(prev, nextArchetypeId, metadata)
+      setBaseUtilityInputs((current) => {
+         const userAdded = current.filter((u) => !(u._uid?.startsWith('utility-')))
+         return [...utilityInputs, ...userAdded]
+       })
+       setBaseUtilityOutputs((current) => {
+         const userAdded = current.filter((u) => !(u._uid?.startsWith('utility-')))
+         return [...utilityOutputs, ...userAdded]
+       })
+      return materials
+    })
 
     const defaults = getMachineArchetype(nextArchetypeId).default_modifiers
     if (defaults.length === 0) return
@@ -66,6 +79,8 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
       metadata,
       base_inputs: baseInputs,
       base_outputs: baseOutputs,
+      base_utility_inputs: baseUtilityInputs,
+      base_utility_outputs: baseUtilityOutputs,
       base_duration_seconds: Number(baseDurationSeconds) || 0,
       duration_seconds: Number(baseDurationSeconds) || 0,
       active_modifiers: activeModifiers,
@@ -78,6 +93,8 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
     metadata,
     baseInputs,
     baseOutputs,
+    baseUtilityInputs,
+    baseUtilityOutputs,
     baseDurationSeconds,
     activeModifiers,
     modifierStates,
@@ -157,6 +174,10 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
             setBaseInputs={setBaseInputs}
             baseOutputs={baseOutputs}
             setBaseOutputs={setBaseOutputs}
+            baseUtilityInputs={baseUtilityInputs}
+            setBaseUtilityInputs={setBaseUtilityInputs}
+            baseUtilityOutputs={baseUtilityOutputs}
+            setBaseUtilityOutputs={setBaseUtilityOutputs}
             activeModifiers={activeModifiers}
             setActiveModifiers={setActiveModifiers}
             modifierStates={modifierStates}

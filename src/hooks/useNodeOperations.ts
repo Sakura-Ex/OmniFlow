@@ -143,8 +143,14 @@ export function useNodeOperations({
     for (const inp of baseInputs) {
       if (inp.id) inputCategoryMap.set(inp.id, inp.category ?? 'item')
     }
+    for (const inp of data.base_utility_inputs ?? []) {
+      if (inp.id) inputCategoryMap.set(inp.id, inp.category ?? 'item')
+    }
     const outputCategoryMap = new Map<string, string>()
     for (const out of baseOutputs) {
+      if (out.id) outputCategoryMap.set(out.id, out.category ?? 'item')
+    }
+    for (const out of data.base_utility_outputs ?? []) {
       if (out.id) outputCategoryMap.set(out.id, out.category ?? 'item')
     }
 

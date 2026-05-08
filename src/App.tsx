@@ -105,6 +105,8 @@ export default function App() {
       extract(data.outputs)
       extract(data.base_inputs)
       extract(data.base_outputs)
+      extract(data.base_utility_inputs)
+      extract(data.base_utility_outputs)
       if (Array.isArray(data.ports)) {
         for (const port of data.ports as Array<Record<string, unknown>>) {
           if (typeof port.item_type === 'string' && typeof port.id === 'string' && port.id) {

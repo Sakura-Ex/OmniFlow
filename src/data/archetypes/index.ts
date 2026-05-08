@@ -31,25 +31,32 @@ export function applyArchetypeToInputs(
   inputs: Resource[],
   archetypeId: string,
   metadata: RecipeNodeData['metadata']
-): Resource[] {
+): { materials: Resource[]; utilityInputs: Resource[]; utilityOutputs: Resource[] } {
   const archetype = getMachineArchetype(archetypeId)
   const utilityEntries = Object.entries(archetype.fixed_utilities)
 
   if (utilityEntries.length === 0) {
-    return inputs.filter((entry) => !entry.is_utility)
+    return {
+      materials: inputs.filter((entry) => !entry.is_utility),
+      utilityInputs: [],
+      utilityOutputs: [],
+    }
   }
 
   const normalizedMaterials = inputs.filter((entry) => !entry.is_utility)
   const existingByCategoryId = new Map(inputs.map((entry) => [`${entry.category}:${entry.id}`, entry]))
 
-  const normalizedUtilities = utilityEntries.map(([utilityId, def]) => {
+  const utilityInputs: Resource[] = []
+  const utilityOutputs: Resource[] = []
+
+  for (const [utilityId, def] of utilityEntries) {
     const resourceId = def.resource_id ?? (def.type.includes(':') ? def.type.split(':').pop()! : utilityId)
     const key = `${def.type}:${resourceId}`
     const existing = existingByCategoryId.get(key)
     const defaultAmount = deriveUtilityAmount(def.type, metadata, existing?.amount ?? 0)
     const routingMode: RoutingMode = existing?.routing_mode ?? def.routing_mode
 
-    return {
+    const resource: Resource = {
       category: def.type,
       id: resourceId,
       amount: typeof existing?.amount === 'number' ? existing.amount : defaultAmount,
@@ -61,10 +68,16 @@ export function applyArchetypeToInputs(
       amount_mutable: def.amount_mutable,
       routing_mode: routingMode,
       routing_locked: def.routing_locked,
-    } satisfies Resource
-  })
+    }
 
-  return normalizedMaterials.concat(normalizedUtilities)
+    if (def.io === 'output') {
+      utilityOutputs.push(resource)
+    } else {
+      utilityInputs.push(resource)
+    }
+  }
+
+  return { materials: normalizedMaterials, utilityInputs, utilityOutputs }
 }
 
 export function getUtilityDefForResource(

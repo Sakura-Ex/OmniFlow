@@ -11,6 +11,7 @@ export const gtElectricArchetype: MachineArchetype = {
       routing_mode: 'global',
       routing_locked: true,
       time_base: 'rate_per_tick',
+      io: 'input',
     },
   },
   default_modifiers: ['gt_multiblock'],

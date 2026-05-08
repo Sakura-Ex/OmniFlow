@@ -55,6 +55,7 @@ export interface UtilityDef {
   routing_mode: RoutingMode
   routing_locked: boolean
   time_base?: TimeBase
+  io?: 'input' | 'output'
 }
 
 export interface MachineArchetype {

@@ -80,7 +80,39 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
   const archetype_id = data.archetype_id ?? getDefaultArchetypeIdForSystem(data.system)
 
   const rawInputs = baseInputsRaw.map(toResource)
-  const base_inputs = applyArchetypeToInputs(rawInputs, archetype_id, data.metadata ?? {})
+  const { materials, utilityInputs, utilityOutputs } = applyArchetypeToInputs(rawInputs, archetype_id, data.metadata ?? {})
+  const base_inputs = materials
+
+  const existingUtilityMap = new Map<string, Resource>()
+  for (const u of (data.base_utility_inputs ?? [])) {
+    if (u.id) existingUtilityMap.set(`${u.category}:${u.id}`, u)
+  }
+  for (const u of (data.base_utility_outputs ?? [])) {
+    if (u.id) existingUtilityMap.set(`${u.category}:${u.id}`, u)
+  }
+
+  const mergeWithExisting = (archetypeItems: Resource[]): Resource[] =>
+    archetypeItems.map((u) => {
+      const key = `${u.category}:${u.id}`
+      const existing = existingUtilityMap.get(key)
+      if (!existing) return u
+      return {
+        ...u,
+        amount: existing.amount,
+        time_base: existing.time_base ?? u.time_base,
+        routing_mode: existing.routing_mode,
+        _uid: existing._uid ?? u._uid,
+      }
+    })
+
+  const base_utility_inputs = [
+    ...mergeWithExisting(utilityInputs),
+    ...(data.base_utility_inputs ?? []).filter((u) => u.id && !utilityInputs.some((a) => `${a.category}:${a.id}` === `${u.category}:${u.id}`)),
+  ]
+  const base_utility_outputs = [
+    ...mergeWithExisting(utilityOutputs),
+    ...(data.base_utility_outputs ?? []).filter((u) => u.id && !utilityOutputs.some((a) => `${a.category}:${a.id}` === `${u.category}:${u.id}`)),
+  ]
   const base_outputs = baseOutputsRaw.map(toResource).map((entry) => ({
     ...entry,
     routing_mode: (entry.routing_mode === 'global' ? 'global' : 'wired') as RoutingMode,
@@ -116,6 +148,8 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
     archetype_id,
     base_inputs,
     base_outputs,
+    base_utility_inputs,
+    base_utility_outputs,
     base_duration_seconds,
     duration_seconds: base_duration_seconds,
     base_duration: secondsToTicks(base_duration_seconds),
@@ -141,16 +175,18 @@ interface PipelineContext {
 // ── The 5-Step Modifier Pipeline ──
 
 export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayload {
-  // ── Step 1: Init State — deep clone, separate recipe_io from utility_io ──
+  // ── Step 1: Init State — deep clone, read four separate arrays ──
   const normalized = ensureRecipeDataShape(rawData)
-  const allInputs = deepCloneResources(normalized.base_inputs ?? [])
-  const allOutputs = deepCloneResources(normalized.base_outputs ?? [])
+  const recipeInputs = deepCloneResources(normalized.base_inputs ?? [])
+  const recipeOutputs = deepCloneResources(normalized.base_outputs ?? [])
+  const utilityInputs = deepCloneResources(normalized.base_utility_inputs ?? [])
+  const utilityOutputs = deepCloneResources(normalized.base_utility_outputs ?? [])
 
   const ctx: PipelineContext = {
-    recipeInputs: allInputs.filter((r) => !r.is_utility),
-    recipeOutputs: allOutputs.filter((r) => !r.is_utility),
-    utilityInputs: allInputs.filter((r) => r.is_utility),
-    utilityOutputs: allOutputs.filter((r) => r.is_utility),
+    recipeInputs,
+    recipeOutputs,
+    utilityInputs,
+    utilityOutputs,
     durationSeconds: normalized.base_duration_seconds ?? 0,
     machineStopped: false,
   }
@@ -181,7 +217,9 @@ export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayloa
     if (!modifier) continue
 
     const uiState = normalized.modifier_states?.[modifierId] ?? createDefaultModifierState(modifierId)
-    const effect = modifier.evaluate(allInputs, allOutputs, ctx.durationSeconds, uiState)
+    const combinedInputs = [...ctx.recipeInputs, ...ctx.utilityInputs]
+    const combinedOutputs = [...ctx.recipeOutputs, ...ctx.utilityOutputs]
+    const effect = modifier.evaluate(combinedInputs, combinedOutputs, ctx.durationSeconds, uiState)
 
     if (effect.machineStopped) collected.stopped = true
     if (effect.statMultipliers) collected.stat.push(effect.statMultipliers)

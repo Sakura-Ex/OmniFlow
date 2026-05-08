@@ -67,6 +67,8 @@ export interface RecipeNodeData {
   outputs: RecipePort[]
   base_inputs?: Resource[]
   base_outputs?: Resource[]
+  base_utility_inputs?: Resource[]
+  base_utility_outputs?: Resource[]
   base_duration_seconds?: number
   /** @deprecated legacy tick field retained only for backward compatibility */
   base_duration?: number

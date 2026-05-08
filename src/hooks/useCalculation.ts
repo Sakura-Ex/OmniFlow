@@ -63,6 +63,12 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       for (const port of shaped.base_outputs ?? []) {
         if (port.routing_mode === 'global') globalOutputSet.add(port.category)
       }
+      for (const port of shaped.base_utility_inputs ?? []) {
+        if (port.routing_mode === 'global') globalInputSet.add(port.category)
+      }
+      for (const port of shaped.base_utility_outputs ?? []) {
+        if (port.routing_mode === 'global') globalOutputSet.add(port.category)
+      }
 
       const rates = runModifierPipeline(shaped)
       const materialOutputs = rates.recipe_outputs.filter((r) => !r.is_utility)
@@ -83,11 +89,17 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
         e.sourceHandle
           ? (shapedRecipeByNodeId.get(e.source)?.base_outputs ?? []).some(
               (p) => p.id && `${p.category}:${p.id}` === e.sourceHandle && p.routing_mode === 'global'
+            ) ||
+            (shapedRecipeByNodeId.get(e.source)?.base_utility_outputs ?? []).some(
+              (p) => p.id && `${p.category}:${p.id}` === e.sourceHandle && p.routing_mode === 'global'
             )
           : false
       const tgtGlobal =
         e.targetHandle
           ? (shapedRecipeByNodeId.get(e.target)?.base_inputs ?? []).some(
+              (p) => p.id && `${p.category}:${p.id}` === e.targetHandle && p.routing_mode === 'global'
+            ) ||
+            (shapedRecipeByNodeId.get(e.target)?.base_utility_inputs ?? []).some(
               (p) => p.id && `${p.category}:${p.id}` === e.targetHandle && p.routing_mode === 'global'
             )
           : false
@@ -243,6 +255,26 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
           targetHandle: key,
         })
       }
+      for (const port of shaped.base_utility_inputs ?? []) {
+        if (port.routing_mode !== 'global' || !port.id) continue
+        const key = `${port.category}:${port.id}`
+        implicitEdges.push({
+          source: VIRTUAL_GLOBAL_SOURCE,
+          target: nodeId,
+          sourceHandle: key,
+          targetHandle: key,
+        })
+      }
+      for (const port of shaped.base_utility_outputs ?? []) {
+        if (port.routing_mode !== 'global' || !port.id) continue
+        const key = `${port.category}:${port.id}`
+        implicitEdges.push({
+          source: nodeId,
+          target: VIRTUAL_GLOBAL_TARGET,
+          sourceHandle: key,
+          targetHandle: key,
+        })
+      }
     }
 
     // ── 收集有下游连线的物品（用于后端 equality 约束判定）──
@@ -380,7 +412,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
           const nodeResult = nodeResults[nodeId] ?? nodeResults[shaped.recipe_id]
           const machines = nodeResult?.machines_actual ?? nodeResult?.machines_exact ?? 0
           if (machines <= 0) continue
-          const allRes = [...(shaped.base_inputs ?? []), ...(shaped.base_outputs ?? [])]
+          const allRes = [...(shaped.base_inputs ?? []), ...(shaped.base_outputs ?? []), ...(shaped.base_utility_inputs ?? []), ...(shaped.base_utility_outputs ?? [])]
           for (const r of allRes) {
             if (r.consumable !== false && r.consumable_probability !== 0 || !r.id) continue
             const key = `${r.category}:${r.id}`

@@ -89,7 +89,7 @@ export interface TopologicalNets {
 export function buildTopologicalNets(
   nodes: Node[],
   edges: Edge[],
-  shapedRecipes: Map<string, { base_inputs?: Resource[]; base_outputs?: Resource[] }>
+  shapedRecipes: Map<string, { base_inputs?: Resource[]; base_outputs?: Resource[]; base_utility_inputs?: Resource[]; base_utility_outputs?: Resource[] }>
 ): TopologicalNets {
   const uf = new UnionFind()
 
@@ -150,6 +150,30 @@ export function buildTopologicalNets(
         }
       }
       for (const port of shaped.base_outputs ?? []) {
+        if (!port.id) continue
+        const qualifiedId = `${port.category}:${port.id}`
+        const key = portKey(nid, qualifiedId)
+        if (port.routing_mode === 'global') {
+          addToNet(`Global_${port.category}`, key)
+        } else if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
+          addToNet(getNetName(uf.find(key)), key)
+        } else {
+          addToNet(`Void_${nid}_${qualifiedId}`, key)
+        }
+      }
+      for (const port of shaped.base_utility_inputs ?? []) {
+        if (!port.id) continue
+        const qualifiedId = `${port.category}:${port.id}`
+        const key = portKey(nid, qualifiedId)
+        if (port.routing_mode === 'global') {
+          addToNet(`Global_${port.category}`, key)
+        } else if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
+          addToNet(getNetName(uf.find(key)), key)
+        } else {
+          addToNet(`Void_${nid}_${qualifiedId}`, key)
+        }
+      }
+      for (const port of shaped.base_utility_outputs ?? []) {
         if (!port.id) continue
         const qualifiedId = `${port.category}:${port.id}`
         const key = portKey(nid, qualifiedId)

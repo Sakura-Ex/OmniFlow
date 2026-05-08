@@ -8,7 +8,7 @@ import { useResourceRegistry } from '../registry/resourceRegistry'
 import { buildUnitSuffix } from '../registry/units'
 import { resolveCategoryDef, resolveResourceProps } from '../utils/endpointNorm'
 import { useResourceIndex } from '../hooks/useResourceIndex'
-import { ResourceDefinitionList, RECIPE_INPUT_COLUMNS, RECIPE_OUTPUT_COLUMNS, MACHINE_UTILITY_COLUMNS } from './ResourceDefinitionList'
+import { ResourceDefinitionList, RECIPE_INPUT_COLUMNS, RECIPE_OUTPUT_COLUMNS, UTILITY_COLUMNS } from './ResourceDefinitionList'
 
 type SettingsUIProps = {
   machineName: string
@@ -22,6 +22,10 @@ type SettingsUIProps = {
   setBaseInputs: Dispatch<SetStateAction<Resource[]>>
   baseOutputs: Resource[]
   setBaseOutputs: Dispatch<SetStateAction<Resource[]>>
+  baseUtilityInputs: Resource[]
+  setBaseUtilityInputs: Dispatch<SetStateAction<Resource[]>>
+  baseUtilityOutputs: Resource[]
+  setBaseUtilityOutputs: Dispatch<SetStateAction<Resource[]>>
   activeModifiers: string[]
   setActiveModifiers: Dispatch<SetStateAction<string[]>>
   modifierStates: Record<string, Record<string, unknown>>
@@ -81,6 +85,10 @@ export function SettingsUI(props: SettingsUIProps) {
     setBaseInputs,
     baseOutputs,
     setBaseOutputs,
+    baseUtilityInputs,
+    setBaseUtilityInputs,
+    baseUtilityOutputs,
+    setBaseUtilityOutputs,
     activeModifiers,
     setActiveModifiers,
     modifierStates,
@@ -181,6 +189,93 @@ export function SettingsUI(props: SettingsUIProps) {
     }))
   }, [setBaseOutputs])
 
+  const handleUpdateUtilityInput = useCallback((index: number, patch: Partial<Resource>) => {
+    setBaseUtilityInputs((prev) => prev.map((item, i) => {
+      if (i !== index) return item
+      const merged = { ...item, ...patch }
+      if (patch.category && patch.category !== item.category) {
+        const catDef = registryCategories[patch.category]
+        if (catDef?.preferred_time_base) {
+          merged.time_base = catDef.preferred_time_base
+        }
+      }
+      return merged
+    }))
+  }, [setBaseUtilityInputs, registryCategories])
+  const handleUpdateUtilityOutput = useCallback((index: number, patch: Partial<Resource>) => {
+    setBaseUtilityOutputs((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)))
+  }, [setBaseUtilityOutputs])
+  const handleAddUtilityInput = useCallback(() => {
+    setBaseUtilityInputs((prev) => [...prev, emptyResource()])
+  }, [setBaseUtilityInputs, emptyResource])
+  const handleAddUtilityOutput = useCallback(() => {
+    setBaseUtilityOutputs((prev) => [...prev, emptyResource()])
+  }, [setBaseUtilityOutputs, emptyResource])
+  const handleRemoveUtilityInput = useCallback((index: number) => {
+    setBaseUtilityInputs((prev) => prev.filter((_, i) => i !== index))
+  }, [setBaseUtilityInputs])
+  const handleRemoveUtilityOutput = useCallback((index: number) => {
+    setBaseUtilityOutputs((prev) => prev.filter((_, i) => i !== index))
+  }, [setBaseUtilityOutputs])
+  const handleToggleUtilityInputRouting = useCallback((index: number) => {
+    setBaseUtilityInputs((prev) => prev.map((item, i) => {
+      if (i !== index || item.routing_locked) return item
+      return { ...item, routing_mode: item.routing_mode === 'global' ? 'wired' : 'global' }
+    }))
+  }, [setBaseUtilityInputs])
+  const handleToggleUtilityOutputRouting = useCallback((index: number) => {
+    setBaseUtilityOutputs((prev) => prev.map((item, i) => {
+      if (i !== index || item.routing_locked) return item
+      return { ...item, routing_mode: item.routing_mode === 'global' ? 'wired' : 'global' }
+    }))
+  }, [setBaseUtilityOutputs])
+
+  const utilityItems = useMemo(() => [
+    ...baseUtilityInputs.map((r) => ({ ...r, is_utility_output: false })),
+    ...baseUtilityOutputs.map((r) => ({ ...r, is_utility_output: true })),
+  ], [baseUtilityInputs, baseUtilityOutputs])
+
+  const handleToggleUtilityIO = useCallback((index: number) => {
+    const inputCount = baseUtilityInputs.length
+    if (index < inputCount) {
+      const item = baseUtilityInputs[index]
+      setBaseUtilityInputs((prev) => prev.filter((_, i) => i !== index))
+      setBaseUtilityOutputs((prev) => [...prev, { ...item }])
+    } else {
+      const outIndex = index - inputCount
+      const item = baseUtilityOutputs[outIndex]
+      setBaseUtilityOutputs((prev) => prev.filter((_, i) => i !== outIndex))
+      setBaseUtilityInputs((prev) => [...prev, { ...item }])
+    }
+  }, [baseUtilityInputs, baseUtilityOutputs, setBaseUtilityInputs, setBaseUtilityOutputs])
+
+  const handleUpdateUtilityMerged = useCallback((index: number, patch: Partial<Resource>) => {
+    const inputCount = baseUtilityInputs.length
+    if (index < inputCount) {
+      handleUpdateUtilityInput(index, patch)
+    } else {
+      handleUpdateUtilityOutput(index - inputCount, patch)
+    }
+  }, [baseUtilityInputs, handleUpdateUtilityInput, handleUpdateUtilityOutput])
+
+  const handleRemoveUtilityMerged = useCallback((index: number) => {
+    const inputCount = baseUtilityInputs.length
+    if (index < inputCount) {
+      handleRemoveUtilityInput(index)
+    } else {
+      handleRemoveUtilityOutput(index - inputCount)
+    }
+  }, [baseUtilityInputs, handleRemoveUtilityInput, handleRemoveUtilityOutput])
+
+  const handleToggleUtilityRoutingMerged = useCallback((index: number) => {
+    const inputCount = baseUtilityInputs.length
+    if (index < inputCount) {
+      handleToggleUtilityInputRouting(index)
+    } else {
+      handleToggleUtilityOutputRouting(index - inputCount)
+    }
+  }, [baseUtilityInputs, handleToggleUtilityInputRouting, handleToggleUtilityOutputRouting])
+
   const addModifier = (modifierId: string) => {
     setActiveModifiers((prev) => (prev.includes(modifierId) ? prev : [...prev, modifierId]))
     setModifierStates((prev) => ({
@@ -216,7 +311,7 @@ export function SettingsUI(props: SettingsUIProps) {
     <div className="recipe-settings__layout">
       <section className="recipe-settings__column">
         <ResourceDefinitionList<Resource>
-          items={baseInputs.filter((r) => !r.is_utility)}
+          items={baseInputs}
           columns={RECIPE_INPUT_COLUMNS}
           emptyMessage="暂无输入资源"
           addLabel="添加输入"
@@ -270,16 +365,18 @@ export function SettingsUI(props: SettingsUIProps) {
         <div className="recipe-settings__modifier-pool">
           <h5>Machine Utilities</h5>
           <ResourceDefinitionList<Resource>
-            items={baseInputs.filter((r) => r.is_utility)}
-            columns={MACHINE_UTILITY_COLUMNS}
+            items={utilityItems}
+            columns={UTILITY_COLUMNS}
             emptyMessage="当前范式无固定公用设施"
             addLabel="添加设施"
-            onUpdateItem={handleUpdateInput}
-            onAddItem={handleAddInput}
-            onRemoveItem={handleRemoveInput}
-            onToggleRoutingItem={handleToggleInputRouting}
+            onUpdateItem={handleUpdateUtilityMerged}
+            onAddItem={handleAddUtilityInput}
+            onRemoveItem={handleRemoveUtilityMerged}
+            onToggleRoutingItem={handleToggleUtilityRoutingMerged}
+            onIoTToggleItem={handleToggleUtilityIO}
             rateMap={inputRateMap}
             categoryOptions={categoryOptions}
+            getCanDelete={(i) => !(utilityItems[i]?._uid?.startsWith('utility-'))}
           />
         </div>
 
@@ -325,7 +422,7 @@ export function SettingsUI(props: SettingsUIProps) {
 
           if (modifierId === 'gt_multiblock') {
             const hatchRows = normalizeGtHatches(state)
-            const baseEuInput = baseInputs.find((r) => r.category === 'energy:gt_eu' && r.is_utility)
+            const baseEuInput = baseUtilityInputs.find((r) => r.category === 'energy:gt_eu')
             const baseEuPerTick = baseEuInput ? baseEuInput.amount : 0
             const summary = evaluateGtMultiblockState(
               { ...state, energyHatches: hatchRows },

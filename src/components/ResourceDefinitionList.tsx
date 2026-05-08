@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { ResourceDefinitionRow, type ResourceDefinitionRowProps, type ColumnDef } from './ResourceDefinitionRow'
 
-export { RECIPE_INPUT_COLUMNS, RECIPE_OUTPUT_COLUMNS, MACHINE_UTILITY_COLUMNS, ENDPOINT_COLUMNS } from './ResourceDefinitionRow'
+export { RECIPE_INPUT_COLUMNS, RECIPE_OUTPUT_COLUMNS, UTILITY_COLUMNS, ENDPOINT_COLUMNS } from './ResourceDefinitionRow'
 
 type ResourceDefinitionListProps<T extends Record<string, unknown> & { _uid?: string }> = {
   items: T[]
@@ -14,6 +14,7 @@ type ResourceDefinitionListProps<T extends Record<string, unknown> & { _uid?: st
   onAddItem: () => void
   onRemoveItem: (index: number) => void
   onToggleRoutingItem?: (index: number) => void
+  onIoTToggleItem?: (index: number) => void
 
   rateMap?: Map<string, number>
   suggestions?: string[]
@@ -36,6 +37,7 @@ export function ResourceDefinitionList<T extends Record<string, unknown> & { _ui
   onAddItem,
   onRemoveItem,
   onToggleRoutingItem,
+  onIoTToggleItem,
   rateMap,
   suggestions,
   categoryOptions,
@@ -74,6 +76,7 @@ export function ResourceDefinitionList<T extends Record<string, unknown> & { _ui
           onUpdate: (i, patch) => onUpdateItem(i, patch as Partial<T>),
           onRemove: onRemoveItem,
           onToggleRouting: onToggleRoutingItem,
+          onIoTToggle: onIoTToggleItem,
           rateText: rateMap
             ? formatRate(rateMap.get(`${item.category ?? ''}:${item.id ?? ''}`))
             : undefined,

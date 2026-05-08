@@ -12,6 +12,7 @@ export type ResourceColumnId =
   | 'preview_rate'
   | 'label'
   | 'spacer'
+  | 'io_toggle'
 
 export interface ColumnDef {
   id: ResourceColumnId
@@ -20,25 +21,37 @@ export interface ColumnDef {
 }
 
 export const RECIPE_INPUT_COLUMNS: ColumnDef[] = [
-  { id: 'id', header: 'ID', width: '114px' },
-  { id: 'amount', header: '数量', width: '82px' },
-  { id: 'time_base', header: '基准', width: '48px' },
-  { id: 'category', header: '类别', width: '74px' },
-  { id: 'probability', header: '消耗几率', width: '48px' },
-  { id: 'routing', header: '', width: '34px' },
-  { id: 'delete', header: '', width: '34px' },
-  { id: 'preview_rate', header: '实际速率', width: '66px' },
+  { id: 'category', header: '类别', width: '1fr' },
+  { id: 'id', header: 'ID', width: '1fr' },
+  { id: 'amount', header: '数量', width: '1fr' },
+  { id: 'time_base', header: '基准', width: 'minmax(0, 56px)' },
+  { id: 'probability', header: '消耗几率', width: 'minmax(0, 56px)' },
+  { id: 'routing', header: '', width: 'minmax(0, 34px)' },
+  { id: 'delete', header: '', width: 'minmax(0, 34px)' },
+  { id: 'preview_rate', header: '实际速率', width: 'minmax(0, 80px)' },
 ]
 
 export const RECIPE_OUTPUT_COLUMNS: ColumnDef[] = [
-  { id: 'id', header: 'ID', width: '114px' },
-  { id: 'amount', header: '数量', width: '82px' },
-  { id: 'time_base', header: '基准', width: '48px' },
-  { id: 'category', header: '类别', width: '74px' },
-  { id: 'probability', header: '产出几率', width: '48px' },
-  { id: 'routing', header: '', width: '34px' },
-  { id: 'delete', header: '', width: '34px' },
-  { id: 'preview_rate', header: '实际速率', width: '66px' },
+  { id: 'category', header: '类别', width: '1fr' },
+  { id: 'id', header: 'ID', width: '1fr' },
+  { id: 'amount', header: '数量', width: '1fr' },
+  { id: 'time_base', header: '基准', width: 'minmax(0, 56px)' },
+  { id: 'probability', header: '产出几率', width: 'minmax(0, 56px)' },
+  { id: 'routing', header: '', width: 'minmax(0, 34px)' },
+  { id: 'delete', header: '', width: 'minmax(0, 34px)' },
+  { id: 'preview_rate', header: '实际速率', width: 'minmax(0, 80px)' },
+]
+
+export const UTILITY_COLUMNS: ColumnDef[] = [
+  { id: 'io_toggle', header: 'I/O', width: 'minmax(0, 34px)' },
+  { id: 'category', header: '类别', width: '1fr' },
+  { id: 'id', header: 'ID', width: '1fr' },
+  { id: 'amount', header: '数量', width: '1fr' },
+  { id: 'time_base', header: '基准', width: 'minmax(0, 56px)' },
+  { id: 'probability', header: '消耗几率', width: 'minmax(0, 56px)' },
+  { id: 'routing', header: '', width: 'minmax(0, 34px)' },
+  { id: 'delete', header: '', width: 'minmax(0, 34px)' },
+  { id: 'preview_rate', header: '实际速率', width: 'minmax(0, 80px)' },
 ]
 
 export const MACHINE_UTILITY_COLUMNS: ColumnDef[] = [
@@ -73,6 +86,7 @@ type RowItem = {
   consumable_probability?: number
   probability?: number
   is_utility?: boolean
+  is_utility_output?: boolean
   _uid?: string
   amount_mutable?: boolean
 }
@@ -85,6 +99,7 @@ export interface ResourceDefinitionRowProps {
   onUpdate: (index: number, patch: Record<string, unknown>) => void
   onRemove: (index: number) => void
   onToggleRouting?: (index: number) => void
+  onIoTToggle?: (index: number) => void
 
   rateText?: string
   unitSuffix?: string
@@ -104,6 +119,7 @@ export function ResourceDefinitionRow({
   onUpdate,
   onRemove,
   onToggleRouting,
+  onIoTToggle,
   rateText,
   unitSuffix,
   suggestions,
@@ -299,6 +315,19 @@ export function ResourceDefinitionRow({
 
           case 'spacer':
             return <span key={col.id} />
+
+          case 'io_toggle':
+            return (
+              <button
+                key={col.id}
+                className={`recipe-editor__io-btn${item.is_utility_output ? ' is-output' : ''}`}
+                onClick={() => onIoTToggle?.(index)}
+                title={item.is_utility_output ? '当前：设施输出（点击切换）' : '当前：设施输入（点击切换）'}
+                type="button"
+              >
+                {item.is_utility_output ? '出' : '入'}
+              </button>
+            )
 
           default:
             return null

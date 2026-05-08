@@ -166,12 +166,13 @@ export function resolveRecipePowerProfile(
     active_modifiers?: string[]
     modifier_states?: Record<string, Record<string, unknown>>
     base_inputs?: Resource[]
+    base_utility_inputs?: Resource[]
   },
   transformedInputs?: Resource[]
 ): ResolvedPowerProfile {
   const metadataEu = Number(data.metadata?.eu_per_tick ?? 0)
   const utilityEu = Number(
-    data.base_inputs?.find((resource) => resource.category === 'energy:gt_eu' && resource.is_utility)?.amount ?? 0
+    data.base_utility_inputs?.find((resource) => resource.category === 'energy:gt_eu')?.amount ?? 0
   )
   const baseEuPerTick = utilityEu > 0 ? utilityEu : metadataEu
 
