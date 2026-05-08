@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import type { ResourceCategoryDef, ResourceOverride } from '../registry/types'
 import type { TimeBase } from '../types/types'
+import { parseResourceId } from '../utils/resourceIdentifier'
 import './ResourceRegistryPanel.css'
 
 type ResourceRegistryPanelProps = {
@@ -290,9 +291,9 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
                     <span></span>
                   </div>
                   {overrideEntries.map(([fullId, def]) => {
-                    const idx = fullId.lastIndexOf(':')
-                    const cat = idx > 0 ? fullId.slice(0, idx) : ''
-                    const asset = idx > 0 ? fullId.slice(idx + 1) : fullId
+                    const parsed = parseResourceId(fullId)
+                    const cat = parsed.category !== parsed.id ? parsed.category : ''
+                    const asset = parsed.id
                     const edit = overrideEdits[fullId]
                     const displayCat = edit?.cat ?? cat
                     const displayAsset = edit?.asset ?? asset

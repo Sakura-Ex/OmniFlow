@@ -4,6 +4,7 @@ import { customGenericArchetype } from './customGeneric'
 import { fluidNetworkedArchetype } from './fluidNetworked'
 import { gtElectricArchetype } from './gtElectric'
 import { deriveUtilityAmount } from './shared'
+import { getId } from '../../utils/resourceIdentifier'
 
 // Add new archetypes by creating a new file and registering it here.
 export const machineArchetypeRegistry: Record<string, MachineArchetype> = {
@@ -50,7 +51,7 @@ export function applyArchetypeToInputs(
   const utilityOutputs: Resource[] = []
 
   for (const [utilityId, def] of utilityEntries) {
-    const resourceId = def.resource_id ?? (def.type.includes(':') ? def.type.split(':').pop()! : utilityId)
+    const resourceId = def.resource_id ?? (def.type.includes(':') ? getId(def.type) : utilityId)
     const key = `${def.type}:${resourceId}`
     const existing = existingByCategoryId.get(key)
     const defaultAmount = deriveUtilityAmount(def.type, metadata, existing?.amount ?? 0)
@@ -87,6 +88,6 @@ export function getUtilityDefForResource(
   if (!resource.is_utility) return null
   const archetype = getMachineArchetype(archetypeId)
   return Object.values(archetype.fixed_utilities).find(
-    (def) => def.type === resource.category && (def.resource_id ?? def.type.split(':').pop()) === resource.id
+    (def) => def.type === resource.category && (def.resource_id ?? getId(def.type)) === resource.id
   ) ?? null
 }

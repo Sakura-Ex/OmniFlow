@@ -2,23 +2,21 @@ import { useMemo } from 'react'
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { FALLBACK_CATEGORY } from '../registry/defaults'
 import type { ResourceCategoryDef } from '../registry/types'
+import { getCategory } from '../utils/resourceIdentifier'
 
 export function useResourceCategory(typeId?: string | null): ResourceCategoryDef {
-  const getCategory = useResourceRegistry((state) => state.getCategory)
+  const getCat = useResourceRegistry((state) => state.getCategory)
 
   return useMemo(() => {
     if (!typeId) return FALLBACK_CATEGORY
 
-    const exact = getCategory(typeId)
+    const exact = getCat(typeId)
     if (exact) return exact
 
-    const colonIdx = typeId.indexOf(':')
-    if (colonIdx > 0) {
-      const namespace = typeId.slice(0, colonIdx)
-      const nsMatch = getCategory(namespace)
-      if (nsMatch) return nsMatch
-    }
+    const categoryId = getCategory(typeId)
+    const nsMatch = getCat(categoryId)
+    if (nsMatch) return nsMatch
 
     return FALLBACK_CATEGORY
-  }, [typeId, getCategory])
+  }, [typeId, getCat])
 }

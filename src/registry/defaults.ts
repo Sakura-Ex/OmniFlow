@@ -1,4 +1,5 @@
 import type { ResourceCategoryDef, ResourceOverride, ResolvedResourceProps } from './types'
+import { getCategory } from '../utils/resourceIdentifier'
 
 export const DEFAULT_RESOURCE_CATEGORIES: ResourceCategoryDef[] = [
   { id: 'item',   displayName: '物品', base_unit: '个', themeColor: '#e5e7eb', preferred_time_base: 'rate_per_sec' },
@@ -26,8 +27,7 @@ export function resolveResourceProps(
   userCategories?: Record<string, ResourceCategoryDef>,
   userOverrides?: Record<string, ResourceOverride>,
 ): ResolvedResourceProps {
-  const idx = fullId.lastIndexOf(':')
-  const categoryId = idx > 0 ? fullId.slice(0, idx) : fullId
+  const categoryId = getCategory(fullId)
 
   const catDef = userCategories?.[fullId]
     ?? userCategories?.[categoryId]
@@ -37,7 +37,7 @@ export function resolveResourceProps(
 
   const override = userOverrides?.[fullId] ?? ResourceOverrideRegistry[fullId]
 
-  const isUnknown = !findBuiltinCategory(categoryId) && (idx <= 0 || !userCategories?.[categoryId])
+  const isUnknown = !findBuiltinCategory(categoryId) && (fullId === categoryId || !userCategories?.[categoryId])
 
   return {
     unit: override?.unit_override ?? catDef.base_unit,

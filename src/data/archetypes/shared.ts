@@ -1,4 +1,5 @@
 import type { RecipeNodeData } from '../../types/recipe'
+import { getId } from '../../utils/resourceIdentifier'
 
 const utilityCategoryHints: Array<{ pattern: RegExp; category: string }> = [
   { pattern: /eu|rf|power|energy|voltage/i, category: 'energy' },
@@ -19,11 +20,9 @@ export function deriveUtilityAmount(
   metadata: RecipeNodeData['metadata'],
   fallback: number
 ): number {
-  const typeParts = type.split(':')
-  if (typeParts.length === 2) {
-    const resourceKey = typeParts[1]
-    const metaValue = metadata[`${resourceKey}_per_tick`]
-    if (typeof metaValue === 'number') return metaValue
-  }
+  if (!type.includes(':')) return fallback
+  const resourceKey = getId(type)
+  const metaValue = metadata[`${resourceKey}_per_tick`]
+  if (typeof metaValue === 'number') return metaValue
   return fallback
 }

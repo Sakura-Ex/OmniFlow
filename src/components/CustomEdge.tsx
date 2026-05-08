@@ -2,19 +2,14 @@ import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from 'reac
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { FALLBACK_CATEGORY } from '../registry/defaults'
 import type { ResourceCategoryDef } from '../registry/types'
-
-function parseCategory(id: string): string {
-  const idx = id.indexOf(':')
-  if (idx > 0) return id.slice(0, idx)
-  return id
-}
+import { getCategory } from '../utils/resourceIdentifier'
 
 function resolveEdgeColor(
   categories: Record<string, ResourceCategoryDef>,
   handleId?: string | null
 ): string {
   if (!handleId) return FALLBACK_CATEGORY.themeColor
-  const categoryId = parseCategory(handleId)
+  const categoryId = getCategory(handleId)
   const exact = categories[categoryId]
   if (exact) return exact.themeColor
   const colonIdx = categoryId.indexOf(':')

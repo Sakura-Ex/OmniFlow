@@ -5,6 +5,7 @@ import { getModifierById } from './registry'
 import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArchetype } from '../data/archetypes/index'
 import { DEFAULT_RESOURCE_CATEGORIES } from '../registry/defaults'
 import type { ModifierEffect } from './types'
+import { getCategory } from '../utils/resourceIdentifier'
 
 export const GAME_BASE_TPS = 20
 
@@ -365,7 +366,7 @@ export function flattenForBackend(payload: ComputedNodePayload): {
   const knownCategories = new Set(DEFAULT_RESOURCE_CATEGORIES.map((c) => c.id))
 
   const isUnknownResource = (category: string): boolean => {
-    const dimensionId = category.includes(':') ? category.slice(0, category.lastIndexOf(':')) : category
+    const dimensionId = category.includes(':') ? getCategory(category) : category
     return !knownCategories.has(dimensionId)
   }
 

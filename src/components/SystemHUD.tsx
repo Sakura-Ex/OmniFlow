@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { resolveCategoryDef } from '../utils/endpointNorm'
 import { formatSimpleRate } from '../utils/resourceFormat'
+import { parseResourceId } from '../utils/resourceIdentifier'
 import './SystemHUD.css'
 
 type SystemHUDProps = {
@@ -15,9 +16,11 @@ type SystemHUDProps = {
 function stripNetKey(item: string): { baseId: string; category: string; name: string } {
   let raw = item
   if (raw.startsWith('Net_')) raw = raw.slice(4).replace(/_[0-9a-f]{4}[a-z0-9]{4}$/, '')
-  const idx = raw.lastIndexOf(':')
-  if (idx <= 0) return { baseId: raw, category: 'item', name: raw }
-  return { baseId: raw, category: raw.slice(0, idx), name: raw.slice(idx + 1) }
+  const parsed = parseResourceId(raw)
+  if (parsed.category === raw && parsed.id === raw) {
+    return { baseId: raw, category: 'item', name: raw }
+  }
+  return { baseId: raw, category: parsed.category, name: parsed.id }
 }
 
 function parseItemKey(item: string): { category: string; name: string } {

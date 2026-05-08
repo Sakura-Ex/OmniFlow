@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import type { TimeBase } from '../types/types'
+import { parseResourceId } from '../utils/resourceIdentifier'
 
 export type ResourceColumnId =
   | 'id'
@@ -188,9 +189,9 @@ export function ResourceDefinitionRow({
                         key={s}
                         onMouseDown={(e) => {
                           e.preventDefault()
-                          const idx = s.lastIndexOf(':')
-                          const cat = idx > 0 ? s.slice(0, idx) : ''
-                          const name = idx > 0 ? s.slice(idx + 1) : s
+                          const parsed = parseResourceId(s)
+                          const cat = parsed.category !== parsed.id ? parsed.category : ''
+                          const name = parsed.id
                           onUpdate(index, { id: name, category: cat })
                           setShowSuggestions(false)
                         }}

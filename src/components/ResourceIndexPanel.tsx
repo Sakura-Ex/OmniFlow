@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useResourceIndex } from '../hooks/useResourceIndex'
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { buildUnitSuffix } from '../registry/units'
+import { parseResourceId } from '../utils/resourceIdentifier'
 import './ResourceRegistryPanel.css'
 
 type ResourceIndexPanelProps = {
@@ -65,8 +66,8 @@ export function ResourceIndexPanel({ onClose, usedResourceKeys }: ResourceIndexP
                 <span>操作</span>
               </div>
               {entryList.map(([fullId, def]) => {
-                const idx = fullId.lastIndexOf(':')
-                const catId = idx > 0 ? fullId.slice(0, idx) : ''
+                const parsed = parseResourceId(fullId)
+                const catId = parsed.category !== parsed.id ? parsed.category : ''
                 const catDef = registryCategories[catId]
                 const inUse = usedSet.has(fullId)
 
