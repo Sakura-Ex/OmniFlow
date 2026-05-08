@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { resolveCategoryDef } from '../utils/endpointNorm'
 import { formatSimpleRate } from '../utils/resourceFormat'
-import { parseResourceId } from '../utils/resourceIdentifier'
+import { parseResourceId, stripNetPrefix, isVirtualGlobal } from '../utils/resourceIdentifier'
 import './SystemHUD.css'
 
 type SystemHUDProps = {
@@ -14,12 +14,9 @@ type SystemHUDProps = {
 }
 
 function stripNetKey(item: string): { baseId: string; category: string; name: string } {
-  let raw = item
-  if (raw.startsWith('Net_')) raw = raw.slice(4).replace(/_[0-9a-f]{4}[a-z0-9]{4}$/, '')
+  const raw = stripNetPrefix(item)
+  if (raw === item) return { baseId: item, category: 'item', name: item }
   const parsed = parseResourceId(raw)
-  if (parsed.category === raw && parsed.id === raw) {
-    return { baseId: raw, category: 'item', name: raw }
-  }
   return { baseId: raw, category: parsed.category, name: parsed.id }
 }
 
@@ -66,10 +63,9 @@ export function SystemHUD({
   const globalOutputSet = new Set(globalOutputIds)
 
   const allInputEntries = Object.entries(systemInputs)
-    .filter(([item]) => !item.startsWith('Virtual_Global_'))
+    .filter(([item]) => !isVirtualGlobal(item))
   const allOutputEntries = Object.entries(systemOutputs)
-    .filter(([item]) => !item.startsWith('Virtual_Global_'))
-
+    .filter(([item]) => !isVirtualGlobal(item))
   const wiredInputEntries = allInputEntries.filter(([item]) => !globalInputSet.has(getGlobalKey(item)))
   const globalInputEntries = allInputEntries.filter(([item]) => globalInputSet.has(getGlobalKey(item)))
   const wiredOutputEntries = allOutputEntries.filter(([item]) => !globalOutputSet.has(getGlobalKey(item)))

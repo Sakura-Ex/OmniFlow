@@ -7,14 +7,17 @@
  * same item/fluid ID but are in disconnected sub-graphs.
  *
  * Port naming after compilation:
- *   Wired  → Net_<originalId>_<uuid>   (one per connected component)
- *   Global → Global_<originalId>        (joins the implicit global bus)
- *   Void   → Void_<nodeId>_<originalId> (isolated, no connection)
+ *   Wired  → Net_<resourceId>_<suffix> (one per connected component)
+ *   Global → Global_<qualifier>        (joins the implicit global bus)
+ *   Void   → Void_<nodeId>_<fullId>    (isolated, no connection)
+ *
+ * @see resourceIdentifier.ts for unified builders / parsers
  */
 
 import type { Edge, Node } from 'reactflow'
 import type { Resource } from '../types/types'
 import { normalizeEndpointPorts } from './endpointNorm'
+import { buildResourceId, buildNetName, buildGlobalName, buildVoidName } from './resourceIdentifier'
 
 /** Key used to look up a port in the net table: "<nodeId>|<portId>" */
 type PortKey = string
@@ -121,8 +124,7 @@ export function buildTopologicalNets(
     if (rootToNetName.has(root)) return rootToNetName.get(root)!
     const parts = root.split('|')
     const resourceId = parts[1] ?? root
-    const suffix = generateShortId()
-    const netName = `Net_${resourceId}_${suffix}`
+    const netName = buildNetName(resourceId, generateShortId())
     rootToNetName.set(root, netName)
     return netName
   }
@@ -134,52 +136,50 @@ export function buildTopologicalNets(
     if (node.type === 'recipeNode' && shaped) {
       for (const port of shaped.base_inputs ?? []) {
         if (!port.id) continue
-        const qualifiedId = `${port.category}:${port.id}`
+        const qualifiedId = buildResourceId(port.category, port.id)
         const key = portKey(nid, qualifiedId)
         if (port.routing_mode === 'global') {
-          addToNet(`Global_${port.category}`, key)
+          addToNet(buildGlobalName(port.category), key)
         } else if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
-          // Port appears in a wired edge: assign to its connected-component net
           addToNet(getNetName(uf.find(key)), key)
         } else {
-          // Void: no connection
-          addToNet(`Void_${nid}_${qualifiedId}`, key)
+          addToNet(buildVoidName(nid, qualifiedId), key)
         }
       }
       for (const port of shaped.base_outputs ?? []) {
         if (!port.id) continue
-        const qualifiedId = `${port.category}:${port.id}`
+        const qualifiedId = buildResourceId(port.category, port.id)
         const key = portKey(nid, qualifiedId)
         if (port.routing_mode === 'global') {
-          addToNet(`Global_${port.category}`, key)
+          addToNet(buildGlobalName(port.category), key)
         } else if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
           addToNet(getNetName(uf.find(key)), key)
         } else {
-          addToNet(`Void_${nid}_${qualifiedId}`, key)
+          addToNet(buildVoidName(nid, qualifiedId), key)
         }
       }
       for (const port of shaped.base_utility_inputs ?? []) {
         if (!port.id) continue
-        const qualifiedId = `${port.category}:${port.id}`
+        const qualifiedId = buildResourceId(port.category, port.id)
         const key = portKey(nid, qualifiedId)
         if (port.routing_mode === 'global') {
-          addToNet(`Global_${port.category}`, key)
+          addToNet(buildGlobalName(port.category), key)
         } else if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
           addToNet(getNetName(uf.find(key)), key)
         } else {
-          addToNet(`Void_${nid}_${qualifiedId}`, key)
+          addToNet(buildVoidName(nid, qualifiedId), key)
         }
       }
       for (const port of shaped.base_utility_outputs ?? []) {
         if (!port.id) continue
-        const qualifiedId = `${port.category}:${port.id}`
+        const qualifiedId = buildResourceId(port.category, port.id)
         const key = portKey(nid, qualifiedId)
         if (port.routing_mode === 'global') {
-          addToNet(`Global_${port.category}`, key)
+          addToNet(buildGlobalName(port.category), key)
         } else if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
           addToNet(getNetName(uf.find(key)), key)
         } else {
-          addToNet(`Void_${nid}_${qualifiedId}`, key)
+          addToNet(buildVoidName(nid, qualifiedId), key)
         }
       }
     } else if (node.type === 'sourceNode' || node.type === 'targetNode') {
@@ -187,12 +187,12 @@ export function buildTopologicalNets(
       for (const port of ports) {
         if (!port.id) continue
         const portCategory = port.category ?? 'item'
-        const qualifiedId = `${portCategory}:${port.id}`
+        const qualifiedId = buildResourceId(portCategory, port.id)
         const key = portKey(nid, qualifiedId)
         if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
           addToNet(getNetName(uf.find(key)), key)
         } else {
-          addToNet(`Void_${nid}_${qualifiedId}`, key)
+          addToNet(buildVoidName(nid, qualifiedId), key)
         }
       }
     }
@@ -228,7 +228,7 @@ export function translatePortIds<T extends { id: string; category?: string }>(
     const netName = lookup.get(key)
     if (!netName) {
       // Fallback: treat as void (should not normally happen if all ports are registered)
-      return { ...port, id: `Void_${nodeId}_${qualifiedId}` }
+      return { ...port, id: buildVoidName(nodeId, qualifiedId) }
     }
     return { ...port, id: netName }
   })

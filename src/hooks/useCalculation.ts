@@ -8,6 +8,7 @@ import { runModifierPipeline, flattenForBackend } from '../modifiers/calculate'
 import { normalizeEndpointPorts } from '../utils/endpointNorm'
 import { buildTopologicalNets } from '../utils/topologicalNets'
 import { useRecipeStore } from '../stores/recipeStore'
+import { isNetName, isVoidName, buildResourceId } from '../utils/resourceIdentifier'
 
 const VIRTUAL_GLOBAL_SOURCE = 'Virtual_Global_Source'
 const VIRTUAL_GLOBAL_TARGET = 'Virtual_Global_Target'
@@ -62,16 +63,16 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
         shapedRecipeByNodeId.set(n.id, stored)
 
         for (const port of stored.base_inputs ?? []) {
-          if (port.routing_mode === 'global') globalInputSet.add(`${port.category}:${port.id}`)
+          if (port.routing_mode === 'global') globalInputSet.add(buildResourceId(port.category, port.id))
         }
         for (const port of stored.base_outputs ?? []) {
-          if (port.routing_mode === 'global') globalOutputSet.add(`${port.category}:${port.id}`)
+          if (port.routing_mode === 'global') globalOutputSet.add(buildResourceId(port.category, port.id))
         }
         for (const port of stored.base_utility_inputs ?? []) {
-          if (port.routing_mode === 'global') globalInputSet.add(`${port.category}:${port.id}`)
+          if (port.routing_mode === 'global') globalInputSet.add(buildResourceId(port.category, port.id))
         }
         for (const port of stored.base_utility_outputs ?? []) {
-          if (port.routing_mode === 'global') globalOutputSet.add(`${port.category}:${port.id}`)
+          if (port.routing_mode === 'global') globalOutputSet.add(buildResourceId(port.category, port.id))
         }
 
         const rates = stored._computed ?? runModifierPipeline(stored)
@@ -83,7 +84,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
         const ports = normalizeEndpointPorts(n.data)
         for (const port of ports) {
           if (port.routing_mode === 'global') {
-            const qid = `${port.category}:${port.id}`
+            const qid = buildResourceId(port.category, port.id)
             if (n.type === 'sourceNode') {
               globalOutputSet.add(qid)
             } else {
@@ -115,15 +116,15 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
         srcGlobal =
           e.sourceHandle
             ? (shapedRecipeByNodeId.get(e.source)?.base_outputs ?? []).some(
-                (p) => p.id && `${p.category}:${p.id}` === e.sourceHandle && p.routing_mode === 'global'
+                (p) => p.id && buildResourceId(p.category, p.id) === e.sourceHandle && p.routing_mode === 'global'
               ) ||
               (shapedRecipeByNodeId.get(e.source)?.base_utility_outputs ?? []).some(
-                (p) => p.id && `${p.category}:${p.id}` === e.sourceHandle && p.routing_mode === 'global'
+                (p) => p.id && buildResourceId(p.category, p.id) === e.sourceHandle && p.routing_mode === 'global'
               )
             : false
       } else if (srcNode?.type === 'sourceNode') {
         const ports = normalizeEndpointPorts(srcNode.data)
-        srcGlobal = ports.some((p) => `${p.category}:${p.id}` === e.sourceHandle && p.routing_mode === 'global')
+        srcGlobal = ports.some((p) => buildResourceId(p.category, p.id) === e.sourceHandle && p.routing_mode === 'global')
       }
 
       let tgtGlobal = false
@@ -131,15 +132,15 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
         tgtGlobal =
           e.targetHandle
             ? (shapedRecipeByNodeId.get(e.target)?.base_inputs ?? []).some(
-                (p) => p.id && `${p.category}:${p.id}` === e.targetHandle && p.routing_mode === 'global'
+                (p) => p.id && buildResourceId(p.category, p.id) === e.targetHandle && p.routing_mode === 'global'
               ) ||
               (shapedRecipeByNodeId.get(e.target)?.base_utility_inputs ?? []).some(
-                (p) => p.id && `${p.category}:${p.id}` === e.targetHandle && p.routing_mode === 'global'
+                (p) => p.id && buildResourceId(p.category, p.id) === e.targetHandle && p.routing_mode === 'global'
               )
             : false
       } else if (tgtNode?.type === 'targetNode') {
         const ports = normalizeEndpointPorts(tgtNode.data)
-        tgtGlobal = ports.some((p) => `${p.category}:${p.id}` === e.targetHandle && p.routing_mode === 'global')
+        tgtGlobal = ports.some((p) => buildResourceId(p.category, p.id) === e.targetHandle && p.routing_mode === 'global')
       }
 
       return !srcGlobal && !tgtGlobal
@@ -160,7 +161,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       const translated: Record<string, number> = {}
       for (const [key, val] of Object.entries(dict)) {
         const netName = netLookup.get(`${nodeId}|${key}`)
-        const finalKey = (netName && netName.startsWith('Net_')) ? netName : key
+        const finalKey = (netName && (isNetName(netName) || isVoidName(netName))) ? netName : key
         translated[finalKey] = (translated[finalKey] ?? 0) + val
       }
       return translated
@@ -192,7 +193,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
           const subId = `${n.id}__p${pi}`
 
           const rawNetId = netLookup.get(key)
-          const netId = (rawNetId && rawNetId.startsWith('Net_')) ? rawNetId : qualifiedId
+          const netId = (rawNetId && isNetName(rawNetId)) ? rawNetId : qualifiedId
 
           if (n.type === 'targetNode' && (mode === 'demand' || mode === 'maximize')) {
             equalityTargetItems.add(netId)
@@ -282,7 +283,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
     for (const [nodeId, shaped] of shapedRecipeByNodeId.entries()) {
       for (const port of shaped.base_inputs ?? []) {
         if (port.routing_mode !== 'global' || !port.id) continue
-        const key = `${port.category}:${port.id}`
+        const key = buildResourceId(port.category, port.id)
         implicitEdges.push({
           source: VIRTUAL_GLOBAL_SOURCE,
           target: nodeId,
@@ -292,7 +293,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       }
       for (const port of shaped.base_outputs ?? []) {
         if (port.routing_mode !== 'global' || !port.id) continue
-        const key = `${port.category}:${port.id}`
+        const key = buildResourceId(port.category, port.id)
         implicitEdges.push({
           source: nodeId,
           target: VIRTUAL_GLOBAL_TARGET,
@@ -302,7 +303,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       }
       for (const port of shaped.base_utility_inputs ?? []) {
         if (port.routing_mode !== 'global' || !port.id) continue
-        const key = `${port.category}:${port.id}`
+        const key = buildResourceId(port.category, port.id)
         implicitEdges.push({
           source: VIRTUAL_GLOBAL_SOURCE,
           target: nodeId,
@@ -312,7 +313,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       }
       for (const port of shaped.base_utility_outputs ?? []) {
         if (port.routing_mode !== 'global' || !port.id) continue
-        const key = `${port.category}:${port.id}`
+        const key = buildResourceId(port.category, port.id)
         implicitEdges.push({
           source: nodeId,
           target: VIRTUAL_GLOBAL_TARGET,
@@ -322,10 +323,10 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       }
     }
 
-    // ── Source / Target 全局端口的 implicit edges ──
+    // ── Source / Target 全局端口�?implicit edges ──
     // 注意：需要将原始节点 ID 转换为子节点 ID
     for (const ep of endpointGlobalPorts) {
-      const key = `${ep.port.category}:${ep.port.id}`
+      const key = buildResourceId(ep.port.category, ep.port.id)
       const subNodeId = portHandleToSubNodeId.get(`${ep.nodeId}|${key}`) ?? ep.nodeId
       if (ep.nodeType === 'sourceNode') {
         implicitEdges.push({
@@ -477,7 +478,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
           const allRes = [...(shaped.base_inputs ?? []), ...(shaped.base_outputs ?? []), ...(shaped.base_utility_inputs ?? []), ...(shaped.base_utility_outputs ?? [])]
           for (const r of allRes) {
             if (r.consumable !== false && r.consumable_probability !== 0 || !r.id) continue
-            const key = `${r.category}:${r.id}`
+            const key = buildResourceId(r.category, r.id)
             capexMap[key] = (capexMap[key] ?? 0) + r.amount * machines
           }
         }
