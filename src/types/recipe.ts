@@ -1,4 +1,4 @@
-import type { Resource } from './types'
+import type { Resource, ComputedNodePayload } from './types'
 
 export type RecipePortKind = string
 
@@ -61,6 +61,7 @@ export interface RecipeNodeData {
   system: MachineSystem
   archetype_id?: string
   duration_seconds: number
+  _computed?: ComputedNodePayload
   /** @deprecated legacy tick field retained only for backward compatibility */
   duration_ticks?: number
   inputs: RecipePort[]

@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type { Edge, Node } from 'reactflow'
 import type { RecipeNodeData, EndpointPort } from '../types/recipe'
+import { useRecipeStore } from '../stores/recipeStore'
 
 export type HandleUpdate = {
   role: 'source' | 'target'
@@ -82,6 +83,7 @@ export function useNodeOperations({
         }
       } else if (currentNode.type === 'recipeNode') {
         mergedData = { ...mergedData, is_auto: nextIsAuto }
+        useRecipeStore.getState().updateRecipe(nodeId, nextData)
       }
     }
 

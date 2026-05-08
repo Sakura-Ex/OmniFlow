@@ -1,12 +1,22 @@
 import { useCallback } from 'react'
 import type { ChangeEvent, Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type { Edge, Node } from 'reactflow'
+import type { RecipeNodeData } from '../types/recipe'
+import { useRecipeStore } from '../stores/recipeStore'
 
-type CanvasPayload = {
-  version: number
+type CanvasPayloadV1 = {
+  version: 1
   nodes: Node[]
   edges: Edge[]
 }
+
+type CanvasPayloadV2 = {
+  version: 2
+  ui: { nodes: Node[]; edges: Edge[] }
+  domain: { recipes: Record<string, RecipeNodeData> }
+}
+
+type CanvasPayload = CanvasPayloadV1 | CanvasPayloadV2
 
 type UseFileIOParams = {
   storageKey: string
@@ -42,26 +52,66 @@ export function useFileIO({
 }: UseFileIOParams) {
   const serializeGraph = useCallback((): CanvasPayload => {
     return {
-      version: 1,
-      nodes: stripState(JSON.parse(JSON.stringify(nodesRef.current))),
-      edges: stripState(JSON.parse(JSON.stringify(edgesRef.current))),
+      version: 2,
+      ui: {
+        nodes: stripState(JSON.parse(JSON.stringify(nodesRef.current))),
+        edges: stripState(JSON.parse(JSON.stringify(edgesRef.current))),
+      },
+      domain: {
+        recipes: useRecipeStore.getState().dumpAll(),
+      },
     }
   }, [edgesRef, nodesRef])
 
-  const loadGraph = useCallback((payload: { nodes?: Node[]; edges?: Edge[] }) => {
-    if (!payload || !Array.isArray(payload.nodes) || !Array.isArray(payload.edges)) {
-      alert('画布数据格式不正确')
+  const loadGraph = useCallback((payload: CanvasPayload) => {
+    const raw = payload as Record<string, unknown>
+
+    if (payload.version === 1 && Array.isArray(raw.nodes) && Array.isArray(raw.edges)) {
+      const v1Nodes = raw.nodes as Node[]
+      const v1Edges = raw.edges as Edge[]
+
+      const recipes: Record<string, RecipeNodeData> = {}
+      const migratedNodes: Node[] = v1Nodes.map((node) => {
+        if (node.type === 'recipeNode') {
+          recipes[node.id] = node.data as RecipeNodeData
+          return { ...node, data: { type: 'recipeNode', label: (node.data as { machine_name?: string }).machine_name ?? '' } }
+        }
+        return node
+      })
+
+      useRecipeStore.getState().loadAll(recipes)
+
+      const normalizedNodes = migratedNodes.map((node) => normalizeCanvasNode(node))
+      takeSnapshot()
+      setNodes(normalizedNodes)
+      setEdges(v1Edges)
+      resetSystemStats()
+      nodesRef.current = normalizedNodes
+      edgesRef.current = v1Edges
       return
     }
 
-    const normalizedNodes = payload.nodes.map((node) => normalizeCanvasNode(node))
+    if (payload.version === 2 && raw.ui && raw.domain) {
+      const v2 = payload as CanvasPayloadV2
 
-    takeSnapshot()
-    setNodes(normalizedNodes)
-    setEdges(payload.edges)
-    resetSystemStats()
-    nodesRef.current = normalizedNodes
-    edgesRef.current = payload.edges
+      if (!Array.isArray(v2.ui.nodes) || !Array.isArray(v2.ui.edges)) {
+        alert('画布数据格式不正确')
+        return
+      }
+
+      useRecipeStore.getState().loadAll(v2.domain.recipes)
+
+      const normalizedNodes = v2.ui.nodes.map((node) => normalizeCanvasNode(node))
+      takeSnapshot()
+      setNodes(normalizedNodes)
+      setEdges(v2.ui.edges)
+      resetSystemStats()
+      nodesRef.current = normalizedNodes
+      edgesRef.current = v2.ui.edges
+      return
+    }
+
+    alert('画布数据格式不正确')
   }, [edgesRef, nodesRef, normalizeCanvasNode, resetSystemStats, setEdges, setNodes, takeSnapshot])
 
   const handleSaveCanvas = useCallback(() => {

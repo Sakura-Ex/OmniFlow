@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import type { Dispatch, MouseEvent, MutableRefObject, SetStateAction } from 'react'
 import { addEdge, type Connection, type Edge, type Node } from 'reactflow'
 import type { RecipeNodeData } from '../types/recipe'
+import { useRecipeStore } from '../stores/recipeStore'
 
 type UseCanvasOperationsParams = {
   setNodes: Dispatch<SetStateAction<Node[]>>
@@ -68,43 +69,47 @@ export function useCanvasOperations({
   const handleAddFurnace = useCallback(() => {
     takeSnapshot()
     const id = makeId()
+    const nodeData: RecipeNodeData = {
+      recipe_id: `recipe_${id}`,
+      machine_name: 'Generic Machine',
+      system: 'gregtech',
+      inputs: [],
+      outputs: [],
+      duration_seconds: 5,
+      is_auto: true,
+      metadata: { eu_per_tick: 32, can_overclock: true },
+    }
     const newNode: Node<RecipeNodeData> = {
       id,
       type: 'recipeNode',
       position: { x: 320 + Math.random() * 50, y: 180 + Math.random() * 50 },
-      data: {
-        recipe_id: `recipe_${id}`,
-        machine_name: 'Generic Machine',
-        system: 'gregtech',
-        inputs: [],
-        outputs: [],
-        duration_seconds: 5,
-        is_auto: true,
-        metadata: { eu_per_tick: 32, can_overclock: true },
-      },
+      data: nodeData,
     }
     setNodes((nds) => nds.concat(newNode))
+    useRecipeStore.getState().setRecipe(id, nodeData)
   }, [setNodes, takeSnapshot])
 
   const handleAddCustomRecipe = useCallback(() => {
     takeSnapshot()
     const id = makeId()
+    const nodeData: RecipeNodeData = {
+      recipe_id: `custom_${id}`,
+      machine_name: 'Custom Machine',
+      system: 'custom',
+      inputs: [],
+      outputs: [],
+      duration_seconds: 0,
+      is_auto: true,
+      metadata: {},
+    }
     const newNode: Node<RecipeNodeData> = {
       id,
       type: 'recipeNode',
       position: { x: 320 + Math.random() * 50, y: 180 + Math.random() * 50 },
-      data: {
-        recipe_id: `custom_${id}`,
-        machine_name: 'Custom Machine',
-        system: 'custom',
-        inputs: [],
-        outputs: [],
-        duration_seconds: 0,
-        is_auto: true,
-        metadata: {},
-      },
+      data: nodeData,
     }
     setNodes((nds) => nds.concat(newNode))
+    useRecipeStore.getState().setRecipe(id, nodeData)
   }, [setNodes, takeSnapshot])
 
   const handleAddTarget = useCallback(() => {
@@ -127,10 +132,12 @@ export function useCanvasOperations({
     setSystemOutputs({})
     setLastSystemInputs({})
     setLastSystemOutputs({})
+    useRecipeStore.setState({ recipes: {} })
   }, [setEdges, setLastSystemInputs, setLastSystemOutputs, setNodes, setSystemInputs, setSystemOutputs, takeSnapshot])
 
   const handleDeleteSelected = useCallback(() => {
     takeSnapshot()
+    const removedIds = nodesRef.current.filter((n) => n.selected).map((n) => n.id)
     setNodes((nds) => {
       const toRemove = nds.filter((n) => n.selected).map((n) => n.id)
       if (toRemove.length === 0) return nds
@@ -138,7 +145,10 @@ export function useCanvasOperations({
       return nds.filter((n) => !toRemove.includes(n.id))
     })
     setEdges((eds) => eds.filter((e) => !e.selected))
-  }, [setEdges, setNodes, takeSnapshot])
+    for (const id of removedIds) {
+      useRecipeStore.getState().removeRecipe(id)
+    }
+  }, [setEdges, setNodes, nodesRef, takeSnapshot])
 
   const handleDeleteSelectedEdges = useCallback(() => {
     takeSnapshot()
@@ -151,6 +161,9 @@ export function useCanvasOperations({
     if (toRemove.length === 0) return
     setNodes((prev) => prev.filter((n) => !toRemove.includes(n.id)))
     setEdges((prev) => prev.filter((e) => !toRemove.includes(e.source) && !toRemove.includes(e.target)))
+    for (const id of toRemove) {
+      useRecipeStore.getState().removeRecipe(id)
+    }
   }, [nodesRef, setEdges, setNodes, takeSnapshot])
 
   const handleSelectAll = useCallback(() => {

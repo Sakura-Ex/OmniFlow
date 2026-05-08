@@ -26,6 +26,8 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useNodeEditor } from './hooks/useNodeEditor'
 import { useCalculation } from './hooks/useCalculation'
 import { useNodeOperations } from './hooks/useNodeOperations'
+import { useRecipeStore } from './stores/recipeStore'
+import type { RecipeNodeData } from './types/recipe'
 import { MenuBar } from './components/MenuBar'
 import { initialNodes, initialEdges } from './domain/canvas/initialState'
 import { normalizeCanvasNode } from './domain/canvas/validators'
@@ -73,6 +75,30 @@ export default function App() {
 
   const { takeSnapshot, undo, redo } = useUndoRedo({ nodesRef, edgesRef, setNodes, setEdges })
 
+  const seededRef = useRef(false)
+  useEffect(() => {
+    if (seededRef.current) return
+    const currentNodes = nodesRef.current
+    const store = useRecipeStore.getState()
+    const needsSeed = currentNodes.some(
+      (n) => n.type === 'recipeNode' && !store.recipes[n.id]
+    )
+    if (!needsSeed) {
+      seededRef.current = true
+      return
+    }
+    const trimmed = currentNodes.map((node) => {
+      if (node.type === 'recipeNode') {
+        const data = node.data as RecipeNodeData
+        store.setRecipe(node.id, data)
+        return { ...node, data: { type: 'recipeNode', label: data.machine_name ?? '' } }
+      }
+      return node
+    })
+    setNodes(trimmed)
+    seededRef.current = true
+  }, [nodesRef, setNodes])
+
   const {
     systemInputs,
     systemOutputs,
@@ -115,6 +141,23 @@ export default function App() {
         }
       }
     }
+
+    const store = useRecipeStore.getState()
+    for (const recipe of Object.values(store.recipes)) {
+      const extract = (list: unknown) => {
+        if (!Array.isArray(list)) return
+        for (const item of list as Array<Record<string, unknown>>) {
+          if (typeof item.category === 'string' && typeof item.id === 'string' && item.id) {
+            keys.add(`${item.category}:${item.id}`)
+          }
+        }
+      }
+      extract(recipe.base_inputs)
+      extract(recipe.base_outputs)
+      extract(recipe.base_utility_inputs)
+      extract(recipe.base_utility_outputs)
+    }
+
     return Array.from(keys)
   }, [nodes])
 

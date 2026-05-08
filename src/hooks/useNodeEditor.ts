@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from 'react'
 import type { Node } from 'reactflow'
 import type { RecipeNodeData, SourceNodeData, TargetNodeData } from '../types/recipe'
 import type { EndpointEditorTarget } from '../EndpointEditorContext'
+import { useRecipeStore } from '../stores/recipeStore'
 
 type UseNodeEditorParams = {
   setNodes: Dispatch<SetStateAction<Node[]>>
@@ -24,8 +25,9 @@ export function useNodeEditor({ setNodes, takeSnapshot, updateNodeInternals }: U
 
   const handleSaveEditor = useCallback((id: string, data: RecipeNodeData) => {
     takeSnapshot()
+    useRecipeStore.getState().setRecipe(id, data)
     setNodes((prev) => prev.map((node) =>
-      node.id === id ? { ...node, data: { ...node.data, ...data } } : node
+      node.id === id ? { ...node, data: { ...node.data, label: data.machine_name } } : node
     ))
     setEditingNode(null)
     updateNodeInternals(id)

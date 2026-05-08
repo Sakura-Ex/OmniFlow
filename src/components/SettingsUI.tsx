@@ -1,4 +1,7 @@
-import { useMemo, useState, useEffect, useRef, useCallback, type Dispatch, type SetStateAction } from 'react'
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
+import { useFormContext } from 'react-hook-form'
+import type { UseFieldArrayReturn } from 'react-hook-form'
+import type { RecipeFormData } from './RecipeEditorModal'
 import type { Resource, TimeBase } from '../types/types'
 import { GT_VOLTAGE_TIERS, evaluateGtMultiblockState } from '../modifiers/gtMultiblock'
 import { listModifiers } from '../modifiers/registry'
@@ -11,25 +14,11 @@ import { useResourceIndex } from '../hooks/useResourceIndex'
 import { ResourceDefinitionList, RECIPE_INPUT_COLUMNS, RECIPE_OUTPUT_COLUMNS, UTILITY_COLUMNS } from './ResourceDefinitionList'
 
 type SettingsUIProps = {
-  machineName: string
-  setMachineName: Dispatch<SetStateAction<string>>
-  archetypeId: string
-  setArchetypeId: Dispatch<SetStateAction<string>>
+  inputFields: UseFieldArrayReturn<RecipeFormData, 'base_inputs', 'id'>
+  outputFields: UseFieldArrayReturn<RecipeFormData, 'base_outputs', 'id'>
+  utilityInputFields: UseFieldArrayReturn<RecipeFormData, 'base_utility_inputs', 'id'>
+  utilityOutputFields: UseFieldArrayReturn<RecipeFormData, 'base_utility_outputs', 'id'>
   onArchetypeChange?: (nextId: string) => void
-  baseDurationSeconds: number
-  setBaseDurationSeconds: Dispatch<SetStateAction<number>>
-  baseInputs: Resource[]
-  setBaseInputs: Dispatch<SetStateAction<Resource[]>>
-  baseOutputs: Resource[]
-  setBaseOutputs: Dispatch<SetStateAction<Resource[]>>
-  baseUtilityInputs: Resource[]
-  setBaseUtilityInputs: Dispatch<SetStateAction<Resource[]>>
-  baseUtilityOutputs: Resource[]
-  setBaseUtilityOutputs: Dispatch<SetStateAction<Resource[]>>
-  activeModifiers: string[]
-  setActiveModifiers: Dispatch<SetStateAction<string[]>>
-  modifierStates: Record<string, Record<string, unknown>>
-  setModifierStates: Dispatch<SetStateAction<Record<string, Record<string, unknown>>>>
   previewDurationSeconds: number
   previewInputRates: Resource[]
   previewOutputRates: Resource[]
@@ -74,36 +63,33 @@ function normalizeGtHatches(state: Record<string, unknown>): Array<{ tier: strin
 
 export function SettingsUI(props: SettingsUIProps) {
   const {
-    machineName,
-    setMachineName,
-    archetypeId,
-    setArchetypeId,
+    inputFields,
+    outputFields,
+    utilityInputFields,
+    utilityOutputFields,
     onArchetypeChange,
-    baseDurationSeconds,
-    setBaseDurationSeconds,
-    baseInputs,
-    setBaseInputs,
-    baseOutputs,
-    setBaseOutputs,
-    baseUtilityInputs,
-    setBaseUtilityInputs,
-    baseUtilityOutputs,
-    setBaseUtilityOutputs,
-    activeModifiers,
-    setActiveModifiers,
-    modifierStates,
-    setModifierStates,
     previewDurationSeconds,
     previewInputRates,
     previewOutputRates,
     previewPowerActualEu,
   } = props
 
+  const { watch, setValue, getValues } = useFormContext<RecipeFormData>()
+
   const modifiers = listModifiers()
+  const archetypeId = watch('archetype_id')
   const archetype = getMachineArchetype(archetypeId)
   const registryCategories = useResourceRegistry((state) => state.categories)
-  const userOverrides = useResourceRegistry((state) => state.overrides)
-  const { ensureEntry } = useResourceIndex()
+  const { entries: resourceIndex } = useResourceIndex()
+
+  const baseInputs = watch('base_inputs') as Resource[]
+  const baseOutputs = watch('base_outputs') as Resource[]
+  const baseUtilityInputs = watch('base_utility_inputs') as Resource[]
+  const baseUtilityOutputs = watch('base_utility_outputs') as Resource[]
+  const machineName = watch('machine_name')
+  const baseDurationSeconds = watch('base_duration_seconds')
+  const activeModifiers = watch('active_modifiers')
+  const modifierStates = watch('modifier_states')
 
   const emptyResource = useCallback((): Resource => ({
     category: 'item',
@@ -119,7 +105,6 @@ export function SettingsUI(props: SettingsUIProps) {
     () => Object.values(registryCategories).map((cat) => ({ id: cat.id, displayName: cat.displayName })),
     [registryCategories]
   )
-  const { entries: resourceIndex } = useResourceIndex()
   const resourceSuggestions = useMemo(() => Object.keys(resourceIndex), [resourceIndex])
   const [dropdownOpen, setDropdownOpen] = useState<Record<string, boolean>>({})
   const [modifierPopoverOpen, setModifierPopoverOpen] = useState(false)
@@ -134,6 +119,7 @@ export function SettingsUI(props: SettingsUIProps) {
     document.addEventListener('mousedown', handleClick, true)
     return () => document.removeEventListener('mousedown', handleClick, true)
   }, [modifierPopoverOpen])
+
   const inputRateMap = useMemo(() => buildRateMap(previewInputRates), [previewInputRates])
   const outputRateMap = useMemo(() => buildRateMap(previewOutputRates), [previewOutputRates])
   const availableModifiers = useMemo(
@@ -148,87 +134,113 @@ export function SettingsUI(props: SettingsUIProps) {
   const defaultModifierSet = useMemo(() => new Set(archetype.default_modifiers), [archetype.default_modifiers])
 
   const handleUpdateInput = useCallback((index: number, patch: Partial<Resource>) => {
-    setBaseInputs((prev) => prev.map((item, i) => {
-      if (i !== index) return item
-      const merged = { ...item, ...patch }
-      if (patch.category && patch.category !== item.category) {
-        const catDef = registryCategories[patch.category]
-        if (catDef?.preferred_time_base) {
-          merged.time_base = catDef.preferred_time_base
-        }
+    const current = getValues('base_inputs')[index]
+    if (!current) return
+    const merged = { ...current, ...patch }
+    if (patch.category && patch.category !== current.category) {
+      const catDef = registryCategories[patch.category]
+      if (catDef?.preferred_time_base) {
+        merged.time_base = catDef.preferred_time_base
       }
-      return merged
-    }))
-  }, [setBaseInputs, registryCategories])
+    }
+    inputFields.update(index, merged)
+  }, [inputFields, registryCategories, getValues])
+
   const handleUpdateOutput = useCallback((index: number, patch: Partial<Resource>) => {
-    setBaseOutputs((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)))
-  }, [setBaseOutputs])
+    const current = getValues('base_outputs')[index]
+    if (!current) return
+    outputFields.update(index, { ...current, ...patch })
+  }, [outputFields, getValues])
 
   const handleAddInput = useCallback(() => {
-    setBaseInputs((prev) => [...prev, emptyResource()])
-  }, [setBaseInputs, emptyResource])
-  const handleAddOutput = useCallback(() => {
-    setBaseOutputs((prev) => [...prev, emptyResource()])
-  }, [setBaseOutputs, emptyResource])
-  const handleRemoveInput = useCallback((index: number) => {
-    setBaseInputs((prev) => prev.filter((_, i) => i !== index))
-  }, [setBaseInputs])
-  const handleRemoveOutput = useCallback((index: number) => {
-    setBaseOutputs((prev) => prev.filter((_, i) => i !== index))
-  }, [setBaseOutputs])
-  const handleToggleInputRouting = useCallback((index: number) => {
-    setBaseInputs((prev) => prev.map((item, i) => {
-      if (i !== index || item.routing_locked) return item
-      return { ...item, routing_mode: item.routing_mode === 'global' ? 'wired' : 'global' }
-    }))
-  }, [setBaseInputs])
-  const handleToggleOutputRouting = useCallback((index: number) => {
-    setBaseOutputs((prev) => prev.map((item, i) => {
-      if (i !== index || item.routing_locked) return item
-      return { ...item, routing_mode: item.routing_mode === 'global' ? 'wired' : 'global' }
-    }))
-  }, [setBaseOutputs])
+    inputFields.append(emptyResource())
+  }, [inputFields, emptyResource])
 
-  const handleUpdateUtilityInput = useCallback((index: number, patch: Partial<Resource>) => {
-    setBaseUtilityInputs((prev) => prev.map((item, i) => {
-      if (i !== index) return item
-      const merged = { ...item, ...patch }
-      if (patch.category && patch.category !== item.category) {
+  const handleAddOutput = useCallback(() => {
+    outputFields.append(emptyResource())
+  }, [outputFields, emptyResource])
+
+  const handleRemoveInput = useCallback((index: number) => {
+    inputFields.remove(index)
+  }, [inputFields])
+
+  const handleRemoveOutput = useCallback((index: number) => {
+    outputFields.remove(index)
+  }, [outputFields])
+
+  const handleToggleInputRouting = useCallback((index: number) => {
+    const current = getValues('base_inputs')[index]
+    if (!current || current.routing_locked) return
+    inputFields.update(index, {
+      ...current,
+      routing_mode: current.routing_mode === 'global' ? 'wired' : 'global',
+    })
+  }, [inputFields, getValues])
+
+  const handleToggleOutputRouting = useCallback((index: number) => {
+    const current = getValues('base_outputs')[index]
+    if (!current || current.routing_locked) return
+    outputFields.update(index, {
+      ...current,
+      routing_mode: current.routing_mode === 'global' ? 'wired' : 'global',
+    })
+  }, [outputFields, getValues])
+
+  const handleUpdateUtilityMerged = useCallback((index: number, patch: Partial<Resource>) => {
+    const inputValues = getValues('base_utility_inputs')
+    const outputValues = getValues('base_utility_outputs')
+    if (index < inputValues.length) {
+      const current = inputValues[index]
+      if (!current) return
+      const merged = { ...current, ...patch }
+      if (patch.category && patch.category !== current.category) {
         const catDef = registryCategories[patch.category]
         if (catDef?.preferred_time_base) {
           merged.time_base = catDef.preferred_time_base
         }
       }
-      return merged
-    }))
-  }, [setBaseUtilityInputs, registryCategories])
-  const handleUpdateUtilityOutput = useCallback((index: number, patch: Partial<Resource>) => {
-    setBaseUtilityOutputs((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)))
-  }, [setBaseUtilityOutputs])
+      utilityInputFields.update(index, merged)
+    } else {
+      const outIndex = index - inputValues.length
+      const current = outputValues[outIndex]
+      if (!current) return
+      utilityOutputFields.update(outIndex, { ...current, ...patch })
+    }
+  }, [utilityInputFields, utilityOutputFields, registryCategories, getValues])
+
   const handleAddUtilityInput = useCallback(() => {
-    setBaseUtilityInputs((prev) => [...prev, emptyResource()])
-  }, [setBaseUtilityInputs, emptyResource])
-  const handleAddUtilityOutput = useCallback(() => {
-    setBaseUtilityOutputs((prev) => [...prev, emptyResource()])
-  }, [setBaseUtilityOutputs, emptyResource])
-  const handleRemoveUtilityInput = useCallback((index: number) => {
-    setBaseUtilityInputs((prev) => prev.filter((_, i) => i !== index))
-  }, [setBaseUtilityInputs])
-  const handleRemoveUtilityOutput = useCallback((index: number) => {
-    setBaseUtilityOutputs((prev) => prev.filter((_, i) => i !== index))
-  }, [setBaseUtilityOutputs])
-  const handleToggleUtilityInputRouting = useCallback((index: number) => {
-    setBaseUtilityInputs((prev) => prev.map((item, i) => {
-      if (i !== index || item.routing_locked) return item
-      return { ...item, routing_mode: item.routing_mode === 'global' ? 'wired' : 'global' }
-    }))
-  }, [setBaseUtilityInputs])
-  const handleToggleUtilityOutputRouting = useCallback((index: number) => {
-    setBaseUtilityOutputs((prev) => prev.map((item, i) => {
-      if (i !== index || item.routing_locked) return item
-      return { ...item, routing_mode: item.routing_mode === 'global' ? 'wired' : 'global' }
-    }))
-  }, [setBaseUtilityOutputs])
+    utilityInputFields.append(emptyResource())
+  }, [utilityInputFields, emptyResource])
+
+  const handleRemoveUtilityMerged = useCallback((index: number) => {
+    const inputValues = getValues('base_utility_inputs')
+    if (index < inputValues.length) {
+      utilityInputFields.remove(index)
+    } else {
+      utilityOutputFields.remove(index - inputValues.length)
+    }
+  }, [utilityInputFields, utilityOutputFields, getValues])
+
+  const handleToggleUtilityRoutingMerged = useCallback((index: number) => {
+    const inputValues = getValues('base_utility_inputs')
+    const outputValues = getValues('base_utility_outputs')
+    if (index < inputValues.length) {
+      const current = inputValues[index]
+      if (!current || current.routing_locked) return
+      utilityInputFields.update(index, {
+        ...current,
+        routing_mode: current.routing_mode === 'global' ? 'wired' : 'global',
+      })
+    } else {
+      const outIndex = index - inputValues.length
+      const current = outputValues[outIndex]
+      if (!current || current.routing_locked) return
+      utilityOutputFields.update(outIndex, {
+        ...current,
+        routing_mode: current.routing_mode === 'global' ? 'wired' : 'global',
+      })
+    }
+  }, [utilityInputFields, utilityOutputFields, getValues])
 
   const utilityItems = useMemo(() => [
     ...baseUtilityInputs.map((r) => ({ ...r, is_utility_output: false })),
@@ -236,75 +248,54 @@ export function SettingsUI(props: SettingsUIProps) {
   ], [baseUtilityInputs, baseUtilityOutputs])
 
   const handleToggleUtilityIO = useCallback((index: number) => {
-    const inputCount = baseUtilityInputs.length
-    if (index < inputCount) {
-      const item = baseUtilityInputs[index]
-      setBaseUtilityInputs((prev) => prev.filter((_, i) => i !== index))
-      setBaseUtilityOutputs((prev) => [...prev, { ...item }])
+    const inputValues = getValues('base_utility_inputs')
+    if (index < inputValues.length) {
+      const item = { ...inputValues[index] }
+      utilityInputFields.remove(index)
+      utilityOutputFields.append(item)
     } else {
-      const outIndex = index - inputCount
-      const item = baseUtilityOutputs[outIndex]
-      setBaseUtilityOutputs((prev) => prev.filter((_, i) => i !== outIndex))
-      setBaseUtilityInputs((prev) => [...prev, { ...item }])
+      const outIndex = index - inputValues.length
+      const outputValues = getValues('base_utility_outputs')
+      const item = { ...outputValues[outIndex] }
+      utilityOutputFields.remove(outIndex)
+      utilityInputFields.append(item)
     }
-  }, [baseUtilityInputs, baseUtilityOutputs, setBaseUtilityInputs, setBaseUtilityOutputs])
-
-  const handleUpdateUtilityMerged = useCallback((index: number, patch: Partial<Resource>) => {
-    const inputCount = baseUtilityInputs.length
-    if (index < inputCount) {
-      handleUpdateUtilityInput(index, patch)
-    } else {
-      handleUpdateUtilityOutput(index - inputCount, patch)
-    }
-  }, [baseUtilityInputs, handleUpdateUtilityInput, handleUpdateUtilityOutput])
-
-  const handleRemoveUtilityMerged = useCallback((index: number) => {
-    const inputCount = baseUtilityInputs.length
-    if (index < inputCount) {
-      handleRemoveUtilityInput(index)
-    } else {
-      handleRemoveUtilityOutput(index - inputCount)
-    }
-  }, [baseUtilityInputs, handleRemoveUtilityInput, handleRemoveUtilityOutput])
-
-  const handleToggleUtilityRoutingMerged = useCallback((index: number) => {
-    const inputCount = baseUtilityInputs.length
-    if (index < inputCount) {
-      handleToggleUtilityInputRouting(index)
-    } else {
-      handleToggleUtilityOutputRouting(index - inputCount)
-    }
-  }, [baseUtilityInputs, handleToggleUtilityInputRouting, handleToggleUtilityOutputRouting])
+  }, [utilityInputFields, utilityOutputFields, getValues])
 
   const addModifier = (modifierId: string) => {
-    setActiveModifiers((prev) => (prev.includes(modifierId) ? prev : [...prev, modifierId]))
-    setModifierStates((prev) => ({
-      ...prev,
+    const currentActive = getValues('active_modifiers')
+    if (!currentActive.includes(modifierId)) {
+      setValue('active_modifiers', [...currentActive, modifierId])
+    }
+    const currentStates = getValues('modifier_states')
+    setValue('modifier_states', {
+      ...currentStates,
       [modifierId]: {
         ...createDefaultModifierState(modifierId),
-        ...(prev[modifierId] ?? {}),
+        ...(currentStates[modifierId] ?? {}),
       },
-    }))
+    })
     setModifierPopoverOpen(false)
   }
 
   const removeModifier = (modifierId: string) => {
-    setActiveModifiers((prev) => prev.filter((id) => id !== modifierId))
-    setModifierStates((prev) => {
-      const next = { ...prev }
-      delete next[modifierId]
-      return next
-    })
+    const currentActive = getValues('active_modifiers')
+    setValue('active_modifiers', currentActive.filter((id) => id !== modifierId))
+    const currentStates = getValues('modifier_states')
+    const next = { ...currentStates }
+    delete next[modifierId]
+    setValue('modifier_states', next)
   }
 
   const setModifierValue = (modifierId: string, key: string, value: unknown) => {
-    setModifierStates((prev) => ({
-      ...prev,
+    const currentStates = getValues('modifier_states')
+    setValue('modifier_states', {
+      ...currentStates,
       [modifierId]: {
-        ...(prev[modifierId] ?? {}),
+        ...(currentStates[modifierId] ?? {}),
         [key]: value,
       },
-    }))
+    })
   }
 
   return (
@@ -331,7 +322,7 @@ export function SettingsUI(props: SettingsUIProps) {
 
         <label className="recipe-editor__field">
           <span>机器范式 (Archetype)</span>
-          <select value={archetypeId} onChange={(e) => { if (onArchetypeChange) onArchetypeChange(e.target.value); else setArchetypeId(e.target.value) }}>
+          <select value={archetypeId} onChange={(e) => { if (onArchetypeChange) onArchetypeChange(e.target.value); else setValue('archetype_id', e.target.value) }}>
             {machineArchetypes.map((item) => (
               <option key={item.id} value={item.id}>{item.name}</option>
             ))}
@@ -340,7 +331,7 @@ export function SettingsUI(props: SettingsUIProps) {
 
         <label className="recipe-editor__field">
           <span>机器名称</span>
-          <input type="text" value={machineName} onChange={(e) => setMachineName(e.target.value)} />
+          <input type="text" value={machineName} onChange={(e) => setValue('machine_name', e.target.value)} />
         </label>
 
         <label className="recipe-editor__field">
@@ -353,7 +344,7 @@ export function SettingsUI(props: SettingsUIProps) {
                 min={0}
                 step={0.05}
                 value={baseDurationSeconds}
-                onChange={(e) => setBaseDurationSeconds(Number(e.target.value) || 0)}
+                onChange={(e) => setValue('base_duration_seconds', Number(e.target.value) || 0)}
               />
               <span className="recipe-editor__input-suffix">s</span>
             </div>
@@ -504,7 +495,7 @@ export function SettingsUI(props: SettingsUIProps) {
                   const rawValue = state.parallelLimit ?? 4
                   const currentParallel = typeof rawValue === 'string' ? rawValue : Math.max(1, Math.floor(Number(rawValue)))
                   const isOpen = dropdownOpen[modifierId] ?? false
-                  
+
                   const handleSelectPreset = (value: number) => {
                     setModifierValue(modifierId, 'parallelLimit', value)
                     setDropdownOpen((prev) => ({ ...prev, [modifierId]: false }))

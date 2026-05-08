@@ -3,11 +3,12 @@ import { Handle, Position, type NodeProps } from 'reactflow'
 import type { RecipeNodeData, RecipeNodeMode } from '../types/recipe'
 import { useRecipeEditor } from '../RecipeEditorContext'
 import { useNodeData } from '../NodeDataContext'
+import { useRecipeStore } from '../stores/recipeStore'
 import { runModifierPipeline } from '../modifiers/calculate'
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { resolveCategoryDef } from '../utils/endpointNorm'
 import type { ResourceCategoryDef } from '../registry/types'
-import type { TimeBase, NormalizedResource } from '../types/types'
+import type { TimeBase, NormalizedResource, ComputedNodePayload } from '../types/types'
 import './RecipeNode.css'
 
 function formatPortAmount(
@@ -49,7 +50,12 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   const { updateNodeData } = useNodeData()
   const userCategories = useResourceRegistry((state) => state.categories)
   const userOverrides = useResourceRegistry((state) => state.overrides)
-  const payload = runModifierPipeline(data)
+
+  const storedPayload = useRecipeStore((state) => state.getPayload(id))
+  const recipe = useRecipeStore((state) => state.recipes[id])
+  const machineName = recipe?.machine_name ?? data.machine_name
+
+  const payload: ComputedNodePayload = storedPayload ?? runModifierPipeline(data)
   const hasZeroOutput =
     payload.recipe_outputs.length === 0 ||
     payload.recipe_outputs.every((r) => r.amount === 0)
@@ -195,7 +201,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
         <div className="recipe-node__header-main">
           <div>
             <p className="recipe-node__kicker">Machine Node</p>
-            <h2 className="recipe-node__title">{data.machine_name}</h2>
+            <h2 className="recipe-node__title">{machineName}</h2>
           </div>
         </div>
         <div className="recipe-node__header-actions">
