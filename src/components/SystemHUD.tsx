@@ -12,10 +12,21 @@ type SystemHUDProps = {
   capexList: Record<string, number>
 }
 
+function stripNetKey(item: string): { baseId: string; category: string; name: string } {
+  let raw = item
+  if (raw.startsWith('Net_')) raw = raw.slice(4).replace(/_[0-9a-f]{4}[a-z0-9]{4}$/, '')
+  const idx = raw.lastIndexOf(':')
+  if (idx <= 0) return { baseId: raw, category: 'item', name: raw }
+  return { baseId: raw, category: raw.slice(0, idx), name: raw.slice(idx + 1) }
+}
+
 function parseItemKey(item: string): { category: string; name: string } {
-  const idx = item.lastIndexOf(':')
-  if (idx <= 0) return { category: 'item', name: item }
-  return { category: item.slice(0, idx), name: item.slice(idx + 1) }
+  const { category, name } = stripNetKey(item)
+  return { category, name }
+}
+
+function getGlobalKey(item: string): string {
+  return stripNetKey(item).baseId
 }
 
 function HUDResourceRow({ item, value, isGlobal }: { item: string; value: number; isGlobal: boolean }) {
@@ -56,10 +67,10 @@ export function SystemHUD({
   const allOutputEntries = Object.entries(systemOutputs)
     .filter(([item]) => !item.startsWith('Virtual_Global_'))
 
-  const wiredInputEntries = allInputEntries.filter(([item]) => !globalInputSet.has(item))
-  const globalInputEntries = allInputEntries.filter(([item]) => globalInputSet.has(item))
-  const wiredOutputEntries = allOutputEntries.filter(([item]) => !globalOutputSet.has(item))
-  const globalOutputEntries = allOutputEntries.filter(([item]) => globalOutputSet.has(item))
+  const wiredInputEntries = allInputEntries.filter(([item]) => !globalInputSet.has(getGlobalKey(item)))
+  const globalInputEntries = allInputEntries.filter(([item]) => globalInputSet.has(getGlobalKey(item)))
+  const wiredOutputEntries = allOutputEntries.filter(([item]) => !globalOutputSet.has(getGlobalKey(item)))
+  const globalOutputEntries = allOutputEntries.filter(([item]) => globalOutputSet.has(getGlobalKey(item)))
 
   return (
     <div className="system-hud">

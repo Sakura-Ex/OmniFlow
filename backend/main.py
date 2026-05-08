@@ -163,6 +163,28 @@ async def calculate_flow(request: CalculateRequest):
         for item_id, rate in recipe_data.inputs.items():
             item_rows[item_id][col] -= rate
 
+    # 步骤 2.5：识别溢流物品，扩展矩阵维度（白皮书 §7.2.2）
+    equality_items_set = set(request.equality_items)
+
+    spill_items: List[str] = []
+    spill_index: Dict[str, int] = {}
+    for item_id in items:
+        row = item_rows[item_id]
+        if item_id not in equality_items_set and bool(np.any(row > 1e-12)):
+            spill_items.append(item_id)
+            spill_index[item_id] = len(spill_items) - 1
+
+    spill_count = len(spill_items)
+    spill_start = total_vars
+    total_vars += spill_count
+
+    for item_id in items:
+        item_rows[item_id] = np.append(item_rows[item_id], np.zeros(spill_count, dtype=float))
+    for spill_item in spill_items:
+        item_rows[spill_item][spill_start + spill_index[spill_item]] = -1.0
+
+    _spill_m = 10000.0 * max(1, recipe_count)
+
     # 步骤 3：构建目标函数 c 与变量边界 bounds
     c = np.zeros(total_vars, dtype=float)
     bounds: List[tuple[float, Optional[float]]] = []
@@ -213,25 +235,24 @@ async def calculate_flow(request: CalculateRequest):
             "col": sink_col,
         })
 
-    # 步骤 4：有下游连线（或 Target）的物品严格守恒，其余允许隐式溢出
+    for i in range(spill_count):
+        c[spill_start + i] = _spill_m
+        bounds.append((0, None))
+
+    # 步骤 4：约束构建（白皮书 §7.2.3）
     A_eq_rows: List[List[float]] = []
     b_eq: List[float] = []
     A_ub_rows: List[List[float]] = []
     b_ub: List[float] = []
-    equality_items = set(request.equality_items)
 
     for item_id in items:
         row = item_rows[item_id]
-        if item_id in equality_items:
-            # 有下游连线：严格守恒等式（产出 + 源输入 - 消耗 - 靶输出 == 0）
+        if item_id in equality_items_set:
             A_eq_rows.append(row.tolist())
             b_eq.append(0.0)
-        else:
-            # 无下游连线：只有当该物品存在生产来源（正系数列）时才施加"净流量 >= 0"约束
-            # 若 row 全为 0 或全负（纯消耗、无 SourceNode 也无配方产出），则视为隐式无限供给，跳过约束
-            if bool(np.any(row > 1e-12)):
-                A_ub_rows.append((-row).tolist())
-                b_ub.append(0.0)
+        elif item_id in spill_index:
+            A_eq_rows.append(row.tolist())
+            b_eq.append(0.0)
 
     A_eq = np.array(A_eq_rows, dtype=float) if A_eq_rows else None
     b_eq_arr = np.array(b_eq, dtype=float) if b_eq else None
@@ -246,6 +267,63 @@ async def calculate_flow(request: CalculateRequest):
             "system_inputs": {},
             "system_outputs": {},
         }
+
+    # ── DEBUG: 写矩阵诊断到文件 ──
+    import json as _json
+    from datetime import datetime as _datetime
+    from pathlib import Path as _Path
+    _debug = {
+        "time": _datetime.now().isoformat(timespec="seconds"),
+        "nodes": len(recipe_nodes) + len(source_nodes) + len(target_nodes),
+        "recipes": [r["node_id"] for r in recipe_nodes],
+        "sources": [s["node_id"] for s in source_nodes],
+        "targets": [t["node_id"] for t in target_nodes],
+        "total_vars": total_vars,
+        "spill_count": spill_count,
+        "spill_m": _spill_m,
+        "spill_items": spill_items,
+        "items": items,
+        "edges": [(e.source, e.target, e.sourceHandle, e.targetHandle) for e in edges],
+        "equality_items": list(equality_items_set),
+        "vars": [],
+        "constraints": [],
+    }
+    for recipe in recipe_nodes:
+        rd: RecipeNodeData = recipe["data"]
+        _debug["vars"].append({
+            "type": "recipe", "node_id": recipe["node_id"],
+            "mode": getattr(rd, 'mode', None) or ('auto' if rd.is_auto else 'limit'),
+            "manual_machines": rd.manual_machines,
+        })
+    for source in source_nodes:
+        sd: SourceNodeData = source["data"]
+        _debug["vars"].append({
+            "type": "source", "node_id": source["node_id"], "id": sd.id,
+            "mode": getattr(sd, 'mode', None) or ('infinite' if sd.is_auto else 'limit'),
+            "amount": sd.amount,
+        })
+    for target in target_nodes:
+        td: TargetNodeData = target["data"]
+        _debug["vars"].append({
+            "type": "target", "node_id": target["node_id"], "id": td.id,
+            "mode": getattr(td, 'mode', None) or ('maximize' if td.is_auto else 'demand'),
+            "amount": td.amount,
+        })
+    for item_id in items:
+        row = item_rows[item_id]
+        _debug["constraints"].append({
+            "item": item_id,
+            "row": [round(float(v), 6) for v in row.tolist()],
+            "equality": item_id in equality_items_set,
+            "spill": item_id in spill_index,
+            "has_pos": bool(np.any(row > 1e-12)),
+        })
+    _log_dir = _Path(__file__).resolve().parent / "logs"
+    _log_dir.mkdir(exist_ok=True)
+    _ts = _datetime.now().strftime("%Y%m%d_%H%M%S")
+    _log_path = _log_dir / f"debug_{_ts}.json"
+    _log_path.write_text(_json.dumps(_debug, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"[DEBUG] written to {_log_path}")
 
     res = linprog(
         c,
@@ -319,4 +397,212 @@ async def calculate_flow(request: CalculateRequest):
         "node_results": node_results,
         "system_inputs": system_inputs,
         "system_outputs": system_outputs,
+    }
+
+
+@app.post("/api/debug", summary="诊断：转储矩阵构建过程")
+async def debug_matrix(request: CalculateRequest):
+    """与 /api/calculate 走完全相同的逻辑，但不求解，只返回诊断信息。"""
+    import json
+
+    nodes = request.nodes
+    edges = request.edges
+
+    def parse_model(model_cls, payload):
+        if hasattr(model_cls, "model_validate"):
+            return model_cls.model_validate(payload)
+        return model_cls.parse_obj(payload)
+
+    recipe_nodes: List[Dict[str, Any]] = []
+    source_nodes: List[Dict[str, Any]] = []
+    target_nodes: List[Dict[str, Any]] = []
+
+    for node in nodes:
+        try:
+            if node.type == "recipeNode":
+                recipe_data = parse_model(RecipeNodeData, node.data)
+                recipe_nodes.append({"node_id": node.id, "data": recipe_data})
+            elif node.type == "sourceNode":
+                source_nodes.append({"node_id": node.id, "data": parse_model(SourceNodeData, node.data)})
+            elif node.type == "targetNode":
+                target_nodes.append({"node_id": node.id, "data": parse_model(TargetNodeData, node.data)})
+        except ValidationError as e:
+            logger.warning("Skipping invalid node %s: %s", node.id, e)
+
+    items: List[str] = []
+    item_index: Dict[str, int] = {}
+
+    def ensure_item(item_id: str) -> None:
+        if item_id not in item_index:
+            item_index[item_id] = len(items)
+            items.append(item_id)
+
+    for recipe in recipe_nodes:
+        recipe_data: RecipeNodeData = recipe["data"]
+        for item_id in recipe_data.inputs:
+            ensure_item(item_id)
+        for item_id in recipe_data.outputs:
+            ensure_item(item_id)
+    for source in source_nodes:
+        ensure_item(source["data"].id)
+    for target in target_nodes:
+        ensure_item(target["data"].id)
+
+    recipe_count = len(recipe_nodes)
+    source_count = len(source_nodes)
+    sink_count = len(target_nodes)
+    source_start = recipe_count
+    sink_start = recipe_count + source_count
+    total_vars = recipe_count + source_count + sink_count
+
+    item_rows: Dict[str, np.ndarray] = {
+        item_id: np.zeros(total_vars, dtype=float)
+        for item_id in items
+    }
+    for col, recipe in enumerate(recipe_nodes):
+        recipe_data: RecipeNodeData = recipe["data"]
+        for item_id, rate in recipe_data.outputs.items():
+            item_rows[item_id][col] += rate
+        for item_id, rate in recipe_data.inputs.items():
+            item_rows[item_id][col] -= rate
+
+    # 步骤 2.5：识别溢流物品（§7.2.2）
+    equality_items_set = set(request.equality_items)
+    spill_items2: List[str] = []
+    spill_index2: Dict[str, int] = {}
+    for item_id in items:
+        row = item_rows[item_id]
+        if item_id not in equality_items_set and bool(np.any(row > 1e-12)):
+            spill_items2.append(item_id)
+            spill_index2[item_id] = len(spill_items2) - 1
+
+    spill_count2 = len(spill_items2)
+    spill_start2 = total_vars
+    total_vars += spill_count2
+
+    for item_id in items:
+        item_rows[item_id] = np.append(item_rows[item_id], np.zeros(spill_count2, dtype=float))
+    for spill_item in spill_items2:
+        item_rows[spill_item][spill_start2 + spill_index2[spill_item]] = -1.0
+
+    _spill_m2 = 10000.0 * max(1, recipe_count)
+
+    c = np.zeros(total_vars, dtype=float)
+    bounds: List[tuple[float, Optional[float]]] = []
+    for col, recipe in enumerate(recipe_nodes):
+        recipe_data: RecipeNodeData = recipe["data"]
+        recipe_mode = getattr(recipe_data, 'mode', None) or ('auto' if recipe_data.is_auto else 'limit')
+        c[col] = 1.0
+        if recipe_mode == 'auto' or recipe_data.manual_machines is None:
+            bounds.append((0, None))
+        else:
+            manual_cap = max(0.0, float(recipe_data.manual_machines))
+            bounds.append((0, manual_cap))
+
+    source_specs: List[Dict[str, Any]] = []
+    for offset, source in enumerate(source_nodes):
+        source_data: SourceNodeData = source["data"]
+        source_col = source_start + offset
+        src_mode = getattr(source_data, 'mode', None) or ('infinite' if source_data.is_auto else 'limit')
+        item_rows[source_data.id][source_col] += 1.0
+        upper_bound = max(0.0, float(source_data.amount)) if src_mode == 'limit' else None
+        bounds.append((0, upper_bound))
+        source_specs.append({
+            "node_id": source["node_id"],
+            "item_id": source_data.id,
+            "col": source_col,
+            "mode": src_mode,
+            "upper_bound": upper_bound,
+        })
+
+    sink_specs: List[Dict[str, Any]] = []
+    for offset, target in enumerate(target_nodes):
+        target_data: TargetNodeData = target["data"]
+        sink_col = sink_start + offset
+        tgt_mode = getattr(target_data, 'mode', None) or ('maximize' if target_data.is_auto else 'demand')
+        demand_amt = max(0.0, float(target_data.amount))
+        item_rows[target_data.id][sink_col] -= 1.0
+        if tgt_mode == 'demand':
+            c[sink_col] = 0.0
+            bounds.append((demand_amt, None))
+        elif tgt_mode == 'maximize':
+            c[sink_col] = -10000.0
+            bounds.append((0, None))
+        else:
+            c[sink_col] = 0.001
+            bounds.append((0, None))
+        sink_specs.append({
+            "node_id": target["node_id"],
+            "item_id": target_data.id,
+            "col": sink_col,
+            "mode": tgt_mode,
+            "demand": demand_amt,
+        })
+
+    for i in range(spill_count2):
+        c[spill_start2 + i] = _spill_m2
+        bounds.append((0, None))
+
+    # ── 约束构建 ──
+    A_eq_rows: List[List[float]] = []
+    b_eq: List[float] = []
+    A_ub_rows: List[List[float]] = []
+    b_ub: List[float] = []
+    constraint_details: List[Dict[str, Any]] = []
+
+    for item_id in items:
+        row = item_rows[item_id]
+        detail = {
+            "item_id": item_id,
+            "row": [round(v, 6) for v in row.tolist()],
+            "in_equality": item_id in equality_items_set,
+            "has_positive": bool(np.any(row > 1e-12)),
+            "has_negative": bool(np.any(row < -1e-12)),
+        }
+        if item_id in equality_items_set:
+            A_eq_rows.append(row.tolist())
+            b_eq.append(0.0)
+            detail["constraint"] = "hard_eq (Target)"
+        elif item_id in spill_index2:
+            A_eq_rows.append(row.tolist())
+            b_eq.append(0.0)
+            detail["constraint"] = f"soft_eq + spill (M={_spill_m2})"
+        else:
+            detail["constraint"] = "skip (无正系数)"
+        constraint_details.append(detail)
+
+    # ── 变量列名 ──
+    var_names: List[str] = []
+    for i, r in enumerate(recipe_nodes):
+        var_names.append(f"Recipe[{r['node_id']}]")
+    for i, s in enumerate(source_nodes):
+        var_names.append(f"Source[{s['node_id']}]")
+    for i, t in enumerate(target_nodes):
+        var_names.append(f"Sink[{t['node_id']}]")
+    for spill_item in spill_items2:
+        var_names.append(f"Spill[{spill_item}]")
+
+    return {
+        "nodes_summary": {
+            "recipe_count": recipe_count,
+            "source_count": source_count,
+            "target_count": sink_count,
+            "spill_count": spill_count2,
+            "total_vars": total_vars,
+            "spill_m": _spill_m2,
+        },
+        "variables": var_names,
+        "variable_bounds": [[float(b[0]), b[1]] for b in bounds],
+        "objective_coeffs": [float(x) for x in c.tolist()],
+        "edges_received": [
+            {"source": e.source, "target": e.target, "sourceHandle": e.sourceHandle, "targetHandle": e.targetHandle}
+            for e in edges
+        ],
+        "equality_items_received": request.equality_items,
+        "items": items,
+        "constraint_details": constraint_details,
+        "equality_rows_count": len(A_eq_rows),
+        "inequality_rows_count": len(A_ub_rows),
+        "b_eq": b_eq,
+        "b_ub": b_ub,
     }

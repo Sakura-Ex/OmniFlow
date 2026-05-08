@@ -62,16 +62,16 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
         shapedRecipeByNodeId.set(n.id, stored)
 
         for (const port of stored.base_inputs ?? []) {
-          if (port.routing_mode === 'global') globalInputSet.add(port.category)
+          if (port.routing_mode === 'global') globalInputSet.add(`${port.category}:${port.id}`)
         }
         for (const port of stored.base_outputs ?? []) {
-          if (port.routing_mode === 'global') globalOutputSet.add(port.category)
+          if (port.routing_mode === 'global') globalOutputSet.add(`${port.category}:${port.id}`)
         }
         for (const port of stored.base_utility_inputs ?? []) {
-          if (port.routing_mode === 'global') globalInputSet.add(port.category)
+          if (port.routing_mode === 'global') globalInputSet.add(`${port.category}:${port.id}`)
         }
         for (const port of stored.base_utility_outputs ?? []) {
-          if (port.routing_mode === 'global') globalOutputSet.add(port.category)
+          if (port.routing_mode === 'global') globalOutputSet.add(`${port.category}:${port.id}`)
         }
 
         const rates = stored._computed ?? runModifierPipeline(stored)
@@ -83,10 +83,11 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
         const ports = normalizeEndpointPorts(n.data)
         for (const port of ports) {
           if (port.routing_mode === 'global') {
+            const qid = `${port.category}:${port.id}`
             if (n.type === 'sourceNode') {
-              globalOutputSet.add(port.category)
+              globalOutputSet.add(qid)
             } else {
-              globalInputSet.add(port.category)
+              globalInputSet.add(qid)
             }
             endpointGlobalPorts.push({
               nodeId: n.id,
@@ -142,7 +143,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       }
 
       return !srcGlobal && !tgtGlobal
-    }
+    })
 
     // ── Step 2.5: Build topological nets for sub-graph isolation ──
     const topologicalNets = buildTopologicalNets(
@@ -170,6 +171,8 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
     const namespaceAlias = new Map<string, string>()
 
     const payloadNodes: Array<{ id: string; type: string; data: Record<string, unknown> }> = []
+    // Target items that must strictly conserve (demand, maximize)
+    const equalityTargetItems = new Set<string>()
 
     for (const n of nodesRef.current) {
       // ── Source / Target: explode multi-port into per-port sub-nodes ──
@@ -190,6 +193,10 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
 
           const rawNetId = netLookup.get(key)
           const netId = (rawNetId && rawNetId.startsWith('Net_')) ? rawNetId : qualifiedId
+
+          if (n.type === 'targetNode' && (mode === 'demand' || mode === 'maximize')) {
+            equalityTargetItems.add(netId)
+          }
 
           portHandleToSubNodeId.set(key, subId)
           namespaceAlias.set(netId, netId)
@@ -337,16 +344,9 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       }
     }
 
-    // ── 收集有下游连线的物品（用于后端 equality 约束判定）──
-    // 全局总线物品（implicitEdges 源自虚拟节点）不进入 equality——它们由后端"隐式供给"逻辑处理
-    const equalityItems = new Set<string>()
-    for (const e of wiredEdges) {
-      if (e.sourceHandle) equalityItems.add(e.sourceHandle)
-    }
-    for (const e of implicitEdges) {
-      if (e.source === VIRTUAL_GLOBAL_SOURCE) continue
-      if (e.sourceHandle) equalityItems.add(e.sourceHandle)
-    }
+    // ── equality_items: Target items that drive hard equality (§7.2.1) ──
+    // Soft constraints for non-Target items are handled by backend spill variables (§7.2.2).
+    const equalityItems = equalityTargetItems
 
     const payload = {
       nodes: payloadNodes.concat([

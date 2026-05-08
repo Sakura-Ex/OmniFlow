@@ -119,13 +119,10 @@ export function buildTopologicalNets(
 
   const getNetName = (root: string): string => {
     if (rootToNetName.has(root)) return rootToNetName.get(root)!
-    // Extract a readable resource-ID fragment from the root key
     const parts = root.split('|')
     const resourceId = parts[1] ?? root
-    // Use a short deterministic suffix so duplicate resource IDs across
-    // different connected components still get distinct net names.
     const suffix = generateShortId()
-    const netName = `Net_${sanitize(resourceId)}_${suffix}`
+    const netName = `Net_${resourceId}_${suffix}`
     rootToNetName.set(root, netName)
     return netName
   }
@@ -250,7 +247,3 @@ function generateShortId(): string {
   return `${_counter.toString(16).padStart(4, '0')}${rand}`
 }
 
-function sanitize(id: string): string {
-  // Keep letters, digits, colons and underscores; replace everything else.
-  return id.replace(/[^a-zA-Z0-9:_-]/g, '_').slice(0, 32)
-}
