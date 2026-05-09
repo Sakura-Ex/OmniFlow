@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
+import { toggleRouting } from '../utils/canvasUtils'
 
-export function useResourceList<T extends { _uid?: string }>(initial: T[]) {
+export function useResourceList<T extends { _uid?: string; routing_mode?: 'wired' | 'global' }>(initial: T[]) {
   const [items, setItems] = useState<T[]>(initial)
 
   const updateAtIndex = useCallback((index: number, patch: Partial<T>) => {
@@ -21,7 +22,7 @@ export function useResourceList<T extends { _uid?: string }>(initial: T[]) {
         if (i !== index) return item
         const entry = item as Record<string, unknown>
         if (entry.routing_locked) return item
-        return { ...item, routing_mode: entry.routing_mode === 'global' ? 'wired' : 'global' } as T
+        return toggleRouting(item)
       }),
     )
   }, [])

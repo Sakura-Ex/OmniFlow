@@ -19,6 +19,7 @@ import { NodeDataProvider } from './NodeDataContext'
 import { useCanvasState } from './hooks/useCanvasState'
 import { useUndoRedo } from './hooks/useUndoRedo'
 import { useTheme } from './hooks/useTheme'
+import { useClickOutside } from './hooks/useClickOutside'
 import { useCanvasOperations } from './hooks/useCanvasOperations'
 import { useClipboard } from './hooks/useClipboard'
 import { useFileIO } from './hooks/useFileIO'
@@ -239,16 +240,7 @@ export default function App() {
     setOpenMenu(null)
   }, [])
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!menuRef.current) return
-      const target = event.target as Element | null
-      if (target && menuRef.current.contains(target)) return
-      setOpenMenu(null)
-    }
-    window.addEventListener('mousedown', handleClickOutside, true)
-    return () => window.removeEventListener('mousedown', handleClickOutside, true)
-  }, [])
+  useClickOutside(menuRef, () => setOpenMenu(null))
 
   const dismissError = useCallback(() => {
     useCanvasStore.getState().setError(null)

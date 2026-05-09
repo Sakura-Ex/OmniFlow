@@ -1,6 +1,7 @@
 import type { RecipeNodeData } from '../../types/recipe'
 import type { CalculateResponse } from '../../types/api'
 import { buildResourceId } from '../../utils/resourceIdentifier'
+import { flattenRecipeResources } from '../../utils/canvasUtils'
 
 export function computeCapexList(
   recipes: Record<string, RecipeNodeData>,
@@ -15,12 +16,7 @@ export function computeCapexList(
       nodeResult?.machines_actual ?? nodeResult?.machines_exact ?? 0
     if (machines <= 0) continue
 
-    const allRes = [
-      ...(shaped.base_inputs ?? []),
-      ...(shaped.base_outputs ?? []),
-      ...(shaped.base_utility_inputs ?? []),
-      ...(shaped.base_utility_outputs ?? []),
-    ]
+    const allRes = flattenRecipeResources(shaped)
 
     for (const r of allRes) {
       if (

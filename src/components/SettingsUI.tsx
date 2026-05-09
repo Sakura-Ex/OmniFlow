@@ -1,5 +1,7 @@
-import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
+import { useMemo, useState, useRef, useCallback } from 'react'
 import { useFormContext } from 'react-hook-form'
+import { useClickOutside } from '../hooks/useClickOutside'
+import { toggleRouting } from '../utils/canvasUtils'
 import type { UseFieldArrayReturn } from 'react-hook-form'
 import type { RecipeFormData } from './RecipeEditorModal'
 import type { Resource, TimeBase } from '../types/types'
@@ -110,15 +112,7 @@ export function SettingsUI(props: SettingsUIProps) {
   const [modifierPopoverOpen, setModifierPopoverOpen] = useState(false)
   const modifierPopoverRef = useRef<HTMLDivElement | null>(null)
 
-  useEffect(() => {
-    if (!modifierPopoverOpen) return
-    const handleClick = (e: MouseEvent) => {
-      if (modifierPopoverRef.current?.contains(e.target as Node)) return
-      setModifierPopoverOpen(false)
-    }
-    document.addEventListener('mousedown', handleClick, true)
-    return () => document.removeEventListener('mousedown', handleClick, true)
-  }, [modifierPopoverOpen])
+  useClickOutside(modifierPopoverRef, () => setModifierPopoverOpen(false), modifierPopoverOpen)
 
   const inputRateMap = useMemo(() => buildRateMap(previewInputRates), [previewInputRates])
   const outputRateMap = useMemo(() => buildRateMap(previewOutputRates), [previewOutputRates])
@@ -171,19 +165,13 @@ export function SettingsUI(props: SettingsUIProps) {
   const handleToggleInputRouting = useCallback((index: number) => {
     const current = getValues('base_inputs')[index]
     if (!current || current.routing_locked) return
-    inputFields.update(index, {
-      ...current,
-      routing_mode: current.routing_mode === 'global' ? 'wired' : 'global',
-    })
+    inputFields.update(index, toggleRouting(current))
   }, [inputFields, getValues])
 
   const handleToggleOutputRouting = useCallback((index: number) => {
     const current = getValues('base_outputs')[index]
     if (!current || current.routing_locked) return
-    outputFields.update(index, {
-      ...current,
-      routing_mode: current.routing_mode === 'global' ? 'wired' : 'global',
-    })
+    outputFields.update(index, toggleRouting(current))
   }, [outputFields, getValues])
 
   const handleUpdateUtilityMerged = useCallback((index: number, patch: Partial<Resource>) => {
@@ -227,18 +215,12 @@ export function SettingsUI(props: SettingsUIProps) {
     if (index < inputValues.length) {
       const current = inputValues[index]
       if (!current || current.routing_locked) return
-      utilityInputFields.update(index, {
-        ...current,
-        routing_mode: current.routing_mode === 'global' ? 'wired' : 'global',
-      })
+      utilityInputFields.update(index, toggleRouting(current))
     } else {
       const outIndex = index - inputValues.length
       const current = outputValues[outIndex]
       if (!current || current.routing_locked) return
-      utilityOutputFields.update(outIndex, {
-        ...current,
-        routing_mode: current.routing_mode === 'global' ? 'wired' : 'global',
-      })
+      utilityOutputFields.update(outIndex, toggleRouting(current))
     }
   }, [utilityInputFields, utilityOutputFields, getValues])
 

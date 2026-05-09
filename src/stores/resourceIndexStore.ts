@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { ResourceDef } from '../types/types'
+import { loadFromStorage, saveToStorage } from '../utils/storage'
 
 const STORAGE_KEY = 'omniflow.resource_index.v1'
 
@@ -12,35 +13,14 @@ type ResourceIndexState = {
   getEntry: (fullId: string) => ResourceDef | undefined
 }
 
-function loadPersisted(): Record<string, ResourceDef> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (typeof parsed === 'object' && parsed !== null) return parsed
-    }
-  } catch {
-    // ignore
-  }
-  return {}
-}
-
-function persist(entries: Record<string, ResourceDef>) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries))
-  } catch {
-    // ignore
-  }
-}
-
 export const useResourceIndexStore = create<ResourceIndexState>((set, get) => ({
-  entries: loadPersisted(),
+  entries: loadFromStorage(STORAGE_KEY, {} as Record<string, ResourceDef>),
 
   ensureEntry: (fullId) => {
     set((state) => {
       if (state.entries[fullId]) return state
       const next = { ...state.entries, [fullId]: { fullId } }
-      persist(next)
+      saveToStorage(STORAGE_KEY, next)
       return { entries: next }
     })
   },
@@ -48,7 +28,7 @@ export const useResourceIndexStore = create<ResourceIndexState>((set, get) => ({
   setEntry: (fullId, def) => {
     set((state) => {
       const next = { ...state.entries, [fullId]: def }
-      persist(next)
+      saveToStorage(STORAGE_KEY, next)
       return { entries: next }
     })
   },
@@ -57,7 +37,7 @@ export const useResourceIndexStore = create<ResourceIndexState>((set, get) => ({
     set((state) => {
       const next = { ...state.entries }
       delete next[fullId]
-      persist(next)
+      saveToStorage(STORAGE_KEY, next)
       return { entries: next }
     })
   },

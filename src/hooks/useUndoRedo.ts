@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type { Edge, Node } from 'reactflow'
-import { stripState } from '../utils/canvasUtils'
+import { deepClone, stripState } from '../utils/canvasUtils'
 
 type Snapshot = {
   nodes: Node[]
@@ -28,8 +28,8 @@ export function useUndoRedo({
 
   const takeSnapshot = useCallback(() => {
     setPast((p) => {
-      const currentNodes = stripState(JSON.parse(JSON.stringify(nodesRef.current))) as Node[]
-      const currentEdges = stripState(JSON.parse(JSON.stringify(edgesRef.current))) as Edge[]
+      const currentNodes = stripState(deepClone(nodesRef.current)) as Node[]
+      const currentEdges = stripState(deepClone(edgesRef.current)) as Edge[]
 
       if (p.length > 0) {
         const last = p[p.length - 1]
@@ -53,8 +53,8 @@ export function useUndoRedo({
 
     setFuture((f) => [
       {
-        nodes: stripState(JSON.parse(JSON.stringify(nodesRef.current))) as Node[],
-        edges: stripState(JSON.parse(JSON.stringify(edgesRef.current))) as Edge[],
+        nodes: stripState(deepClone(nodesRef.current)) as Node[],
+        edges: stripState(deepClone(edgesRef.current)) as Edge[],
       },
       ...f,
     ])
@@ -74,8 +74,8 @@ export function useUndoRedo({
     setPast((p) => [
       ...p,
       {
-        nodes: stripState(JSON.parse(JSON.stringify(nodesRef.current))) as Node[],
-        edges: stripState(JSON.parse(JSON.stringify(edgesRef.current))) as Edge[],
+        nodes: stripState(deepClone(nodesRef.current)) as Node[],
+        edges: stripState(deepClone(edgesRef.current)) as Edge[],
       },
     ])
 

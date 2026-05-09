@@ -83,6 +83,39 @@ export interface TopologicalNets {
 }
 
 /**
+ * Process a single port: determine its compiled net name and add it to the
+ * lookup table.  Three outcomes are possible:
+ *   1. Global   → port joins the implicit global bus for its category
+ *   2. Wired    → port is part of a connected component (has an edge or
+ *                  is unioned with another port via a wire)
+ *   3. Void     → port is isolated, gets a unique void name
+ */
+function processPort(
+  port: { id?: string; category: string; routing_mode?: string },
+  nodeId: string,
+  uf: UnionFind,
+  edges: Edge[],
+  addToNet: (netName: string, key: string) => void,
+  hasEdgeForKey: (key: string, edges: Edge[], nodeId: string) => boolean,
+  getNetName: (root: string) => string,
+  buildGlobalName: (qualifier: string) => string,
+  buildVoidName: (nodeId: string, fullId: string) => string,
+  buildResourceId: (category: string, id: string) => string,
+  portKey: (nodeId: string, portId: string) => string,
+): void {
+  if (!port.id) return
+  const qualifiedId = buildResourceId(port.category, port.id)
+  const key = portKey(nodeId, qualifiedId)
+  if (port.routing_mode === 'global') {
+    addToNet(buildGlobalName(port.category), key)
+  } else if (uf.find(key) !== key || hasEdgeForKey(key, edges, nodeId)) {
+    addToNet(getNetName(uf.find(key)), key)
+  } else {
+    addToNet(buildVoidName(nodeId, qualifiedId), key)
+  }
+}
+
+/**
  * Task 1: Build topological nets from the React Flow graph.
  *
  * @param nodes  React Flow nodes (only recipeNode, sourceNode, targetNode matter)
@@ -135,65 +168,24 @@ export function buildTopologicalNets(
 
     if (node.type === 'recipeNode' && shaped) {
       for (const port of shaped.base_inputs ?? []) {
-        if (!port.id) continue
-        const qualifiedId = buildResourceId(port.category, port.id)
-        const key = portKey(nid, qualifiedId)
-        if (port.routing_mode === 'global') {
-          addToNet(buildGlobalName(port.category), key)
-        } else if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
-          addToNet(getNetName(uf.find(key)), key)
-        } else {
-          addToNet(buildVoidName(nid, qualifiedId), key)
-        }
+        processPort(port, nid, uf, edges, addToNet, hasEdgeForKey, getNetName, buildGlobalName, buildVoidName, buildResourceId, portKey)
       }
       for (const port of shaped.base_outputs ?? []) {
-        if (!port.id) continue
-        const qualifiedId = buildResourceId(port.category, port.id)
-        const key = portKey(nid, qualifiedId)
-        if (port.routing_mode === 'global') {
-          addToNet(buildGlobalName(port.category), key)
-        } else if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
-          addToNet(getNetName(uf.find(key)), key)
-        } else {
-          addToNet(buildVoidName(nid, qualifiedId), key)
-        }
+        processPort(port, nid, uf, edges, addToNet, hasEdgeForKey, getNetName, buildGlobalName, buildVoidName, buildResourceId, portKey)
       }
       for (const port of shaped.base_utility_inputs ?? []) {
-        if (!port.id) continue
-        const qualifiedId = buildResourceId(port.category, port.id)
-        const key = portKey(nid, qualifiedId)
-        if (port.routing_mode === 'global') {
-          addToNet(buildGlobalName(port.category), key)
-        } else if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
-          addToNet(getNetName(uf.find(key)), key)
-        } else {
-          addToNet(buildVoidName(nid, qualifiedId), key)
-        }
+        processPort(port, nid, uf, edges, addToNet, hasEdgeForKey, getNetName, buildGlobalName, buildVoidName, buildResourceId, portKey)
       }
       for (const port of shaped.base_utility_outputs ?? []) {
-        if (!port.id) continue
-        const qualifiedId = buildResourceId(port.category, port.id)
-        const key = portKey(nid, qualifiedId)
-        if (port.routing_mode === 'global') {
-          addToNet(buildGlobalName(port.category), key)
-        } else if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
-          addToNet(getNetName(uf.find(key)), key)
-        } else {
-          addToNet(buildVoidName(nid, qualifiedId), key)
-        }
+        processPort(port, nid, uf, edges, addToNet, hasEdgeForKey, getNetName, buildGlobalName, buildVoidName, buildResourceId, portKey)
       }
     } else if (node.type === 'sourceNode' || node.type === 'targetNode') {
       const ports = normalizeEndpointPorts(node.data)
       for (const port of ports) {
-        if (!port.id) continue
-        const portCategory = port.category ?? 'item'
-        const qualifiedId = buildResourceId(portCategory, port.id)
-        const key = portKey(nid, qualifiedId)
-        if (uf.find(key) !== key || hasEdgeForKey(key, edges, nid)) {
-          addToNet(getNetName(uf.find(key)), key)
-        } else {
-          addToNet(buildVoidName(nid, qualifiedId), key)
-        }
+        processPort(
+          { ...port, category: port.category ?? 'item' },
+          nid, uf, edges, addToNet, hasEdgeForKey, getNetName, buildGlobalName, buildVoidName, buildResourceId, portKey
+        )
       }
     }
   }

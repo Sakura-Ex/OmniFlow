@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { ResourceCategoryDef, ResourceRegistryState, ResourceOverride } from './types'
 import { DEFAULT_RESOURCE_CATEGORIES, ResourceOverrideRegistry } from './defaults'
+import { loadFromStorage, saveToStorage } from '../utils/storage'
 
 const STORAGE_KEY = 'omniflow.resource_registry.v4'
 
@@ -9,29 +10,8 @@ type PersistedState = {
   overrides: Record<string, ResourceOverride>
 }
 
-function loadPersisted(): Partial<PersistedState> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (typeof parsed === 'object' && parsed !== null) return parsed
-    }
-  } catch {
-    // ignore corrupted storage
-  }
-  return {}
-}
-
-function persist(state: PersistedState) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  } catch {
-    // ignore quota errors
-  }
-}
-
 function buildInitial(): PersistedState {
-  const persisted = loadPersisted()
+  const persisted = loadFromStorage(STORAGE_KEY, {} as PersistedState)
 
   const categories: Record<string, ResourceCategoryDef> = {}
   for (const def of DEFAULT_RESOURCE_CATEGORIES) {
@@ -53,7 +33,7 @@ function saveAll(
   categories: Record<string, ResourceCategoryDef>,
   overrides: Record<string, ResourceOverride>,
 ) {
-  persist({ categories, overrides })
+  saveToStorage(STORAGE_KEY, { categories, overrides })
 }
 
 export const useResourceRegistry = create<ResourceRegistryState>((set, get) => ({

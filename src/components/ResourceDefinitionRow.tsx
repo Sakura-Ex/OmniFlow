@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import type { TimeBase } from '../types/types'
 import { parseResourceId } from '../utils/resourceIdentifier'
+import { useClickOutside } from '../hooks/useClickOutside'
 
 export type ResourceColumnId =
   | 'id'
@@ -136,15 +137,7 @@ export function ResourceDefinitionRow({
   const idInputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (!showSuggestions) return
-    const handleClick = (e: MouseEvent) => {
-      if (containerRef.current?.contains(e.target as Node)) return
-      setShowSuggestions(false)
-    }
-    document.addEventListener('mousedown', handleClick, true)
-    return () => document.removeEventListener('mousedown', handleClick, true)
-  }, [showSuggestions])
+  useClickOutside(containerRef, () => setShowSuggestions(false), showSuggestions)
 
   const filteredSuggestions = suggestions?.filter((s) =>
     s.toLowerCase().includes((item.id ?? '').toLowerCase()),
