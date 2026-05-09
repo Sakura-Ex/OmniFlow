@@ -1,12 +1,12 @@
 import { useCallback, useState } from 'react'
-import type { Dispatch, SetStateAction } from 'react'
 import type { Node } from 'reactflow'
 import type { RecipeNodeData, SourceNodeData, TargetNodeData } from '../types/recipe'
 import type { EndpointEditorTarget } from '../EndpointEditorContext'
 import { useRecipeStore } from '../stores/recipeStore'
+import { useCanvasStore } from '../stores/canvasStore'
 
 type UseNodeEditorParams = {
-  setNodes: Dispatch<SetStateAction<Node[]>>
+  setNodes: (nodes: Node[]) => void
   takeSnapshot: () => void
   updateNodeInternals: (nodeId: string) => void
 }
@@ -26,7 +26,8 @@ export function useNodeEditor({ setNodes, takeSnapshot, updateNodeInternals }: U
   const handleSaveEditor = useCallback((id: string, data: RecipeNodeData) => {
     takeSnapshot()
     useRecipeStore.getState().setRecipe(id, data)
-    setNodes((prev) => prev.map((node) =>
+    const prev = useCanvasStore.getState().nodes
+    setNodes(prev.map((node) =>
       node.id === id ? { ...node, data: { ...node.data, label: data.machine_name } } : node
     ))
     setEditingNode(null)
@@ -43,7 +44,8 @@ export function useNodeEditor({ setNodes, takeSnapshot, updateNodeInternals }: U
 
   const handleSaveEndpoint = useCallback((id: string, patch: Partial<SourceNodeData & TargetNodeData>) => {
     takeSnapshot()
-    setNodes((prev) => prev.map((node) =>
+    const prev = useCanvasStore.getState().nodes
+    setNodes(prev.map((node) =>
       node.id !== id ? node : { ...node, data: { ...node.data, ...patch } }
     ))
     setEditingEndpoint(null)

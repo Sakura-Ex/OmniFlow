@@ -1,5 +1,5 @@
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from 'reactflow'
-import { useResourceRegistry } from '../registry/resourceRegistry'
+import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { FALLBACK_CATEGORY } from '../registry/defaults'
 import type { ResourceCategoryDef } from '../registry/types'
 import { getCategory } from '../utils/resourceIdentifier'
@@ -33,7 +33,7 @@ export function CustomEdge({
   targetHandleId,
   markerEnd,
 }: EdgeProps) {
-  const categories = useResourceRegistry((state) => state.categories)
+  const categories = useGlobalResourceTable((state) => state.categories)
   const handleId = sourceHandleId ?? targetHandleId ?? ''
   const color = resolveEdgeColor(categories, handleId)
 

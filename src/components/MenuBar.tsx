@@ -36,7 +36,6 @@ type MenuBarProps = {
   handleFitView: () => void
   handleCalculate: () => Promise<void>
   onOpenRegistry: () => void
-  onOpenResourceIndex: () => void
 }
 
 export function MenuBar({
@@ -70,7 +69,6 @@ export function MenuBar({
   handleFitView,
   handleCalculate,
   onOpenRegistry,
-  onOpenResourceIndex,
 }: MenuBarProps) {
   return (
     <div className="menu-bar" ref={menuRef}>
@@ -207,13 +205,6 @@ export function MenuBar({
           onClick={() => handleMenuAction(onOpenRegistry)}
         >
           ⚙️ 全局资源字典
-        </button>
-        <button
-          className="menu-button menu-button--theme"
-          type="button"
-          onClick={() => handleMenuAction(onOpenResourceIndex)}
-        >
-          📋 资源表
         </button>
       </div>
 

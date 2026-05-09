@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -11,8 +11,6 @@ import { RecipeEditorModal } from './components/RecipeEditorModal'
 import { EndpointEditorModal } from './components/EndpointEditorModal'
 import { SystemHUD } from './components/SystemHUD'
 import { ResourceRegistryPanel } from './components/ResourceRegistryPanel'
-import { ResourceIndexPanel } from './components/ResourceIndexPanel'
-import { useResourceIndexStore } from './stores/resourceIndexStore'
 import { RecipeEditorProvider } from './RecipeEditorContext'
 import { EndpointEditorProvider } from './EndpointEditorContext'
 import { NodeDataProvider } from './NodeDataContext'
@@ -66,7 +64,6 @@ export default function App() {
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const { theme, toggleTheme } = useTheme()
   const [showRegistry, setShowRegistry] = useState(false)
-  const [showResourceIndex, setShowResourceIndex] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const reactFlowRef = useRef<ReactFlowInstance | null>(null)
   const menuRef = useRef<HTMLDivElement | null>(null)
@@ -112,36 +109,6 @@ export default function App() {
     resetSystemStats,
     handleCalculate,
   } = useCalculation()
-
-  const recipeStoreSnapshot = useRecipeStore((state) => state.recipes)
-  const usedResourceKeys = useMemo(() => {
-    const keys = new Set<string>()
-    for (const recipe of Object.values(recipeStoreSnapshot)) {
-      const extract = (list: unknown) => {
-        if (!Array.isArray(list)) return
-        for (const item of list as Array<Record<string, unknown>>) {
-          if (typeof item.category === 'string' && typeof item.id === 'string' && item.id) {
-            keys.add(`${item.category}:${item.id}`)
-          }
-        }
-      }
-      extract(recipe.base_inputs)
-      extract(recipe.base_outputs)
-      extract(recipe.base_utility_inputs)
-      extract(recipe.base_utility_outputs)
-    }
-    for (const node of nodes) {
-      const data = node.data as Record<string, unknown>
-      if (Array.isArray(data.ports)) {
-        for (const port of data.ports as Array<Record<string, unknown>>) {
-          if (typeof port.category === 'string' && typeof port.id === 'string' && port.id) {
-            keys.add(`${port.category}:${port.id}`)
-          }
-        }
-      }
-    }
-    return Array.from(keys)
-  }, [nodes, recipeStoreSnapshot])
 
   const {
     isValidConnection,
@@ -262,7 +229,6 @@ export default function App() {
           onSave={handleSaveEndpoint}
         />
         {showRegistry && <ResourceRegistryPanel onClose={() => setShowRegistry(false)} />}
-        {showResourceIndex && <ResourceIndexPanel onClose={() => setShowResourceIndex(false)} usedResourceKeys={usedResourceKeys} />}
 
         {error && (
           <div className="toast-error" onClick={dismissError}>
@@ -315,7 +281,6 @@ export default function App() {
           handleFitView={handleFitView}
           handleCalculate={handleCalculate}
           onOpenRegistry={() => setShowRegistry(true)}
-          onOpenResourceIndex={() => setShowResourceIndex(true)}
         />
 
         <RecipeEditorProvider value={{ onEdit: handleEditNode, onAutoFill: autoFillEndpoints }}>

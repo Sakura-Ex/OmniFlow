@@ -9,10 +9,9 @@ import { GT_VOLTAGE_TIERS, evaluateGtMultiblockState } from '../modifiers/gtMult
 import { listModifiers } from '../modifiers/registry'
 import { createDefaultModifierState, patchModifierSchemaWithNodeResources } from '../modifiers/state'
 import { getMachineArchetype, machineArchetypes } from '../data/archetypes/index'
-import { useResourceRegistry } from '../registry/resourceRegistry'
+import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { buildUnitSuffix } from '../registry/units'
 import { resolveCategoryDef, resolveResourceProps } from '../utils/endpointNorm'
-import { useResourceIndexStore } from '../stores/resourceIndexStore'
 import { ResourceDefinitionList, RECIPE_INPUT_COLUMNS, RECIPE_OUTPUT_COLUMNS, UTILITY_COLUMNS } from './ResourceDefinitionList'
 
 type SettingsUIProps = {
@@ -83,8 +82,8 @@ export function SettingsUI(props: SettingsUIProps) {
   const modifiers = listModifiers()
   const archetypeId = watch('archetype_id')
   const archetype = getMachineArchetype(archetypeId)
-  const registryCategories = useResourceRegistry((state) => state.categories)
-  const { entries: resourceIndex } = useResourceIndexStore()
+  const registryCategories = useGlobalResourceTable((state) => state.categories)
+  const { entries: resourceIndex } = useGlobalResourceTable()
 
   const baseInputs = watch('base_inputs') as Resource[]
   const baseOutputs = watch('base_outputs') as Resource[]

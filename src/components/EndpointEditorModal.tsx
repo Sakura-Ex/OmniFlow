@@ -1,10 +1,9 @@
 import { useState, useMemo } from 'react'
 import type { SourceNodeData, TargetNodeData, EndpointPort } from '../types/recipe'
 import type { EndpointEditorTarget } from '../EndpointEditorContext'
-import { useResourceRegistry } from '../registry/resourceRegistry'
+import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { normalizeEndpointPorts, emptyEndpointPort } from '../utils/endpointNorm'
 import { ResourceDefinitionList, ENDPOINT_COLUMNS } from './ResourceDefinitionList'
-import { useResourceIndexStore } from '../stores/resourceIndexStore'
 import './EndpointEditorModal.css'
 
 type Props = {
@@ -14,12 +13,12 @@ type Props = {
 }
 
 export function EndpointEditorModal({ node, onClose, onSave }: Props) {
-  const registryCategories = useResourceRegistry((state) => state.categories)
+  const registryCategories = useGlobalResourceTable((state) => state.categories)
   const categoryOptions = useMemo(
     () => Object.values(registryCategories).map((cat) => ({ id: cat.id, displayName: cat.displayName })),
     [registryCategories]
   )
-  const { entries: resourceIndex } = useResourceIndexStore()
+  const { entries: resourceIndex } = useGlobalResourceTable()
   const resourceSuggestions = useMemo(() => Object.keys(resourceIndex), [resourceIndex])
 
   const initialPorts = node ? normalizeEndpointPorts(node.data) : []

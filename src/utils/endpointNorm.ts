@@ -1,6 +1,7 @@
 import type { EndpointPort, SourceNodeData, TargetNodeData } from '../types/recipe'
-import type { ResourceCategoryDef, ResourceOverride } from '../registry/types'
-import { FALLBACK_CATEGORY, resolveResourceProps } from '../registry/defaults'
+import type { ResourceCategoryDef, UnitOverride } from '../registry/types'
+import { FALLBACK_CATEGORY } from '../registry/defaults'
+import { resolveResourceProps } from '../registry/globalResourceTable'
 import { getCategory } from './resourceIdentifier'
 
 export { resolveResourceProps }
@@ -8,7 +9,7 @@ export { resolveResourceProps }
 export function resolveCategoryDef(
   typeId?: string | null,
   userCategories?: Record<string, ResourceCategoryDef>,
-  userOverrides?: Record<string, ResourceOverride>,
+  userOverrides?: Record<string, UnitOverride>,
 ): ResourceCategoryDef {
   if (!typeId) return FALLBACK_CATEGORY
   const categoryId = getCategory(typeId)

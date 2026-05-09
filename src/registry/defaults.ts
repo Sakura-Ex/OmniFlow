@@ -1,5 +1,4 @@
-import type { ResourceCategoryDef, ResourceOverride, ResolvedResourceProps } from './types'
-import { getCategory } from '../utils/resourceIdentifier'
+import type { ResourceCategoryDef, UnitOverride } from './types'
 
 export const DEFAULT_RESOURCE_CATEGORIES: ResourceCategoryDef[] = [
   { id: 'item',   displayName: '物品', base_unit: '个', themeColor: '#e5e7eb', preferred_time_base: 'rate_per_sec' },
@@ -17,36 +16,7 @@ export const FALLBACK_CATEGORY: ResourceCategoryDef = {
   preferred_time_base: 'rate_per_sec',
 }
 
-export const ResourceOverrideRegistry: Record<string, ResourceOverride> = {
+export const DEFAULT_OVERRIDES: Record<string, UnitOverride> = {
   'stress:create_su':  { unit_override: 'RPM' },
   'energy:thermal_rf': { unit_override: 'RF' },
-}
-
-export function resolveResourceProps(
-  fullId: string,
-  userCategories?: Record<string, ResourceCategoryDef>,
-  userOverrides?: Record<string, ResourceOverride>,
-): ResolvedResourceProps {
-  const categoryId = getCategory(fullId)
-
-  const catDef = userCategories?.[fullId]
-    ?? userCategories?.[categoryId]
-    ?? findBuiltinCategory(fullId)
-    ?? findBuiltinCategory(categoryId)
-    ?? FALLBACK_CATEGORY
-
-  const override = userOverrides?.[fullId] ?? ResourceOverrideRegistry[fullId]
-
-  const isUnknown = !findBuiltinCategory(categoryId) && (fullId === categoryId || !userCategories?.[categoryId])
-
-  return {
-    unit: override?.unit_override ?? catDef.base_unit,
-    themeColor: catDef.themeColor,
-    preferred_time_base: catDef.preferred_time_base,
-    is_unknown: isUnknown,
-  }
-}
-
-function findBuiltinCategory(id: string): ResourceCategoryDef | undefined {
-  return DEFAULT_RESOURCE_CATEGORIES.find((c) => c.id === id)
 }

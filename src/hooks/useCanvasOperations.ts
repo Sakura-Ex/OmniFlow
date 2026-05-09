@@ -1,12 +1,12 @@
 import { useCallback } from 'react'
-import type { Dispatch, MouseEvent, MutableRefObject, SetStateAction } from 'react'
+import type { MouseEvent } from 'react'
 import { addEdge, type Connection, type Edge, type Node } from 'reactflow'
 import type { RecipeNodeData } from '../types/recipe'
 import { useCanvasStore } from '../stores/canvasStore'
 
 type UseCanvasOperationsParams = {
-  setNodes: Dispatch<SetStateAction<Node[]>>
-  setEdges: Dispatch<SetStateAction<Edge[]>>
+  setNodes: (nodes: Node[]) => void
+  setEdges: (edges: Edge[]) => void
   takeSnapshot: () => void
 }
 
@@ -35,12 +35,12 @@ export function useCanvasOperations({
       targetHandle: params.targetHandle,
       type: 'default',
     }
-    setEdges((eds) => addEdge(edge, eds))
+    setEdges(addEdge(edge, useCanvasStore.getState().edges))
   }, [setEdges, takeSnapshot])
 
   const onEdgeDoubleClick = useCallback((_: MouseEvent, edge: Edge) => {
     takeSnapshot()
-    setEdges((eds) => eds.filter((e) => e.id !== edge.id))
+    setEdges(useCanvasStore.getState().edges.filter((e) => e.id !== edge.id))
   }, [setEdges, takeSnapshot])
 
   const handleAddSource = useCallback(() => {
@@ -132,13 +132,15 @@ export function useCanvasOperations({
   }, [takeSnapshot])
 
   const handleSelectAll = useCallback(() => {
-    setNodes((prev) => prev.map((node) => ({ ...node, selected: true })))
-    setEdges((prev) => prev.map((edge) => ({ ...edge, selected: true })))
+    const state = useCanvasStore.getState()
+    setNodes(state.nodes.map((node) => ({ ...node, selected: true })))
+    setEdges(state.edges.map((edge) => ({ ...edge, selected: true })))
   }, [setEdges, setNodes])
 
   const handleClearSelection = useCallback(() => {
-    setNodes((prev) => prev.map((node) => ({ ...node, selected: false })))
-    setEdges((prev) => prev.map((edge) => ({ ...edge, selected: false })))
+    const state = useCanvasStore.getState()
+    setNodes(state.nodes.map((node) => ({ ...node, selected: false })))
+    setEdges(state.edges.map((edge) => ({ ...edge, selected: false })))
   }, [setEdges, setNodes])
 
   return {

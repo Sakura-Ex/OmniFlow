@@ -5,7 +5,7 @@ import { useRecipeEditor } from '../RecipeEditorContext'
 import { useNodeData } from '../NodeDataContext'
 import { useRecipeStore } from '../stores/recipeStore'
 import { runModifierPipeline } from '../modifiers/calculate'
-import { useResourceRegistry } from '../registry/resourceRegistry'
+import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { resolveCategoryDef } from '../utils/endpointNorm'
 import { formatPortAmount, formatRateValue } from '../utils/resourceFormat'
 import { formatOpExRate, formatProbability, formatMachineExact, formatCapEx } from '../utils/formatters'
@@ -26,8 +26,8 @@ function formatMachineCount(value: number | undefined, isExact: boolean) {
 export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   const { onEdit, onAutoFill } = useRecipeEditor()
   const { updateNodeData } = useNodeData()
-  const userCategories = useResourceRegistry((state) => state.categories)
-  const userOverrides = useResourceRegistry((state) => state.overrides)
+  const userCategories = useGlobalResourceTable((state) => state.categories)
+  const userOverrides = useGlobalResourceTable((state) => state.overrides)
 
   const storedPayload = useRecipeStore((state) => state.getPayload(id))
   const recipe = useRecipeStore((state) => state.recipes[id])

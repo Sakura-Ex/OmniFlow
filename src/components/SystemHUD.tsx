@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useResourceRegistry } from '../registry/resourceRegistry'
+import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { resolveCategoryDef } from '../utils/endpointNorm'
 import { formatSimpleRate } from '../utils/resourceFormat'
 import { parseResourceId, stripNetPrefix, isVirtualGlobal } from '../utils/resourceIdentifier'
@@ -29,8 +29,8 @@ function getGlobalKey(item: string): string {
 }
 
 function HUDResourceRow({ item, value, isGlobal }: { item: string; value: number; isGlobal: boolean }) {
-  const userCategories = useResourceRegistry((state) => state.categories)
-  const userOverrides = useResourceRegistry((state) => state.overrides)
+  const userCategories = useGlobalResourceTable((state) => state.categories)
+  const userOverrides = useGlobalResourceTable((state) => state.overrides)
   const { category, name } = parseItemKey(item)
   const catDef = resolveCategoryDef(category, userCategories, userOverrides)
   const hexColor = catDef.themeColor

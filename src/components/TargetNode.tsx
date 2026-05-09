@@ -2,7 +2,7 @@ import { useCallback, useState, type KeyboardEvent } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
 import { useNodeData } from '../NodeDataContext'
 import { useEndpointEditor } from '../EndpointEditorContext'
-import { useResourceRegistry } from '../registry/resourceRegistry'
+import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { buildUnitSuffix } from '../registry/units'
 import { normalizeEndpointPorts, resolveCategoryDef } from '../utils/endpointNorm'
 import type { TargetNodeData, TargetNodeMode } from '../types/recipe'
@@ -18,8 +18,8 @@ function formatValue(value: number | undefined) {
 export function TargetNode({ id, data }: NodeProps<TargetNodeData>) {
   const { updateNodeData } = useNodeData()
   const { onEdit } = useEndpointEditor()
-  const userCategories = useResourceRegistry((state) => state.categories)
-  const userOverrides = useResourceRegistry((state) => state.overrides)
+  const userCategories = useGlobalResourceTable((state) => state.categories)
+  const userOverrides = useGlobalResourceTable((state) => state.overrides)
   const ports = normalizeEndpointPorts(data)
   const mode: TargetNodeMode = data.mode ?? ((data.is_auto ?? data.is_virtual ?? true) ? 'maximize' : 'demand')
   const isEditable = mode === 'demand'
