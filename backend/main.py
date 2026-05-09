@@ -10,6 +10,22 @@ from scipy.optimize import linprog
 
 logger = logging.getLogger("omniflow")
 
+# ── Net 命名常量 (与前端 resourceIdentifier.ts 保持同步) ──
+VOID_PREFIX = "Void_"
+NET_PREFIX = "Net_"
+GLOBAL_PREFIX = "Global_"
+VIRTUAL_GLOBAL_PREFIX = "Virtual_Global_"
+
+
+def is_void_name(name: str) -> bool:
+    """Void_xxx → 孤立端口，直接排空"""
+    return name.startswith(VOID_PREFIX)
+
+
+def is_net_name(name: str) -> bool:
+    """Net_xxx → 有线连通分量"""
+    return name.startswith(NET_PREFIX)
+
 # =====================================================================
 # 1. 基础环境与 FastAPI 实例初始化
 # =====================================================================
@@ -164,11 +180,14 @@ async def calculate_flow(request: CalculateRequest):
             item_rows[item_id][col] -= rate
 
     # 步骤 2.5：识别溢流物品，扩展矩阵维度（白皮书 §7.2.2）
+    # Void_ 端口 = 直接排空，不进入守恒约束，不分配溢流变量
     equality_items_set = set(request.equality_items)
 
     spill_items: List[str] = []
     spill_index: Dict[str, int] = {}
     for item_id in items:
+        if is_void_name(item_id):
+            continue
         row = item_rows[item_id]
         if item_id not in equality_items_set and bool(np.any(row > 1e-12)):
             spill_items.append(item_id)
@@ -240,6 +259,7 @@ async def calculate_flow(request: CalculateRequest):
         bounds.append((0, None))
 
     # 步骤 4：约束构建（白皮书 §7.2.3）
+    # Void_ 端口无约束 — 直接排空，不参与物质守恒
     A_eq_rows: List[List[float]] = []
     b_eq: List[float] = []
     A_ub_rows: List[List[float]] = []
@@ -247,6 +267,8 @@ async def calculate_flow(request: CalculateRequest):
 
     for item_id in items:
         row = item_rows[item_id]
+        if is_void_name(item_id):
+            continue
         if item_id in equality_items_set:
             A_eq_rows.append(row.tolist())
             b_eq.append(0.0)
@@ -467,10 +489,13 @@ async def debug_matrix(request: CalculateRequest):
             item_rows[item_id][col] -= rate
 
     # 步骤 2.5：识别溢流物品（§7.2.2）
+    # Void_ 端口 = 直接排空，不进入守恒约束，不分配溢流变量
     equality_items_set = set(request.equality_items)
     spill_items2: List[str] = []
     spill_index2: Dict[str, int] = {}
     for item_id in items:
+        if is_void_name(item_id):
+            continue
         row = item_rows[item_id]
         if item_id not in equality_items_set and bool(np.any(row > 1e-12)):
             spill_items2.append(item_id)
@@ -563,6 +588,8 @@ async def debug_matrix(request: CalculateRequest):
             A_eq_rows.append(row.tolist())
             b_eq.append(0.0)
             detail["constraint"] = "hard_eq (Target)"
+        elif is_void_name(item_id):
+            detail["constraint"] = "skip (Void — 直接排空)"
         elif item_id in spill_index2:
             A_eq_rows.append(row.tolist())
             b_eq.append(0.0)

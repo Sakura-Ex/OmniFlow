@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { resolveCategoryDef } from '../utils/endpointNorm'
 import { formatSimpleRate } from '../utils/resourceFormat'
@@ -15,7 +15,6 @@ type SystemHUDProps = {
 
 function stripNetKey(item: string): { baseId: string; category: string; name: string } {
   const raw = stripNetPrefix(item)
-  if (raw === item) return { baseId: item, category: 'item', name: item }
   const parsed = parseResourceId(raw)
   return { baseId: raw, category: parsed.category, name: parsed.id }
 }
@@ -62,9 +61,32 @@ export function SystemHUD({
   const globalInputSet = new Set(globalInputIds)
   const globalOutputSet = new Set(globalOutputIds)
 
-  const allInputEntries = Object.entries(systemInputs)
+  /** 将带前缀的 backend key 按物理物品类别:id 聚合净速率 */
+  const { displayInputs, displayOutputs } = useMemo(() => {
+    const net: Record<string, number> = {}
+    for (const [key, rate] of Object.entries(systemInputs)) {
+      const baseId = stripNetPrefix(key)
+      net[baseId] = (net[baseId] ?? 0) - rate
+    }
+    for (const [key, rate] of Object.entries(systemOutputs)) {
+      const baseId = stripNetPrefix(key)
+      net[baseId] = (net[baseId] ?? 0) + rate
+    }
+    const inputs: Record<string, number> = {}
+    const outputs: Record<string, number> = {}
+    for (const [baseId, netRate] of Object.entries(net)) {
+      if (netRate > 1e-9) {
+        outputs[baseId] = netRate
+      } else if (netRate < -1e-9) {
+        inputs[baseId] = -netRate
+      }
+    }
+    return { displayInputs: inputs, displayOutputs: outputs }
+  }, [systemInputs, systemOutputs])
+
+  const allInputEntries = Object.entries(displayInputs)
     .filter(([item]) => !isVirtualGlobal(item))
-  const allOutputEntries = Object.entries(systemOutputs)
+  const allOutputEntries = Object.entries(displayOutputs)
     .filter(([item]) => !isVirtualGlobal(item))
   const wiredInputEntries = allInputEntries.filter(([item]) => !globalInputSet.has(getGlobalKey(item)))
   const globalInputEntries = allInputEntries.filter(([item]) => globalInputSet.has(getGlobalKey(item)))

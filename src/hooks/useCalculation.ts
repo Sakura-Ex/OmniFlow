@@ -169,10 +169,8 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
 
     // ── Step 3: compile payload nodes with flattened recipe IO ──
     const portHandleToSubNodeId = new Map<string, string>()
-    const namespaceAlias = new Map<string, string>()
 
     const payloadNodes: Array<{ id: string; type: string; data: Record<string, unknown> }> = []
-    // Target items that must strictly conserve (demand, maximize)
     const equalityTargetItems = new Set<string>()
 
     for (const n of nodesRef.current) {
@@ -200,7 +198,6 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
           }
 
           portHandleToSubNodeId.set(key, subId)
-          namespaceAlias.set(netId, netId)
 
           payloadNodes.push({
             id: subId,
@@ -229,13 +226,6 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
 
       const translatedInputs = translateFlattenedKeys(n.id, flattened.inputs)
       const translatedOutputs = translateFlattenedKeys(n.id, flattened.outputs)
-
-      for (const itemId of Object.keys(translatedInputs)) {
-        namespaceAlias.set(itemId, itemId)
-      }
-      for (const itemId of Object.keys(translatedOutputs)) {
-        namespaceAlias.set(itemId, itemId)
-      }
 
       payloadNodes.push({
         id: n.id,
@@ -323,7 +313,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       }
     }
 
-    // ── Source / Target 全局端口�?implicit edges ──
+    // ── Source / Target 全局端口�?implicit edges ──
     // 注意：需要将原始节点 ID 转换为子节点 ID
     for (const ep of endpointGlobalPorts) {
       const key = buildResourceId(ep.port.category, ep.port.id)
@@ -369,15 +359,6 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
     setGlobalInputIds(Array.from(globalInputSet))
     setGlobalOutputIds(Array.from(globalOutputSet))
 
-    const deduplicateSystemMap = (record: Record<string, number>) => {
-      const next: Record<string, number> = {}
-      for (const [key, value] of Object.entries(record)) {
-        const originalId = namespaceAlias.get(key) ?? key
-        next[originalId] = (next[originalId] ?? 0) + value
-      }
-      return next
-    }
-
     try {
       const response = await fetch('http://localhost:8000/api/calculate', {
         method: 'POST',
@@ -391,8 +372,8 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
 
       if (result.status === 'success') {
         const nodeResults = result.node_results ?? {}
-        const nextSystemInputs = deduplicateSystemMap(result.system_inputs ?? {})
-        const nextSystemOutputs = deduplicateSystemMap(result.system_outputs ?? {})
+        const nextSystemInputs = result.system_inputs ?? {}
+        const nextSystemOutputs = result.system_outputs ?? {}
 
         setNodes((prev) =>
           prev.map((node) => {
