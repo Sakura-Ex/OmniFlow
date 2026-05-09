@@ -105,7 +105,9 @@ export function ResourceDefinitionList<T extends Record<string, unknown> & { _ui
   )
 }
 
+import { formatOpExRate } from '../utils/formatters'
+
 function formatRate(value: number | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '0.00'
-  return value.toFixed(2)
+  return formatOpExRate(value)
 }

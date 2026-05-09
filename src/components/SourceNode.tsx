@@ -8,10 +8,11 @@ import { normalizeEndpointPorts, resolveCategoryDef } from '../utils/endpointNor
 import type { SourceNodeData, SourceNodeMode } from '../types/recipe'
 import './SourceNode.css'
 
+import { formatOpExRate } from '../utils/formatters'
+
 function formatValue(value: number | undefined) {
   if (typeof value !== 'number' || Number.isNaN(value)) return ''
-  const rounded = parseFloat(value.toPrecision(6))
-  return Number.isFinite(rounded) ? String(rounded) : ''
+  return formatOpExRate(value)
 }
 
 export function SourceNode({ id, data }: NodeProps<SourceNodeData>) {

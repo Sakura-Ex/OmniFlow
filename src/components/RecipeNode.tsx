@@ -8,18 +8,19 @@ import { runModifierPipeline } from '../modifiers/calculate'
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { resolveCategoryDef } from '../utils/endpointNorm'
 import { formatPortAmount, formatRateValue } from '../utils/resourceFormat'
+import { formatOpExRate, formatProbability, formatMachineExact, formatCapEx } from '../utils/formatters'
 import type { ResourceCategoryDef } from '../registry/types'
 import type { TimeBase, NormalizedResource, ComputedNodePayload } from '../types/types'
 import './RecipeNode.css'
 
 function formatDisplayValue(value: number | undefined) {
   if (typeof value !== 'number' || Number.isNaN(value)) return ''
-  const rounded = parseFloat(value.toPrecision(6))
-  return Number.isFinite(rounded) ? String(rounded) : ''
+  return formatOpExRate(value)
 }
 
-function formatPercent(value: number) {
-  return `${(value * 100).toFixed(1).replace(/\.0$/, '')}%`
+function formatMachineCount(value: number | undefined, isExact: boolean) {
+  if (typeof value !== 'number' || Number.isNaN(value)) return ''
+  return isExact ? formatMachineExact(value) : formatCapEx(value)
 }
 
 export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
@@ -66,7 +67,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
     })
 
     if (nextMode === 'limit') {
-      setDraftManualMachines(formatDisplayValue(nextManual) || String(nextManual))
+      setDraftManualMachines(formatMachineCount(nextManual, false) || String(nextManual))
     }
   }
 
@@ -293,7 +294,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
               value={
                 isLimit
                   ? draftManualMachines
-                  : formatDisplayValue(machinesActual ?? undefined)
+                  : formatMachineCount(machinesExact ?? machinesActual, !!machinesExact)
               }
               readOnly={!isLimit}
               placeholder="[ 等待计算 ]"
@@ -314,8 +315,8 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
               manualCap > 0 &&
               runtimeMachines !== null && (
                 <span className="recipe-node__utilization-hint">
-                  实际运转: {formatDisplayValue(runtimeMachines)} 台 (
-                  {formatPercent(
+                  实际运转: {formatMachineCount(runtimeMachines, !!machinesExact)} 台 (
+                  {formatProbability(
                     Math.max(0, Math.min(1, runtimeMachines / manualCap))
                   )}
                   )

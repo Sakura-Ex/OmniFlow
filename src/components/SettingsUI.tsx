@@ -27,19 +27,21 @@ type SettingsUIProps = {
   previewPowerActualEu: number
 }
 
+import { formatOpExRate, formatMachineExact, formatCapEx, formatTimeScale } from '../utils/formatters'
+
 function formatRate(value: number | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '0.00'
-  return value.toFixed(2)
+  return formatOpExRate(value)
 }
 
 function formatDuration(value: number): string {
   if (!Number.isFinite(value) || value <= 0) return 'Instant'
-  return `${value.toFixed(2)}s`
+  return `${formatOpExRate(value)}s`
 }
 
 function formatPower(value: number): string {
   if (!Number.isFinite(value)) return '0'
-  return value.toFixed(0)
+  return formatCapEx(value)
 }
 
 function buildRateMap(rates: Resource[]): Map<string, number> {
@@ -569,7 +571,7 @@ export function SettingsUI(props: SettingsUIProps) {
                       <span>🔁 实际并行: ×{summary.actualParallel}</span>
                       <span>🔁 实际超频: {summary.actualOverclockCount} 次</span>
                       <span>⚡ 最终功耗: {formatPower(summary.finalEuPerTick)} {buildUnitSuffix(resolveResourceProps('energy:gt_eu').unit, 'rate_per_tick')}</span>
-                      <span>⏱️ 时间缩放: ×{summary.finalDurationScale.toFixed(4)}</span>
+                      <span>⏱️ 时间缩放: ×{formatTimeScale(summary.finalDurationScale)}</span>
                     </>
                   )}
                 </div>
