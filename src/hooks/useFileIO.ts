@@ -4,20 +4,7 @@ import type { Edge, Node } from 'reactflow'
 import type { RecipeNodeData } from '../types/recipe'
 import { useRecipeStore } from '../stores/recipeStore'
 import { stripState } from '../utils/canvasUtils'
-
-type CanvasPayloadV1 = {
-  version: 1
-  nodes: Node[]
-  edges: Edge[]
-}
-
-type CanvasPayloadV2 = {
-  version: 2
-  ui: { nodes: Node[]; edges: Edge[] }
-  domain: { recipes: Record<string, RecipeNodeData> }
-}
-
-type CanvasPayload = CanvasPayloadV1 | CanvasPayloadV2
+import { migrateV1ToV2, type CanvasPayload, type CanvasPayloadV1, type CanvasPayloadV2 } from '../core/migration/v1ToV2'
 
 type UseFileIOParams = {
   storageKey: string
@@ -59,27 +46,17 @@ export function useFileIO({
     const raw = payload as Record<string, unknown>
 
     if (payload.version === 1 && Array.isArray(raw.nodes) && Array.isArray(raw.edges)) {
-      const v1Nodes = raw.nodes as Node[]
-      const v1Edges = raw.edges as Edge[]
+      const v2 = migrateV1ToV2(payload as CanvasPayloadV1)
 
-      const recipes: Record<string, RecipeNodeData> = {}
-      const migratedNodes: Node[] = v1Nodes.map((node) => {
-        if (node.type === 'recipeNode') {
-          recipes[node.id] = node.data as RecipeNodeData
-          return { ...node, data: { type: 'recipeNode', label: (node.data as { machine_name?: string }).machine_name ?? '' } }
-        }
-        return node
-      })
+      useRecipeStore.getState().loadAll(v2.domain.recipes)
 
-      useRecipeStore.getState().loadAll(recipes)
-
-      const normalizedNodes = migratedNodes.map((node) => normalizeCanvasNode(node))
+      const normalizedNodes = v2.ui.nodes.map((node) => normalizeCanvasNode(node))
       takeSnapshot()
       setNodes(normalizedNodes)
-      setEdges(v1Edges)
+      setEdges(v2.ui.edges)
       resetSystemStats()
       nodesRef.current = normalizedNodes
-      edgesRef.current = v1Edges
+      edgesRef.current = v2.ui.edges
       return
     }
 

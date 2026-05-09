@@ -110,7 +110,7 @@ export default function App() {
     error,
     resetSystemStats,
     handleCalculate,
-  } = useCalculation({ nodesRef, edgesRef })
+  } = useCalculation()
 
   const recipeStoreSnapshot = useRecipeStore((state) => state.recipes)
   const usedResourceKeys = useMemo(() => {
