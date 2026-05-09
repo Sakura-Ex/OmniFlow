@@ -2,18 +2,12 @@ import { useCallback } from 'react'
 import type { Dispatch, MouseEvent, MutableRefObject, SetStateAction } from 'react'
 import { addEdge, type Connection, type Edge, type Node } from 'reactflow'
 import type { RecipeNodeData } from '../types/recipe'
-import { useRecipeStore } from '../stores/recipeStore'
+import { useCanvasStore } from '../stores/canvasStore'
 
 type UseCanvasOperationsParams = {
   setNodes: Dispatch<SetStateAction<Node[]>>
   setEdges: Dispatch<SetStateAction<Edge[]>>
-  nodesRef: MutableRefObject<Node[]>
-  edgesRef: MutableRefObject<Edge[]>
   takeSnapshot: () => void
-  setSystemInputs: Dispatch<SetStateAction<Record<string, number>>>
-  setSystemOutputs: Dispatch<SetStateAction<Record<string, number>>>
-  setLastSystemInputs: Dispatch<SetStateAction<Record<string, number>>>
-  setLastSystemOutputs: Dispatch<SetStateAction<Record<string, number>>>
 }
 
 function makeId() {
@@ -23,12 +17,7 @@ function makeId() {
 export function useCanvasOperations({
   setNodes,
   setEdges,
-  nodesRef,
   takeSnapshot,
-  setSystemInputs,
-  setSystemOutputs,
-  setLastSystemInputs,
-  setLastSystemOutputs,
 }: UseCanvasOperationsParams) {
   const isValidConnection = useCallback((connection: Connection) => {
     return connection.sourceHandle === connection.targetHandle
@@ -63,8 +52,8 @@ export function useCanvasOperations({
       position: { x: 320 + Math.random() * 50, y: 180 + Math.random() * 50 },
       data: { id: `item_${id.slice(-4)}`, label: `item_${id.slice(-4)}`, amount: 100, is_auto: true, category: 'item' },
     }
-    setNodes((nds) => nds.concat(newNode))
-  }, [setNodes, takeSnapshot])
+    useCanvasStore.getState().addNode(newNode)
+  }, [takeSnapshot])
 
   const handleAddFurnace = useCallback(() => {
     takeSnapshot()
@@ -85,9 +74,8 @@ export function useCanvasOperations({
       position: { x: 320 + Math.random() * 50, y: 180 + Math.random() * 50 },
       data: nodeData,
     }
-    setNodes((nds) => nds.concat(newNode))
-    useRecipeStore.getState().setRecipe(id, nodeData)
-  }, [setNodes, takeSnapshot])
+    useCanvasStore.getState().addRecipeNode(id, nodeData, newNode)
+  }, [takeSnapshot])
 
   const handleAddCustomRecipe = useCallback(() => {
     takeSnapshot()
@@ -108,9 +96,8 @@ export function useCanvasOperations({
       position: { x: 320 + Math.random() * 50, y: 180 + Math.random() * 50 },
       data: nodeData,
     }
-    setNodes((nds) => nds.concat(newNode))
-    useRecipeStore.getState().setRecipe(id, nodeData)
-  }, [setNodes, takeSnapshot])
+    useCanvasStore.getState().addRecipeNode(id, nodeData, newNode)
+  }, [takeSnapshot])
 
   const handleAddTarget = useCallback(() => {
     takeSnapshot()
@@ -121,50 +108,28 @@ export function useCanvasOperations({
       position: { x: 320 + Math.random() * 50, y: 180 + Math.random() * 50 },
       data: { id: `demand_${id.slice(-4)}`, label: `demand_${id.slice(-4)}`, amount: 100, is_auto: true, category: 'item' },
     }
-    setNodes((nds) => nds.concat(newNode))
-  }, [setNodes, takeSnapshot])
+    useCanvasStore.getState().addNode(newNode)
+  }, [takeSnapshot])
 
   const handleClear = useCallback(() => {
     takeSnapshot()
-    setNodes([])
-    setEdges([])
-    setSystemInputs({})
-    setSystemOutputs({})
-    setLastSystemInputs({})
-    setLastSystemOutputs({})
-    useRecipeStore.setState({ recipes: {} })
-  }, [setEdges, setLastSystemInputs, setLastSystemOutputs, setNodes, setSystemInputs, setSystemOutputs, takeSnapshot])
+    useCanvasStore.getState().clearAll()
+  }, [takeSnapshot])
 
   const handleDeleteSelected = useCallback(() => {
     takeSnapshot()
-    const removedIds = nodesRef.current.filter((n) => n.selected).map((n) => n.id)
-    setNodes((nds) => {
-      const toRemove = nds.filter((n) => n.selected).map((n) => n.id)
-      if (toRemove.length === 0) return nds
-      setEdges((es) => es.filter((ed) => !toRemove.includes(ed.source) && !toRemove.includes(ed.target)))
-      return nds.filter((n) => !toRemove.includes(n.id))
-    })
-    setEdges((eds) => eds.filter((e) => !e.selected))
-    for (const id of removedIds) {
-      useRecipeStore.getState().removeRecipe(id)
-    }
-  }, [setEdges, setNodes, nodesRef, takeSnapshot])
+    useCanvasStore.getState().deleteSelected()
+  }, [takeSnapshot])
 
   const handleDeleteSelectedEdges = useCallback(() => {
     takeSnapshot()
-    setEdges((eds) => eds.filter((e) => !e.selected))
-  }, [setEdges, takeSnapshot])
+    useCanvasStore.getState().deleteSelectedEdges()
+  }, [takeSnapshot])
 
   const handleDeleteSelectedNodes = useCallback(() => {
     takeSnapshot()
-    const toRemove = nodesRef.current.filter((n) => n.selected).map((n) => n.id)
-    if (toRemove.length === 0) return
-    setNodes((prev) => prev.filter((n) => !toRemove.includes(n.id)))
-    setEdges((prev) => prev.filter((e) => !toRemove.includes(e.source) && !toRemove.includes(e.target)))
-    for (const id of toRemove) {
-      useRecipeStore.getState().removeRecipe(id)
-    }
-  }, [nodesRef, setEdges, setNodes, takeSnapshot])
+    useCanvasStore.getState().deleteSelected()
+  }, [takeSnapshot])
 
   const handleSelectAll = useCallback(() => {
     setNodes((prev) => prev.map((node) => ({ ...node, selected: true })))

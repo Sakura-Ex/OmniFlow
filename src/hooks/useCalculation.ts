@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react'
-import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
+import { useCallback } from 'react'
+import type { MutableRefObject } from 'react'
 import type { Edge, Node } from 'reactflow'
 import type { RecipeNodeData } from '../types/recipe'
 import type { ComputedNodePayload } from '../types/types'
@@ -8,6 +8,7 @@ import { runModifierPipeline, flattenForBackend } from '../modifiers/calculate'
 import { normalizeEndpointPorts } from '../utils/endpointNorm'
 import { buildTopologicalNets } from '../utils/topologicalNets'
 import { useRecipeStore } from '../stores/recipeStore'
+import { useCanvasStore } from '../stores/canvasStore'
 import { isNetName, isVoidName, buildResourceId } from '../utils/resourceIdentifier'
 
 const VIRTUAL_GLOBAL_SOURCE = 'Virtual_Global_Source'
@@ -25,26 +26,20 @@ function resolveIsAuto(data: Record<string, unknown> | undefined): boolean {
 type UseCalculationParams = {
   nodesRef: MutableRefObject<Node[]>
   edgesRef: MutableRefObject<Edge[]>
-  setNodes: Dispatch<SetStateAction<Node[]>>
 }
 
-export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationParams) {
-  const [systemInputs, setSystemInputs] = useState<Record<string, number>>({})
-  const [systemOutputs, setSystemOutputs] = useState<Record<string, number>>({})
-  const [lastSystemInputs, setLastSystemInputs] = useState<Record<string, number>>({})
-  const [lastSystemOutputs, setLastSystemOutputs] = useState<Record<string, number>>({})
-  const [globalInputIds, setGlobalInputIds] = useState<string[]>([])
-  const [globalOutputIds, setGlobalOutputIds] = useState<string[]>([])
-  const [capexList, setCapexList] = useState<Record<string, number>>({})
+export function useCalculation({ nodesRef, edgesRef }: UseCalculationParams) {
+  const systemInputs = useCanvasStore((s) => s.systemInputs)
+  const systemOutputs = useCanvasStore((s) => s.systemOutputs)
+  const lastSystemInputs = useCanvasStore((s) => s.lastSystemInputs)
+  const lastSystemOutputs = useCanvasStore((s) => s.lastSystemOutputs)
+  const globalInputIds = useCanvasStore((s) => s.globalInputIds)
+  const globalOutputIds = useCanvasStore((s) => s.globalOutputIds)
+  const capexList = useCanvasStore((s) => s.capexList)
+  const error = useCanvasStore((s) => s.error)
 
   const resetSystemStats = useCallback(() => {
-    setSystemInputs({})
-    setSystemOutputs({})
-    setLastSystemInputs({})
-    setLastSystemOutputs({})
-    setGlobalInputIds([])
-    setGlobalOutputIds([])
-    setCapexList({})
+    useCanvasStore.getState().resetCalculationState()
   }, [])
 
   const handleCalculate = useCallback(async () => {
@@ -52,11 +47,20 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
     const globalInputSet = new Set<string>()
     const globalOutputSet = new Set<string>()
 
-    // ── Step 1: shape all recipe nodes, detect global ports & zero-output nodes ──
     const zeroOutputNodeNames: string[] = []
     const endpointGlobalPorts: Array<{ nodeId: string; nodeType: string; port: { category: string; id: string } }> = []
 
-    for (const n of nodesRef.current) {
+    const storeNodes = useCanvasStore.getState().nodes
+    const storeEdges = useCanvasStore.getState().edges
+    const canvasNodes = storeNodes.length > 0 ? storeNodes : nodesRef.current
+    const canvasEdges = storeEdges.length > 0 ? storeEdges : edgesRef.current
+
+    console.log('Calculation start - nodes count:', canvasNodes.length, 'edges count:', canvasEdges.length)
+    if (canvasNodes.length === 0) {
+      console.warn('No nodes found for calculation!', { nodesRef: nodesRef.current, storeNodes })
+    }
+
+    for (const n of canvasNodes) {
       if (n.type === 'recipeNode') {
         const stored = useRecipeStore.getState().recipes[n.id]
         if (!stored) continue
@@ -102,14 +106,15 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
 
     if (zeroOutputNodeNames.length > 0) {
       const names = zeroOutputNodeNames.join(' / ')
-      alert(`Outputs of these recipe nodes are all zero:\n${names}\n(Set valid outputs or fix machine parameters.)`)
+      const errorMsg = `Outputs of these recipe nodes are all zero:\n${names}\n(Set valid outputs or fix machine parameters.)`
+      console.warn('Calculation aborted:', errorMsg)
+      useCanvasStore.getState().setError(errorMsg)
       return
     }
 
-    // ── Step 2: filter physical (non-global) wired edges ──
-    const physicalEdges = edgesRef.current.filter((e) => {
-      const srcNode = nodesRef.current.find((n) => n.id === e.source)
-      const tgtNode = nodesRef.current.find((n) => n.id === e.target)
+    const physicalEdges = canvasEdges.filter((e) => {
+      const srcNode = canvasNodes.find((n) => n.id === e.source)
+      const tgtNode = canvasNodes.find((n) => n.id === e.target)
 
       let srcGlobal = false
       if (srcNode?.type === 'recipeNode') {
@@ -146,9 +151,8 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       return !srcGlobal && !tgtGlobal
     })
 
-    // ── Step 2.5: Build topological nets for sub-graph isolation ──
     const topologicalNets = buildTopologicalNets(
-      nodesRef.current,
+      canvasNodes,
       physicalEdges,
       shapedRecipeByNodeId,
     )
@@ -167,14 +171,12 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       return translated
     }
 
-    // ── Step 3: compile payload nodes with flattened recipe IO ──
     const portHandleToSubNodeId = new Map<string, string>()
 
     const payloadNodes: Array<{ id: string; type: string; data: Record<string, unknown> }> = []
     const equalityTargetItems = new Set<string>()
 
-    for (const n of nodesRef.current) {
-      // ── Source / Target: explode multi-port into per-port sub-nodes ──
+    for (const n of canvasNodes) {
       if (n.type === 'sourceNode' || n.type === 'targetNode') {
         const ports = normalizeEndpointPorts(n.data)
         const isAuto = resolveIsAuto(n.data)
@@ -186,7 +188,7 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
 
         ports.forEach((port, pi) => {
           const portCategory = port.category ?? 'item'
-          const qualifiedId = `${portCategory}:${port.id}`
+          const qualifiedId = buildResourceId(portCategory, port.id)
           const key = `${n.id}|${qualifiedId}`
           const subId = `${n.id}__p${pi}`
 
@@ -213,14 +215,16 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
         continue
       }
 
-      // ── Non-recipe nodes pass through as-is ──
       if (n.type !== 'recipeNode') {
         payloadNodes.push({ id: n.id, type: n.type ?? 'unknown', data: n.data as Record<string, unknown> })
         continue
       }
 
-      // ── Recipe node: use cached _computed from Store, fall back to pipeline ──
-      const shaped = shapedRecipeByNodeId.get(n.id)!
+      const shaped = shapedRecipeByNodeId.get(n.id)
+      if (!shaped) {
+        console.warn(`Recipe node ${n.id} not found in recipe store, skipping`)
+        continue
+      }
       const payload = (shaped._computed as ComputedNodePayload | undefined) ?? runModifierPipeline(shaped)
       const flattened = flattenForBackend(payload)
 
@@ -245,7 +249,6 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       })
     }
 
-    // ── Step 4: translate physical edge handles and redirect to sub-nodes ──
     const wiredEdges = physicalEdges.map((e) => {
       const srcSubId = e.sourceHandle
         ? (portHandleToSubNodeId.get(`${e.source}|${e.sourceHandle}`) ?? e.source)
@@ -262,7 +265,6 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       }
     })
 
-    // ── Step 5: build implicit global bus edges ──
     const implicitEdges: Array<{
       source: string
       target: string
@@ -313,8 +315,6 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       }
     }
 
-    // ── Source / Target 全局端口�?implicit edges ──
-    // 注意：需要将原始节点 ID 转换为子节点 ID
     for (const ep of endpointGlobalPorts) {
       const key = buildResourceId(ep.port.category, ep.port.id)
       const subNodeId = portHandleToSubNodeId.get(`${ep.nodeId}|${key}`) ?? ep.nodeId
@@ -335,8 +335,6 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       }
     }
 
-    // ── equality_items: Target items that drive hard equality (§7.2.1) ──
-    // Soft constraints for non-Target items are handled by backend spill variables (§7.2.2).
     const equalityItems = equalityTargetItems
 
     const payload = {
@@ -356,155 +354,41 @@ export function useCalculation({ nodesRef, edgesRef, setNodes }: UseCalculationP
       equality_items: Array.from(equalityItems),
     }
 
-    setGlobalInputIds(Array.from(globalInputSet))
-    setGlobalOutputIds(Array.from(globalOutputSet))
+    const canvasStore = useCanvasStore.getState()
+    canvasStore.setGlobalInputIds(Array.from(globalInputSet))
+    canvasStore.setGlobalOutputIds(Array.from(globalOutputSet))
 
     try {
+      console.log('Sending calculation payload, payload:', payload)
       const response = await fetch('http://localhost:8000/api/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
+      }
 
       const result = await response.json() as CalculateResponse
-
-      if (result.status === 'success') {
-        const nodeResults = result.node_results ?? {}
-        const nextSystemInputs = result.system_inputs ?? {}
-        const nextSystemOutputs = result.system_outputs ?? {}
-
-        setNodes((prev) =>
-          prev.map((node) => {
-            let nextData = node.data
-            const directNodeResult = nodeResults[node.id]
-            const shaped = shapedRecipeByNodeId.get(node.id)
-            const recipeId = (shaped?.recipe_id && typeof shaped.recipe_id === 'string') ? shaped.recipe_id : null
-            const nodeResult = directNodeResult ?? (recipeId ? nodeResults[recipeId] : undefined)
-
-            if (nodeResult) nextData = { ...nextData, ...nodeResult }
-
-            // ── Aggregate exploded sub-node results back to original endpoint nodes ──
-            if (node.type === 'sourceNode') {
-              const isAuto = resolveIsAuto(nextData)
-              const ports = normalizeEndpointPorts(node.data)
-              const actualAmounts: Record<string, number> = {}
-              let totalActual = 0
-              for (const port of ports) {
-                const portCategory = port.category ?? 'item'
-                const qualifiedId = `${portCategory}:${port.id}`
-                const key = `${node.id}|${qualifiedId}`
-                const subNodeId = portHandleToSubNodeId.get(key)
-                if (subNodeId) {
-                  const subResult = nodeResults[subNodeId]
-                  const amt = typeof subResult?.actual_amount === 'number' ? subResult.actual_amount : 0
-                  actualAmounts[port.id] = amt
-                  totalActual += amt
-                }
-              }
-              nextData = {
-                ...nextData,
-                is_auto: isAuto,
-                actual_amount: totalActual,
-                actual_amounts: actualAmounts,
-              }
-            }
-
-            if (node.type === 'targetNode') {
-              const isAuto = resolveIsAuto(nextData)
-              const ports = normalizeEndpointPorts(node.data)
-              const actualAmounts: Record<string, number> = {}
-              let totalActual = 0
-              for (const port of ports) {
-                const portCategory = port.category ?? 'item'
-                const qualifiedId = `${portCategory}:${port.id}`
-                const key = `${node.id}|${qualifiedId}`
-                const subNodeId = portHandleToSubNodeId.get(key)
-                if (subNodeId) {
-                  const subResult = nodeResults[subNodeId]
-                  const amt = typeof subResult?.actual_amount === 'number' ? subResult.actual_amount : 0
-                  actualAmounts[port.id] = amt
-                  totalActual += amt
-                }
-              }
-              nextData = {
-                ...nextData,
-                is_auto: isAuto,
-                actual_amount: totalActual,
-                actual_amounts: actualAmounts,
-              }
-            }
-
-            if (node.type === 'recipeNode') {
-              nextData = { ...nextData, is_auto: resolveIsAuto(nextData) }
-            }
-
-            if (nextData === node.data) return node
-            return { ...node, data: nextData }
-          })
-        )
-
-        setSystemInputs(nextSystemInputs)
-        setSystemOutputs(nextSystemOutputs)
-        setLastSystemInputs(nextSystemInputs)
-        setLastSystemOutputs(nextSystemOutputs)
-
-        // ── CapEx: compute shopping list from consumable:false resources ──
-        const capexMap: Record<string, number> = {}
-        for (const [nodeId, shaped] of shapedRecipeByNodeId) {
-          const nodeResult = nodeResults[nodeId] ?? nodeResults[shaped.recipe_id]
-          const machines = nodeResult?.machines_actual ?? nodeResult?.machines_exact ?? 0
-          if (machines <= 0) continue
-          const allRes = [...(shaped.base_inputs ?? []), ...(shaped.base_outputs ?? []), ...(shaped.base_utility_inputs ?? []), ...(shaped.base_utility_outputs ?? [])]
-          for (const r of allRes) {
-            if (r.consumable !== false && r.consumable_probability !== 0 || !r.id) continue
-            const key = buildResourceId(r.category, r.id)
-            capexMap[key] = (capexMap[key] ?? 0) + r.amount * machines
-          }
-        }
-        setCapexList(capexMap)
-      } else if (result.status === 'unbounded') {
-        setSystemInputs({})
-        setSystemOutputs({})
-        setGlobalInputIds([])
-        setGlobalOutputIds([])
-        alert('Unbounded: Found "Maximize" nodes, but no physical bottleneck. Set a machine cap or source limit upstream.')
-      } else if (result.status === 'infeasible') {
-        setSystemInputs({})
-        setSystemOutputs({})
-        setGlobalInputIds([])
-        setGlobalOutputIds([])
-        alert('Infeasible: Check for conflicting constraints or missing input sources.')
-      } else {
-        setSystemInputs({})
-        setSystemOutputs({})
-        setGlobalInputIds([])
-        setGlobalOutputIds([])
-        alert('Calculation failed. Please try again later.')
-      }
-    } catch (error) {
-      console.error('calculate failed', error)
-      setSystemInputs({})
-      setSystemOutputs({})
-      setGlobalInputIds([])
-      setGlobalOutputIds([])
-      alert('Cannot connect to backend. Please confirm the backend is running.')
+      console.log('Calculation result:', result)
+      canvasStore.setCalculationResult(result)
+    } catch (err) {
+      console.error('calculate failed', err)
+      canvasStore.setError(`Cannot connect to backend: ${err instanceof Error ? err.message : 'Unknown error'}\nPlease confirm the backend is running at http://localhost:8000`)
     }
-  }, [nodesRef, edgesRef, setNodes])
+  }, [nodesRef, edgesRef])
 
   return {
     systemInputs,
     systemOutputs,
     lastSystemInputs,
     lastSystemOutputs,
-    setSystemInputs,
-    setSystemOutputs,
-    setLastSystemInputs,
-    setLastSystemOutputs,
     globalInputIds,
     globalOutputIds,
     capexList,
+    error,
     resetSystemStats,
     handleCalculate,
   }

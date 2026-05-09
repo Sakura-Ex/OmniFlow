@@ -1,18 +1,9 @@
 import { useCallback } from 'react'
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type { Edge, Node } from 'reactflow'
-import type { RecipeNodeData, EndpointPort } from '../types/recipe'
-import { useRecipeStore } from '../stores/recipeStore'
-
-export type HandleUpdate = {
-  role: 'source' | 'target'
-  previousId: string
-  nextId: string
-}
-
-function makeId() {
-  return `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
-}
+import type { RecipeNodeData } from '../types/recipe'
+import { useCanvasStore, type HandleUpdate } from '../stores/canvasStore'
+import { buildResourceId } from '../utils/resourceIdentifier'
 
 type UseNodeOperationsParams = {
   nodesRef: MutableRefObject<Node[]>
@@ -22,6 +13,10 @@ type UseNodeOperationsParams = {
   takeSnapshot: () => void
   lastSystemInputs: Record<string, number>
   lastSystemOutputs: Record<string, number>
+}
+
+function makeId() {
+  return `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
 }
 
 export function useNodeOperations({
@@ -38,96 +33,9 @@ export function useNodeOperations({
     nextData: Record<string, unknown>,
     handleUpdate?: HandleUpdate,
   ) => {
-    const currentNode = nodesRef.current.find((n) => n.id === nodeId)
-    if (!currentNode) return
-
-    const currentData = currentNode.data ?? {}
-    let mergedData = { ...currentData, ...nextData }
-
-    const nextIsAuto = typeof mergedData.is_auto === 'boolean'
-      ? mergedData.is_auto
-      : typeof mergedData.is_virtual === 'boolean'
-        ? mergedData.is_virtual
-        : undefined
-
-    if (typeof nextIsAuto === 'boolean') {
-      if (currentNode.type === 'sourceNode') {
-        const ports: EndpointPort[] = currentNode.data?.ports ?? []
-        const actualAmounts: Record<string, number> = { ...currentNode.data?.actual_amounts }
-        for (const port of ports) {
-          if (port.id) {
-            actualAmounts[port.id] = nextIsAuto
-              ? (currentNode.data?.actual_amounts?.[port.id] ?? lastSystemInputs[port.id])
-              : (currentNode.data?.actual_amounts?.[port.id])
-          }
-        }
-        mergedData = {
-          ...mergedData,
-          is_auto: nextIsAuto,
-          actual_amounts: actualAmounts,
-        }
-      } else if (currentNode.type === 'targetNode') {
-        const ports: EndpointPort[] = currentNode.data?.ports ?? []
-        const actualAmounts: Record<string, number> = { ...currentNode.data?.actual_amounts }
-        for (const port of ports) {
-          if (port.id) {
-            actualAmounts[port.id] = nextIsAuto
-              ? (currentNode.data?.actual_amounts?.[port.id] ?? lastSystemOutputs[port.id])
-              : (currentNode.data?.actual_amounts?.[port.id])
-          }
-        }
-        mergedData = {
-          ...mergedData,
-          is_auto: nextIsAuto,
-          actual_amounts: actualAmounts,
-        }
-      } else if (currentNode.type === 'recipeNode') {
-        mergedData = { ...mergedData, is_auto: nextIsAuto }
-        useRecipeStore.getState().updateRecipe(nodeId, nextData)
-      }
-    }
-
-    const dataChanged = Object.keys(mergedData).some((key) => currentData[key] !== mergedData[key])
-    const handleChanged = !!(handleUpdate && handleUpdate.previousId !== handleUpdate.nextId)
-
-    if (!dataChanged && !handleChanged) return
-
     takeSnapshot()
-    const nextNodes = nodesRef.current.map((node) =>
-      node.id === nodeId ? { ...node, data: mergedData } : node
-    )
-    setNodes(nextNodes)
-    nodesRef.current = nextNodes
-
-    if (handleChanged && handleUpdate) {
-      const currentNode = nodesRef.current.find((n) => n.id === nodeId)
-      const nodeCategory: string = currentNode?.data?.category ?? 'item'
-      const ports: EndpointPort[] = currentNode?.data?.ports ?? []
-      const oldPort = ports.find((p) => p.id === handleUpdate.previousId)
-      const portCategory = oldPort?.category ?? nodeCategory
-      const prevHandle = `${portCategory}:${handleUpdate.previousId}`
-      const nextHandle = `${portCategory}:${handleUpdate.nextId}`
-      const nextEdges = edgesRef.current.map((edge) => {
-        if (
-          handleUpdate.role === 'source' &&
-          edge.source === nodeId &&
-          edge.sourceHandle === prevHandle
-        ) {
-          return { ...edge, sourceHandle: nextHandle }
-        }
-        if (
-          handleUpdate.role === 'target' &&
-          edge.target === nodeId &&
-          edge.targetHandle === prevHandle
-        ) {
-          return { ...edge, targetHandle: nextHandle }
-        }
-        return edge
-      })
-      setEdges(nextEdges)
-      edgesRef.current = nextEdges
-    }
-  }, [nodesRef, edgesRef, setNodes, setEdges, takeSnapshot, lastSystemInputs, lastSystemOutputs])
+    useCanvasStore.getState().updateNodeData(nodeId, nextData, handleUpdate)
+  }, [takeSnapshot])
 
   const autoFillEndpoints = useCallback((nodeId: string) => {
     const recipeNode = nodesRef.current.find((node) => node.id === nodeId)
@@ -157,12 +65,12 @@ export function useNodeOperations({
 
     const missingInputs = inputs.filter((input) =>
       !edgesRef.current.some(
-        (edge) => edge.target === nodeId && edge.targetHandle === `${inputCategoryMap.get(input.id) ?? 'item'}:${input.id}`
+        (edge) => edge.target === nodeId && edge.targetHandle === buildResourceId(inputCategoryMap.get(input.id) ?? 'item', input.id)
       )
     )
     const missingOutputs = outputs.filter((output) =>
       !edgesRef.current.some(
-        (edge) => edge.source === nodeId && edge.sourceHandle === `${outputCategoryMap.get(output.id) ?? 'item'}:${output.id}`
+        (edge) => edge.source === nodeId && edge.sourceHandle === buildResourceId(outputCategoryMap.get(output.id) ?? 'item', output.id)
       )
     )
 
@@ -182,7 +90,7 @@ export function useNodeOperations({
       const y = position.y + index * spacing - inputOffset
       const cachedAmount = lastSystemInputs[input.id]
       const cat = inputCategoryMap.get(input.id) ?? 'item'
-      const handleId = `${cat}:${input.id}`
+      const handleId = buildResourceId(cat, input.id)
 
       nodesToAdd.push({
         id: sourceId,
@@ -215,7 +123,7 @@ export function useNodeOperations({
       const y = position.y + index * spacing - outputOffset
       const cachedAmount = lastSystemOutputs[output.id]
       const cat = outputCategoryMap.get(output.id) ?? 'item'
-      const handleId = `${cat}:${output.id}`
+      const handleId = buildResourceId(cat, output.id)
 
       nodesToAdd.push({
         id: targetId,

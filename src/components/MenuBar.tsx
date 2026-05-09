@@ -195,7 +195,7 @@ export function MenuBar({
         </button>
         {openMenu === 'solve' && (
           <div className="menu-dropdown">
-            <button className="menu-item" onClick={() => handleMenuAction(handleCalculate)}>🚀 执行矩阵求解</button>
+            <button className="menu-item" onClick={() => { void handleCalculate(); setOpenMenu(null); }}>🚀 执行矩阵求解</button>
           </div>
         )}
       </div>

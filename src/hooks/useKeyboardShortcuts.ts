@@ -1,12 +1,6 @@
 import { useEffect } from 'react'
-import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
-import type { Edge, Node } from 'reactflow'
 
 type UseKeyboardShortcutsParams = {
-  nodesRef: MutableRefObject<Node[]>
-  edgesRef: MutableRefObject<Edge[]>
-  setNodes: Dispatch<SetStateAction<Node[]>>
-  setEdges: Dispatch<SetStateAction<Edge[]>>
   takeSnapshot: () => void
   undo: () => void
   redo: () => void
@@ -16,13 +10,11 @@ type UseKeyboardShortcutsParams = {
   handleCut: () => Promise<void>
   handlePaste: () => Promise<void>
   handleDuplicate: () => void
+  onDelete: () => void
+  isEditing: boolean
 }
 
 export function useKeyboardShortcuts({
-  nodesRef,
-  edgesRef,
-  setNodes,
-  setEdges,
   takeSnapshot,
   undo,
   redo,
@@ -32,6 +24,8 @@ export function useKeyboardShortcuts({
   handleCut,
   handlePaste,
   handleDuplicate,
+  onDelete,
+  isEditing,
 }: UseKeyboardShortcutsParams) {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -43,7 +37,7 @@ export function useKeyboardShortcuts({
         return
       }
 
-      if (document.querySelector('.recipe-editor__overlay, .ep-editor__overlay, .resource-registry__overlay')) {
+      if (isEditing) {
         return
       }
 
@@ -73,36 +67,22 @@ export function useKeyboardShortcuts({
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
         redo()
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        const toRemoveNodes = nodesRef.current.filter((n) => n.selected).map((n) => n.id)
-        const toRemoveEdges = edgesRef.current.filter((edge) => edge.selected).map((edge) => edge.id)
-
-        if (toRemoveNodes.length === 0 && toRemoveEdges.length === 0) return
-
-        takeSnapshot()
-        if (toRemoveNodes.length > 0) {
-          setNodes((prev) => prev.filter((n) => !toRemoveNodes.includes(n.id)))
-          setEdges((es) => es.filter((edge) => !toRemoveNodes.includes(edge.source) && !toRemoveNodes.includes(edge.target)))
-        }
-        if (toRemoveEdges.length > 0) {
-          setEdges((es) => es.filter((edge) => !toRemoveEdges.includes(edge.id)))
-        }
+        onDelete()
       }
     }
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [
-    edgesRef,
     handleClearSelection,
     handleCopy,
     handleCut,
     handleDuplicate,
     handlePaste,
     handleSelectAll,
-    nodesRef,
+    isEditing,
+    onDelete,
     redo,
-    setEdges,
-    setNodes,
     takeSnapshot,
     undo,
   ])

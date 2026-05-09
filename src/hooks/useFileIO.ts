@@ -3,6 +3,7 @@ import type { ChangeEvent, Dispatch, MutableRefObject, SetStateAction } from 're
 import type { Edge, Node } from 'reactflow'
 import type { RecipeNodeData } from '../types/recipe'
 import { useRecipeStore } from '../stores/recipeStore'
+import { stripState } from '../utils/canvasUtils'
 
 type CanvasPayloadV1 = {
   version: 1
@@ -28,15 +29,6 @@ type UseFileIOParams = {
   takeSnapshot: () => void
   normalizeCanvasNode: (node: Node) => Node
   resetSystemStats: () => void
-}
-
-function stripState<T extends { selected?: boolean; dragging?: boolean }>(items: T[]) {
-  return items.map((item) => {
-    const { selected, dragging, ...rest } = item
-    void selected
-    void dragging
-    return rest as unknown as T
-  })
 }
 
 export function useFileIO({

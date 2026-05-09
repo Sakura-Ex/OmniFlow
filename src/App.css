@@ -182,3 +182,36 @@
     border-right-color: var(--border);
   }
 }
+
+.toast-error {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  max-width: 600px;
+  padding: 14px 24px 14px 48px;
+  background: rgba(220, 38, 38, 0.92);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-line;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 24px rgba(220, 38, 38, 0.32);
+  animation: toast-in 0.25s ease-out;
+}
+
+.toast-error::before {
+  content: '⚠';
+  position: absolute;
+  left: 16px;
+  top: 14px;
+  font-size: 18px;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}

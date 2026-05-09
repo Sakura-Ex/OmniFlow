@@ -10,7 +10,7 @@ import { getMachineArchetype, machineArchetypes } from '../data/archetypes/index
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { buildUnitSuffix } from '../registry/units'
 import { resolveCategoryDef, resolveResourceProps } from '../utils/endpointNorm'
-import { useResourceIndex } from '../hooks/useResourceIndex'
+import { useResourceIndexStore } from '../stores/resourceIndexStore'
 import { ResourceDefinitionList, RECIPE_INPUT_COLUMNS, RECIPE_OUTPUT_COLUMNS, UTILITY_COLUMNS } from './ResourceDefinitionList'
 
 type SettingsUIProps = {
@@ -80,7 +80,7 @@ export function SettingsUI(props: SettingsUIProps) {
   const archetypeId = watch('archetype_id')
   const archetype = getMachineArchetype(archetypeId)
   const registryCategories = useResourceRegistry((state) => state.categories)
-  const { entries: resourceIndex } = useResourceIndex()
+  const { entries: resourceIndex } = useResourceIndexStore()
 
   const baseInputs = watch('base_inputs') as Resource[]
   const baseOutputs = watch('base_outputs') as Resource[]

@@ -12,7 +12,7 @@ import { EndpointEditorModal } from './components/EndpointEditorModal'
 import { SystemHUD } from './components/SystemHUD'
 import { ResourceRegistryPanel } from './components/ResourceRegistryPanel'
 import { ResourceIndexPanel } from './components/ResourceIndexPanel'
-import { useResourceIndex } from './hooks/useResourceIndex'
+import { useResourceIndexStore } from './stores/resourceIndexStore'
 import { RecipeEditorProvider } from './RecipeEditorContext'
 import { EndpointEditorProvider } from './EndpointEditorContext'
 import { NodeDataProvider } from './NodeDataContext'
@@ -27,6 +27,7 @@ import { useNodeEditor } from './hooks/useNodeEditor'
 import { useCalculation } from './hooks/useCalculation'
 import { useNodeOperations } from './hooks/useNodeOperations'
 import { useRecipeStore } from './stores/recipeStore'
+import { useCanvasStore } from './stores/canvasStore'
 import type { RecipeNodeData } from './types/recipe'
 import { MenuBar } from './components/MenuBar'
 import { initialNodes, initialEdges } from './domain/canvas/initialState'
@@ -78,16 +79,15 @@ export default function App() {
   const seededRef = useRef(false)
   useEffect(() => {
     if (seededRef.current) return
-    const currentNodes = nodesRef.current
     const store = useRecipeStore.getState()
-    const needsSeed = currentNodes.some(
+    const needsSeed = nodesRef.current.some(
       (n) => n.type === 'recipeNode' && !store.recipes[n.id]
     )
     if (!needsSeed) {
       seededRef.current = true
       return
     }
-    const trimmed = currentNodes.map((node) => {
+    const trimmed = nodesRef.current.map((node) => {
       if (node.type === 'recipeNode') {
         const data = node.data as RecipeNodeData
         store.setRecipe(node.id, data)
@@ -107,18 +107,14 @@ export default function App() {
     globalInputIds,
     globalOutputIds,
     capexList,
-    setSystemInputs,
-    setSystemOutputs,
-    setLastSystemInputs,
-    setLastSystemOutputs,
+    error,
     resetSystemStats,
     handleCalculate,
-  } = useCalculation({ nodesRef, edgesRef, setNodes })
+  } = useCalculation({ nodesRef, edgesRef })
 
   const recipeStoreSnapshot = useRecipeStore((state) => state.recipes)
   const usedResourceKeys = useMemo(() => {
     const keys = new Set<string>()
-
     for (const recipe of Object.values(recipeStoreSnapshot)) {
       const extract = (list: unknown) => {
         if (!Array.isArray(list)) return
@@ -133,7 +129,6 @@ export default function App() {
       extract(recipe.base_utility_inputs)
       extract(recipe.base_utility_outputs)
     }
-
     for (const node of nodes) {
       const data = node.data as Record<string, unknown>
       if (Array.isArray(data.ports)) {
@@ -144,7 +139,6 @@ export default function App() {
         }
       }
     }
-
     return Array.from(keys)
   }, [nodes, recipeStoreSnapshot])
 
@@ -165,13 +159,7 @@ export default function App() {
   } = useCanvasOperations({
     setNodes,
     setEdges,
-    nodesRef,
-    edgesRef,
     takeSnapshot,
-    setSystemInputs,
-    setSystemOutputs,
-    setLastSystemInputs,
-    setLastSystemOutputs,
   })
 
   const backgroundDotColor = theme === 'light' ? 'rgba(71, 85, 105, 0.22)' : 'rgba(148, 163, 184, 0.24)'
@@ -225,10 +213,6 @@ export default function App() {
   })
 
   useKeyboardShortcuts({
-    nodesRef,
-    edgesRef,
-    setNodes,
-    setEdges,
     takeSnapshot,
     undo,
     redo,
@@ -238,6 +222,8 @@ export default function App() {
     handleCut,
     handlePaste,
     handleDuplicate,
+    onDelete: handleDeleteSelected,
+    isEditing: editingNode !== null || editingEndpoint !== null,
   })
 
   const handleFitView = useCallback(() => {
@@ -260,9 +246,12 @@ export default function App() {
       if (target && menuRef.current.contains(target)) return
       setOpenMenu(null)
     }
-
     window.addEventListener('mousedown', handleClickOutside, true)
     return () => window.removeEventListener('mousedown', handleClickOutside, true)
+  }, [])
+
+  const dismissError = useCallback(() => {
+    useCanvasStore.getState().setError(null)
   }, [])
 
   return (
@@ -282,6 +271,13 @@ export default function App() {
         />
         {showRegistry && <ResourceRegistryPanel onClose={() => setShowRegistry(false)} />}
         {showResourceIndex && <ResourceIndexPanel onClose={() => setShowResourceIndex(false)} usedResourceKeys={usedResourceKeys} />}
+
+        {error && (
+          <div className="toast-error" onClick={dismissError}>
+            {error}
+          </div>
+        )}
+
         <SystemHUD
           systemInputs={systemInputs}
           systemOutputs={systemOutputs}

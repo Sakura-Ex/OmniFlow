@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type { Edge, Node } from 'reactflow'
+import { stripState } from '../utils/canvasUtils'
 
 type Snapshot = {
   nodes: Node[]
@@ -13,15 +14,6 @@ type UseUndoRedoParams = {
   setNodes: Dispatch<SetStateAction<Node[]>>
   setEdges: Dispatch<SetStateAction<Edge[]>>
   historyLimit?: number
-}
-
-function stripState<T extends { selected?: boolean; dragging?: boolean }>(items: T[]) {
-  return items.map((item) => {
-    const { selected, dragging, ...rest } = item
-    void selected
-    void dragging
-    return rest as unknown as T
-  })
 }
 
 export function useUndoRedo({

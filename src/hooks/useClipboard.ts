@@ -1,6 +1,9 @@
 import { useCallback, useRef } from 'react'
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type { Edge, Node } from 'reactflow'
+import type { RecipeNodeData } from '../types/recipe'
+import { stripState } from '../utils/canvasUtils'
+import { useRecipeStore } from '../stores/recipeStore'
 
 type ClipboardPayload = {
   nodes: Node[]
@@ -18,15 +21,6 @@ type UseClipboardParams = {
 
 function makeId() {
   return `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
-}
-
-function stripState<T extends { selected?: boolean; dragging?: boolean }>(items: T[]) {
-  return items.map((item) => {
-    const { selected, dragging, ...rest } = item
-    void selected
-    void dragging
-    return rest as unknown as T
-  })
 }
 
 export function useClipboard({
@@ -105,6 +99,12 @@ export function useClipboard({
     const clearedEdges = edgesRef.current.map((edge) => ({ ...edge, selected: false }))
     const mergedNodes = [...clearedNodes, ...nextNodes]
     const mergedEdges = [...clearedEdges, ...nextEdges]
+
+    nextNodes.forEach((node) => {
+      if (node.type === 'recipeNode' && node.data) {
+        useRecipeStore.getState().setRecipe(node.id, node.data as RecipeNodeData)
+      }
+    })
 
     setNodes(mergedNodes)
     setEdges(mergedEdges)

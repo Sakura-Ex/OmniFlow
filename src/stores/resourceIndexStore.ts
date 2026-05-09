@@ -33,7 +33,7 @@ function persist(entries: Record<string, ResourceDef>) {
   }
 }
 
-export const useResourceIndex = create<ResourceIndexState>((set, get) => ({
+export const useResourceIndexStore = create<ResourceIndexState>((set, get) => ({
   entries: loadPersisted(),
 
   ensureEntry: (fullId) => {

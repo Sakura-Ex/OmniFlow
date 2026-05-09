@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useResourceIndex } from '../hooks/useResourceIndex'
+import { useResourceIndexStore } from '../stores/resourceIndexStore'
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { buildUnitSuffix } from '../registry/units'
 import { parseResourceId } from '../utils/resourceIdentifier'
@@ -11,7 +11,7 @@ type ResourceIndexPanelProps = {
 }
 
 export function ResourceIndexPanel({ onClose, usedResourceKeys }: ResourceIndexPanelProps) {
-  const { entries, setEntry, removeEntry } = useResourceIndex()
+  const { entries, setEntry, removeEntry } = useResourceIndexStore()
   const registryCategories = useResourceRegistry((state) => state.categories)
 
   const entryList = useMemo(() => Object.entries(entries), [entries])

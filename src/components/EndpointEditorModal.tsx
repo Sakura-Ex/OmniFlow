@@ -4,7 +4,7 @@ import type { EndpointEditorTarget } from '../EndpointEditorContext'
 import { useResourceRegistry } from '../registry/resourceRegistry'
 import { normalizeEndpointPorts, emptyEndpointPort } from '../utils/endpointNorm'
 import { ResourceDefinitionList, ENDPOINT_COLUMNS } from './ResourceDefinitionList'
-import { useResourceIndex } from '../hooks/useResourceIndex'
+import { useResourceIndexStore } from '../stores/resourceIndexStore'
 import './EndpointEditorModal.css'
 
 type Props = {
@@ -19,7 +19,7 @@ export function EndpointEditorModal({ node, onClose, onSave }: Props) {
     () => Object.values(registryCategories).map((cat) => ({ id: cat.id, displayName: cat.displayName })),
     [registryCategories]
   )
-  const { entries: resourceIndex } = useResourceIndex()
+  const { entries: resourceIndex } = useResourceIndexStore()
   const resourceSuggestions = useMemo(() => Object.keys(resourceIndex), [resourceIndex])
 
   const initialPorts = node ? normalizeEndpointPorts(node.data) : []
