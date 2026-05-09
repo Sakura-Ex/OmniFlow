@@ -3,6 +3,7 @@ import type { RecipeNodeData } from '../types/recipe'
 import type { ComputedNodePayload } from '../types/types'
 import { ensureRecipeDataShape, runModifierPipeline } from '../modifiers/calculate'
 import { applyArchetypeToInputs } from '../data/archetypes/index'
+import { useGlobalResourceTable } from '../registry/globalResourceTable'
 
 export type RecipeStore = {
   recipes: Record<string, RecipeNodeData>
@@ -21,6 +22,21 @@ function shapeAndCompute(data: RecipeNodeData): RecipeNodeData {
   return { ...shaped, _computed: computed as unknown as Record<string, unknown> }
 }
 
+function ensureAllResourceEntries(data: RecipeNodeData) {
+  const table = useGlobalResourceTable.getState()
+  const resources = [
+    ...(data.base_inputs ?? []),
+    ...(data.base_outputs ?? []),
+    ...(data.base_utility_inputs ?? []),
+    ...(data.base_utility_outputs ?? []),
+  ]
+  for (const res of resources) {
+    if (res.id) {
+      table.ensureEntry(`${res.category}:${res.id}`)
+    }
+  }
+}
+
 function stripComputed(recipe: RecipeNodeData): RecipeNodeData {
   const { _computed, ...rest } = recipe as RecipeNodeData & { _computed?: unknown }
   void _computed
@@ -31,9 +47,11 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
   recipes: {},
 
   setRecipe: (nodeId, data) => {
-    set((state) => ({
-      recipes: { ...state.recipes, [nodeId]: shapeAndCompute(data) },
-    }))
+    set((state) => {
+      const shaped = shapeAndCompute(data)
+      ensureAllResourceEntries(shaped)
+      return { recipes: { ...state.recipes, [nodeId]: shaped } }
+    })
   },
 
   updateRecipe: (nodeId, patch) => {
@@ -41,7 +59,9 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
       const current = state.recipes[nodeId]
       if (!current) return state
       const merged = { ...current, ...patch }
-      return { recipes: { ...state.recipes, [nodeId]: shapeAndCompute(merged) } }
+      const shaped = shapeAndCompute(merged)
+      ensureAllResourceEntries(shaped)
+      return { recipes: { ...state.recipes, [nodeId]: shaped } }
     })
   },
 
@@ -76,7 +96,9 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
           ...(current.base_utility_outputs ?? []).filter((u) => !(u._uid?.startsWith('utility-'))),
         ],
       }
-      return { recipes: { ...state.recipes, [nodeId]: shapeAndCompute(merged) } }
+      const shaped = shapeAndCompute(merged)
+      ensureAllResourceEntries(shaped)
+      return { recipes: { ...state.recipes, [nodeId]: shaped } }
     })
   },
 
@@ -92,6 +114,7 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
       const shaped: Record<string, RecipeNodeData> = {}
       for (const [id, data] of Object.entries(recipes)) {
         shaped[id] = shapeAndCompute(data)
+        ensureAllResourceEntries(shaped[id])
       }
       return { recipes: { ...state.recipes, ...shaped } }
     })
