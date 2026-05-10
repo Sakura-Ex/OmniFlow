@@ -110,9 +110,14 @@ export interface ResourceDefinitionRowProps {
   categoryOptions?: { id: string; displayName: string }[]
   probabilityLabel?: string
   routingLocked?: boolean
-  amountReadonly?: boolean
+  amountLocked?: boolean
   canDelete?: boolean
   rowLabel?: string
+  categoryLocked?: boolean
+  idLocked?: boolean
+  timeBaseLocked?: boolean
+  probabilityLocked?: boolean
+  ioToggleLocked?: boolean
 }
 
 export function ResourceDefinitionRow({
@@ -129,9 +134,14 @@ export function ResourceDefinitionRow({
   categoryOptions,
   probabilityLabel,
   routingLocked,
-  amountReadonly,
+  amountLocked,
   canDelete,
   rowLabel,
+  categoryLocked,
+  idLocked,
+  timeBaseLocked,
+  probabilityLocked,
+  ioToggleLocked,
 }: ResourceDefinitionRowProps) {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const idInputRef = useRef<HTMLInputElement>(null)
@@ -157,6 +167,7 @@ export function ResourceDefinitionRow({
                   type="text"
                   placeholder="资源 ID"
                   value={item.id ?? ''}
+                  disabled={idLocked}
                   style={{ width: '100%' }}
                   onFocus={() => setShowSuggestions(true)}
                   onChange={(e) => onUpdate(index, { id: e.target.value })}
@@ -211,7 +222,7 @@ export function ResourceDefinitionRow({
                   type="number"
                   min={0}
                   value={item.amount ?? 1}
-                  disabled={amountReadonly}
+                  disabled={amountLocked}
                   onChange={(e) => onUpdate(index, { amount: Number(e.target.value) })}
                 />
                 {unitSuffix && <span className="recipe-editor__input-suffix">{unitSuffix}</span>}
@@ -223,6 +234,7 @@ export function ResourceDefinitionRow({
               <select
                 key={col.id}
                 value={item.time_base ?? 'per_cycle'}
+                disabled={timeBaseLocked}
                 onChange={(e) => onUpdate(index, { time_base: e.target.value as TimeBase })}
               >
                 {TIME_BASE_OPTIONS.map((opt) => (
@@ -236,6 +248,7 @@ export function ResourceDefinitionRow({
               <select
                 key={col.id}
                 value={item.category ?? ''}
+                disabled={categoryLocked}
                 onChange={(e) => onUpdate(index, { category: e.target.value })}
               >
                 {categoryOptions?.map((opt) => (
@@ -252,6 +265,7 @@ export function ResourceDefinitionRow({
                   min={0}
                   max={1}
                   step={0.01}
+                   disabled={probabilityLocked}
                   value={item.consumable === false ? 0 : (item.consumable_probability ?? 1)}
                   onChange={(e) => {
                     const v = Math.max(0, Math.min(1, Number(e.target.value) || 0))
@@ -319,6 +333,7 @@ export function ResourceDefinitionRow({
                 className={`recipe-editor__io-btn${item.is_utility_output ? ' is-output' : ''}`}
                 onClick={() => onIoTToggle?.(index)}
                 title={item.is_utility_output ? '当前：设施输出（点击切换）' : '当前：设施输入（点击切换）'}
+                disabled={ioToggleLocked}
                 type="button"
               >
                 {item.is_utility_output ? '出' : '入'}

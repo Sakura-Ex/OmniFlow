@@ -4,7 +4,7 @@ import { createDefaultModifierState } from './state'
 import { getModifierById } from './registry'
 import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArchetype } from '../data/archetypes/index'
 import { DEFAULT_RESOURCE_CATEGORIES } from '../registry/defaults'
-import type { ModifierEffect } from './types'
+import type { ModifierEffect, PipelineContext } from './types'
 import { getCategory } from '../utils/resourceIdentifier'
 
 export const GAME_BASE_TPS = 20
@@ -59,17 +59,6 @@ export function toResource(port: Partial<RecipePort> | Partial<Resource>): Resou
     utility_type: typeof (port as Partial<Resource>).utility_type === 'string' ? (port as Partial<Resource>).utility_type : undefined,
     amount_mutable: typeof (port as Partial<Resource>).amount_mutable === 'boolean' ? (port as Partial<Resource>).amount_mutable : undefined,
     _uid: typeof (port as Partial<Resource>)._uid === 'string' ? (port as Partial<Resource>)._uid : undefined,
-  }
-}
-
-export function toLegacyPort(resource: Resource): RecipePort {
-  const type = resource.category.toLowerCase().includes('fluid') ? 'fluid' : 'item'
-  return {
-    id: resource.id,
-    amount: resource.amount,
-    category: resource.category,
-    type,
-    probability: resource.probability,
   }
 }
 
@@ -156,84 +145,12 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
     base_duration: secondsToTicks(base_duration_seconds),
     active_modifiers,
     modifier_states,
-    inputs: base_inputs.map(toLegacyPort),
-    outputs: base_outputs.map(toLegacyPort),
-    duration_ticks: secondsToTicks(base_duration_seconds),
   }
 }
 
-// ── Pipeline context: mutable working copy during modifier application ──
-
-interface PipelineContext {
-  recipeInputs: Resource[]
-  recipeOutputs: Resource[]
-  utilityInputs: Resource[]
-  utilityOutputs: Resource[]
-  durationSeconds: number
-  machineStopped: boolean
-}
-
-// ── The 5-Step Modifier Pipeline ──
-
-export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayload {
-  // ── Step 1: Init State — deep clone, read four separate arrays ──
-  const normalized = ensureRecipeDataShape(rawData)
-  const recipeInputs = deepCloneResources(normalized.base_inputs ?? [])
-  const recipeOutputs = deepCloneResources(normalized.base_outputs ?? [])
-  const utilityInputs = deepCloneResources(normalized.base_utility_inputs ?? [])
-  const utilityOutputs = deepCloneResources(normalized.base_utility_outputs ?? [])
-
-  const ctx: PipelineContext = {
-    recipeInputs,
-    recipeOutputs,
-    utilityInputs,
-    utilityOutputs,
-    durationSeconds: normalized.base_duration_seconds ?? 0,
-    machineStopped: false,
-  }
-
-  // ── Collect effects from all active modifiers evaluated against base data ──
-  type CollectedEffects = {
-    stat: ModifierEffect['statMultipliers'][]
-    parallel: number[]
-    duration: number[]
-    utility: Record<string, number>[]
-    output: Record<string, number>[]
-    energyAmount: number | undefined
-    stopped: boolean
-  }
-
-  const collected: CollectedEffects = {
-    stat: [],
-    parallel: [],
-    duration: [],
-    utility: [],
-    output: [],
-    energyAmount: undefined,
-    stopped: false,
-  }
-
-  for (const modifierId of normalized.active_modifiers ?? []) {
-    const modifier = getModifierById(modifierId)
-    if (!modifier) continue
-
-    const uiState = normalized.modifier_states?.[modifierId] ?? createDefaultModifierState(modifierId)
-    const combinedInputs = [...ctx.recipeInputs, ...ctx.utilityInputs]
-    const combinedOutputs = [...ctx.recipeOutputs, ...ctx.utilityOutputs]
-    const effect = modifier.evaluate(combinedInputs, combinedOutputs, ctx.durationSeconds, uiState)
-
-    if (effect.machineStopped) collected.stopped = true
-    if (effect.statMultipliers) collected.stat.push(effect.statMultipliers)
-    if (effect.parallelMultiplier !== undefined) collected.parallel.push(effect.parallelMultiplier)
-    if (effect.durationMultiplier !== undefined) collected.duration.push(effect.durationMultiplier)
-    if (effect.utilityMultipliers) collected.utility.push(effect.utilityMultipliers)
-    if (effect.outputMultipliers) collected.output.push(effect.outputMultipliers)
-    if (effect.energyAmount !== undefined) collected.energyAmount = effect.energyAmount
-  }
-
-  // ── Step 2: Phase 0 — Stat Multipliers (linear, unconditional) ──
-  for (const sm of collected.stat) {
-    if (!sm) continue
+function applyEffect(ctx: PipelineContext, effect: ModifierEffect): void {
+  if (effect.statMultipliers) {
+    const sm = effect.statMultipliers
     if (sm.duration !== undefined) ctx.durationSeconds *= sm.duration
     if (sm.recipeInput !== undefined) {
       for (const r of ctx.recipeInputs) r.amount *= sm.recipeInput
@@ -247,89 +164,121 @@ export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayloa
     }
   }
 
-  // ── Step 3: Phase 1 & Phase 2 — Parallel + Overclock ──
-
-  // Phase 1: Parallel (uniform scaling of ALL amounts, consumable guard)
-  let totalParallel = 1
-  for (const p of collected.parallel) totalParallel *= p
-
-  if (totalParallel !== 1) {
+  if (effect.parallelMultiplier !== undefined && effect.parallelMultiplier !== 1) {
+    const p = effect.parallelMultiplier
     for (const r of ctx.recipeInputs) {
-      if (r.consumable !== false && r.consumable_probability !== 0) r.amount *= totalParallel
+      if (r.consumable !== false && r.consumable_probability !== 0) r.amount *= p
     }
     for (const r of ctx.recipeOutputs) {
-      if (r.consumable !== false && r.consumable_probability !== 0) r.amount *= totalParallel
+      if (r.consumable !== false && r.consumable_probability !== 0) r.amount *= p
     }
     for (const r of ctx.utilityInputs) {
-      if (r.consumable !== false && r.consumable_probability !== 0) r.amount *= totalParallel
+      if (r.consumable !== false && r.consumable_probability !== 0) r.amount *= p
     }
     for (const r of ctx.utilityOutputs) {
-      if (r.consumable !== false && r.consumable_probability !== 0) r.amount *= totalParallel
+      if (r.consumable !== false && r.consumable_probability !== 0) r.amount *= p
     }
   }
 
-  // Phase 2: Duration (overclock time scaling)
-  for (const d of collected.duration) ctx.durationSeconds *= d
-  ctx.durationSeconds = Math.max(0.05, ctx.durationSeconds)
+  if (effect.durationMultiplier !== undefined) {
+    ctx.durationSeconds *= effect.durationMultiplier
+    ctx.durationSeconds = Math.max(0.05, ctx.durationSeconds)
+  }
 
-  // Phase 2: Utility multipliers (targeted overclock)
-  const mergedUtility: Record<string, number> = {}
-  for (const um of collected.utility) {
-    for (const [typeId, mult] of Object.entries(um)) {
-      mergedUtility[typeId] = (mergedUtility[typeId] ?? 1) * mult
+  if (effect.utilityMultipliers) {
+    for (const r of ctx.utilityInputs) {
+      if (r.utility_type) {
+        const mult = effect.utilityMultipliers[r.utility_type]
+        if (mult !== undefined) r.amount *= mult
+      }
     }
   }
-  for (const r of ctx.utilityInputs) {
-    if (r.utility_type) {
-      const mult = mergedUtility[r.utility_type]
+
+  if (effect.outputMultipliers) {
+    for (const r of ctx.recipeOutputs) {
+      const mult = effect.outputMultipliers[r.id]
       if (mult !== undefined) r.amount *= mult
     }
   }
 
-  // Phase 2: Legacy energyAmount fallback
-  if (collected.energyAmount !== undefined) {
-    const euInput = ctx.utilityInputs.find((r) => r.category === 'energy:gt_eu')
-    if (euInput) euInput.amount = collected.energyAmount
-  }
-
-  // Phase 2: Output multipliers (probability)
-  const mergedOutput: Record<string, number> = {}
-  for (const om of collected.output) {
-    for (const [id, mult] of Object.entries(om)) {
-      mergedOutput[id] = (mergedOutput[id] ?? 1) * mult
-    }
-  }
-  for (const r of ctx.recipeOutputs) {
-    const mult = mergedOutput[r.id]
-    if (mult !== undefined) r.amount *= mult
-  }
-
-  // Machine stopped: zero all recipe outputs
-  if (collected.stopped) {
+  if (effect.machineStopped) {
     ctx.machineStopped = true
     for (const r of ctx.recipeOutputs) r.amount = 0
   }
 
-  // ── Step 4: Ultimate Rate Normalization — all amounts → rate/sec ──
-  const dur = Math.max(0.05, ctx.durationSeconds)
-
-  function normalizeRate(res: Resource): number {
-    const probability = res.consumable_probability ?? 1
-    if (res.consumable === false || probability === 0) return 0
-    const mMode = res.time_base ?? 'per_cycle'
-    const baseRate = mMode === 'rate_per_tick'
-      ? res.amount * GAME_BASE_TPS
-      : mMode === 'rate_per_sec'
-        ? res.amount
-        : dur > 0 ? res.amount / dur : MAX_INSTANT_RATE
-    return baseRate * probability
+  if (effect.removedInputs) {
+    const removeSet = new Set(effect.removedInputs)
+    ctx.recipeInputs = ctx.recipeInputs.filter((r) => !removeSet.has(r.id))
+    ctx.utilityInputs = ctx.utilityInputs.filter((r) => !removeSet.has(r.id))
   }
+
+  if (effect.removedOutputs) {
+    const removeSet = new Set(effect.removedOutputs)
+    ctx.recipeOutputs = ctx.recipeOutputs.filter((r) => !removeSet.has(r.id))
+    ctx.utilityOutputs = ctx.utilityOutputs.filter((r) => !removeSet.has(r.id))
+  }
+
+  if (effect.addedInputs) {
+    for (const res of effect.addedInputs) {
+      if (res.is_utility) {
+        ctx.utilityInputs.push(res)
+      } else {
+        ctx.recipeInputs.push(res)
+      }
+    }
+  }
+
+  if (effect.addedOutputs) {
+    for (const res of effect.addedOutputs) {
+      if (res.is_utility) {
+        ctx.utilityOutputs.push(res)
+      } else {
+        ctx.recipeOutputs.push(res)
+      }
+    }
+  }
+}
+
+export function normalizeRate(res: Resource, dur: number): number {
+  const probability = res.consumable_probability ?? 1
+  if (res.consumable === false || probability === 0) return 0
+  const mMode = res.time_base ?? 'per_cycle'
+  const baseRate = mMode === 'rate_per_tick'
+    ? res.amount * GAME_BASE_TPS
+    : mMode === 'rate_per_sec'
+      ? res.amount
+      : dur > 0 ? res.amount / dur : MAX_INSTANT_RATE
+  return baseRate * probability
+}
+
+export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayload {
+  const normalized = ensureRecipeDataShape(rawData)
+  const ctx: PipelineContext = {
+    recipeInputs: deepCloneResources(normalized.base_inputs ?? []),
+    recipeOutputs: deepCloneResources(normalized.base_outputs ?? []),
+    utilityInputs: deepCloneResources(normalized.base_utility_inputs ?? []),
+    utilityOutputs: deepCloneResources(normalized.base_utility_outputs ?? []),
+    durationSeconds: normalized.base_duration_seconds ?? 0,
+    machineStopped: false,
+  }
+
+  for (const modifierId of normalized.active_modifiers ?? []) {
+    const modifier = getModifierById(modifierId)
+    if (!modifier) continue
+
+    const uiState = normalized.modifier_states?.[modifierId] ?? createDefaultModifierState(modifierId)
+    const effect = modifier.evaluate(ctx, uiState)
+    applyEffect(ctx, effect)
+  }
+
+  // ── Rate Normalization — all amounts → rate/sec ──
+  const dur = Math.max(0.05, ctx.durationSeconds)
 
   const toNormalized = (resources: Resource[]): NormalizedResource[] =>
     resources.map((res) => ({
       category: res.category,
       id: res.id,
-      amount: normalizeRate(res),
+      amount: normalizeRate(res, dur),
       time_base: res.time_base ?? 'per_cycle',
       consumable: res.consumable,
       consumable_probability: res.consumable_probability,
@@ -342,15 +291,12 @@ export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayloa
       _uid: res._uid,
     }))
 
-  // ── Step 5: Structured Output ──
   return {
-    nodeId: normalized.recipe_id || '',
     recipe_inputs: toNormalized(ctx.recipeInputs),
     recipe_outputs: toNormalized(ctx.recipeOutputs),
     utility_inputs: toNormalized(ctx.utilityInputs),
     utility_outputs: toNormalized(ctx.utilityOutputs),
     duration_seconds: dur,
-    is_instant: dur === 0,
   }
 }
 
@@ -384,60 +330,4 @@ export function flattenForBackend(payload: ComputedNodePayload): {
   }
 
   return { inputs, outputs }
-}
-
-// ── Legacy compatibility — kept for consumers that haven't migrated yet ──
-
-export type CalculatedRates = {
-  transformedInputs: Resource[]
-  transformedOutputs: Resource[]
-  inputRates: Resource[]
-  outputRates: Resource[]
-  duration: number
-  isInstant: boolean
-}
-
-export function getCalculatedRates(nodeData: RecipeNodeData): CalculatedRates {
-  const payload = runModifierPipeline(nodeData)
-  const ratesToResource = (nr: NormalizedResource): Resource => ({
-    category: nr.category,
-    id: nr.id,
-    amount: nr.amount,
-    time_base: nr.time_base,
-    consumable: nr.consumable,
-    probability: nr.probability,
-    routing_mode: nr.routing_mode,
-    routing_locked: nr.routing_locked,
-    is_utility: nr.is_utility,
-    utility_type: nr.utility_type,
-    amount_mutable: nr.amount_mutable,
-    _uid: nr._uid,
-  })
-
-  const allInputs = [...payload.recipe_inputs, ...payload.utility_inputs].map(ratesToResource)
-  const allOutputs = [...payload.recipe_outputs, ...payload.utility_outputs].map(ratesToResource)
-
-  return {
-    transformedInputs: allInputs,
-    transformedOutputs: allOutputs,
-    inputRates: allInputs,
-    outputRates: allOutputs,
-    duration: payload.duration_seconds,
-    isInstant: payload.is_instant,
-  }
-}
-
-export function normalizePayloadResources(rates: Resource[]): Resource[] {
-  const keep = rates.filter((r) => r.consumable !== false)
-  const merged = new Map<string, Resource>()
-  for (const r of keep) {
-    const key = `${r.category}:${r.id}`
-    const existing = merged.get(key)
-    if (existing) {
-      existing.amount += r.amount
-    } else {
-      merged.set(key, { ...r })
-    }
-  }
-  return [...merged.values()]
 }

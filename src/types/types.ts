@@ -41,13 +41,11 @@ export interface NormalizedResource {
 
 /** 修饰器管线最终输出：四维独立，供 UI 精准渲染上下半区 */
 export interface ComputedNodePayload {
-  nodeId: string
   recipe_inputs: NormalizedResource[]
   recipe_outputs: NormalizedResource[]
   utility_inputs: NormalizedResource[]
   utility_outputs: NormalizedResource[]
   duration_seconds: number
-  is_instant: boolean
 }
 
 export interface UtilityDef {

@@ -22,10 +22,15 @@ type ResourceDefinitionListProps<T extends Record<string, unknown> & { _uid?: st
   probabilityLabel?: string
 
   getRoutingLocked?: (index: number) => boolean
-  getAmountReadonly?: (index: number) => boolean
+  getAmountLocked?: (index: number) => boolean
   getCanDelete?: (index: number) => boolean
   getRowLabel?: (index: number) => string
   getUnitSuffix?: (index: number) => string
+  getCategoryLocked?: (index: number) => boolean
+  getIdLocked?: (index: number) => boolean
+  getTimeBaseLocked?: (index: number) => boolean
+  getProbabilityLocked?: (index: number) => boolean
+  getIoToggleLocked?: (index: number) => boolean
 }
 
 export function ResourceDefinitionList<T extends Record<string, unknown> & { _uid?: string }>({
@@ -43,10 +48,15 @@ export function ResourceDefinitionList<T extends Record<string, unknown> & { _ui
   categoryOptions,
   probabilityLabel,
   getRoutingLocked,
-  getAmountReadonly,
+  getAmountLocked,
   getCanDelete,
   getRowLabel,
   getUnitSuffix,
+  getCategoryLocked,
+  getIdLocked,
+  getTimeBaseLocked,
+  getProbabilityLocked,
+  getIoToggleLocked,
 }: ResourceDefinitionListProps<T>) {
   const gridTemplate = useMemo(
     () => columns.map((c) => c.width ?? 'auto').join(' '),
@@ -84,10 +94,15 @@ export function ResourceDefinitionList<T extends Record<string, unknown> & { _ui
           categoryOptions,
           probabilityLabel,
           routingLocked: getRoutingLocked?.(index),
-          amountReadonly: getAmountReadonly?.(index),
+          amountLocked: getAmountLocked?.(index),
           canDelete: getCanDelete?.(index) ?? true,
           rowLabel: getRowLabel?.(index),
           unitSuffix: getUnitSuffix?.(index),
+          categoryLocked: getCategoryLocked?.(index),
+          idLocked: getIdLocked?.(index),
+          timeBaseLocked: getTimeBaseLocked?.(index),
+          probabilityLocked: getProbabilityLocked?.(index),
+          ioToggleLocked: getIoToggleLocked?.(index),
         }
 
         return <ResourceDefinitionRow key={item._uid ?? `row-${index}`} {...rowProps} />

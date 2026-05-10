@@ -1,4 +1,4 @@
-import type { IMachineModifier } from './types'
+import type { IMachineModifier, PipelineContext } from './types'
 
 export const chanceOutputModifier: IMachineModifier = {
   id: 'chance_output',
@@ -18,16 +18,17 @@ export const chanceOutputModifier: IMachineModifier = {
       defaultValue: 1,
     },
   ],
-  evaluate: (_baseInputs, baseOutputs, _baseDuration, uiState) => {
+  evaluate: (ctx: PipelineContext, uiState: Record<string, unknown>) => {
     const prob = Number(uiState.probability)
     const normalizedProb = Number.isFinite(prob) ? Math.max(0, Math.min(1, prob)) : 1
     const targetId = String(uiState.targetResourceId || '')
+    const allOutputs = [...ctx.recipeOutputs, ...ctx.utilityOutputs]
 
     const outputMultipliers: Record<string, number> = {}
     if (targetId) {
       outputMultipliers[targetId] = normalizedProb
     } else {
-      for (const out of baseOutputs) {
+      for (const out of allOutputs) {
         outputMultipliers[out.id] = normalizedProb
       }
     }

@@ -1,8 +1,10 @@
 import type { IMachineModifier } from './types'
+import { baseChassisEfficiencyModifier } from './baseChassisEfficiency'
 import { chanceOutputModifier } from './chanceOutput'
 import { gtMultiblockModifier } from './gtMultiblock'
 
 export const modifierRegistry: Record<string, IMachineModifier> = {
+  [baseChassisEfficiencyModifier.id]: baseChassisEfficiencyModifier,
   [chanceOutputModifier.id]: chanceOutputModifier,
   [gtMultiblockModifier.id]: gtMultiblockModifier,
 }

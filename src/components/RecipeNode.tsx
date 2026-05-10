@@ -87,7 +87,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
             .padStart(2, '0')}`
         : hexColor.replace(')', ', 0.38)').replace('rgb', 'rgba')
 
-      const portRate = payload.is_instant
+      const portRate = payload.duration_seconds === 0
         ? 'Instant'
         : formatRateValue(res.amount, mMode)
       const handleId = `${res.category}:${res.id || res._uid || `${side}-${index}`}`

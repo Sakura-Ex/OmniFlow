@@ -1,5 +1,5 @@
 import type { Resource } from '../types/types'
-import type { IMachineModifier } from './types'
+import type { IMachineModifier, PipelineContext } from './types'
 
 export type GtVoltageTier = {
   id: string
@@ -223,8 +223,9 @@ export const gtMultiblockModifier: IMachineModifier = {
       defaultValue: false,
     },
   ],
-  evaluate: (baseInputs, _baseOutputs, _baseDuration, uiState) => {
-    const baseEuInput = baseInputs.find((r) => r.category === 'energy:gt_eu' && r.is_utility)
+  evaluate: (ctx: PipelineContext, uiState: Record<string, unknown>) => {
+    const allInputs = [...ctx.recipeInputs, ...ctx.utilityInputs]
+    const baseEuInput = allInputs.find((r) => r.category === 'energy:gt_eu' && r.is_utility)
     const baseEuPerTick = baseEuInput ? baseEuInput.amount : 0
 
     const summary = evaluateGtMultiblockState(uiState, baseEuPerTick)

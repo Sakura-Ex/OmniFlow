@@ -7,6 +7,7 @@ export {
   resolveRecipePowerProfile,
   gtMultiblockModifier,
 } from './gtMultiblock'
+export { baseChassisEfficiencyModifier } from './baseChassisEfficiency'
 export { chanceOutputModifier } from './chanceOutput'
 export { modifierRegistry, listModifiers, getModifierById } from './registry'
 export { createDefaultModifierState, patchModifierSchemaWithNodeResources } from './state'

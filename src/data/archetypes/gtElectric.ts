@@ -14,5 +14,5 @@ export const gtElectricArchetype: MachineArchetype = {
       io: 'input',
     },
   },
-  default_modifiers: ['gt_multiblock'],
+  default_modifiers: ['gt_multiblock', 'base_chassis_efficiency'],
 }
