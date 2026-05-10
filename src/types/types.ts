@@ -58,11 +58,18 @@ export interface UtilityDef {
   io?: 'input' | 'output'
 }
 
+export interface ArchetypeTrait {
+  key: string
+  label: string
+  default: unknown
+}
+
 export interface MachineArchetype {
   id: string
   name: string
   fixed_utilities: Record<string, UtilityDef>
   default_modifiers: string[]
+  traits?: Record<string, ArchetypeTrait>
 }
 
 export interface ResourceDef {

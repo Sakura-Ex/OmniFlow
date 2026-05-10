@@ -4,7 +4,7 @@ import { createDefaultModifierState } from './state'
 import { getModifierById } from './registry'
 import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArchetype } from '../data/archetypes/index'
 import { DEFAULT_RESOURCE_CATEGORIES } from '../registry/defaults'
-import type { ModifierEffect, PipelineContext } from './types'
+import type { PipelineContext } from './types'
 import { getCategory } from '../utils/resourceIdentifier'
 
 export const GAME_BASE_TPS = 20
@@ -61,8 +61,6 @@ export function toResource(port: Partial<RecipePort> | Partial<Resource>): Resou
     _uid: typeof (port as Partial<Resource>)._uid === 'string' ? (port as Partial<Resource>)._uid : undefined,
   }
 }
-
-// ── Pre-processing: normalize raw recipe data into a shaped baseline ──
 
 export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
   const baseInputsRaw = (data.base_inputs?.length ? data.base_inputs : data.inputs) ?? []
@@ -133,6 +131,12 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
     }
   }
 
+  const traits = archetype.traits ?? {}
+  const hardware_specs: Record<string, unknown> = {}
+  for (const [traitKey, traitDef] of Object.entries(traits)) {
+    hardware_specs[traitKey] = data.hardware_specs?.[traitKey] ?? traitDef.default
+  }
+
   return {
     ...data,
     archetype_id,
@@ -145,97 +149,7 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
     base_duration: secondsToTicks(base_duration_seconds),
     active_modifiers,
     modifier_states,
-  }
-}
-
-function applyEffect(ctx: PipelineContext, effect: ModifierEffect): void {
-  if (effect.statMultipliers) {
-    const sm = effect.statMultipliers
-    if (sm.duration !== undefined) ctx.durationSeconds *= sm.duration
-    if (sm.recipeInput !== undefined) {
-      for (const r of ctx.recipeInputs) r.amount *= sm.recipeInput
-    }
-    if (sm.recipeOutput !== undefined) {
-      for (const r of ctx.recipeOutputs) r.amount *= sm.recipeOutput
-    }
-    if (sm.utility !== undefined) {
-      for (const r of ctx.utilityInputs) r.amount *= sm.utility
-      for (const r of ctx.utilityOutputs) r.amount *= sm.utility
-    }
-  }
-
-  if (effect.parallelMultiplier !== undefined && effect.parallelMultiplier !== 1) {
-    const p = effect.parallelMultiplier
-    for (const r of ctx.recipeInputs) {
-      if (r.consumable !== false && r.consumable_probability !== 0) r.amount *= p
-    }
-    for (const r of ctx.recipeOutputs) {
-      if (r.consumable !== false && r.consumable_probability !== 0) r.amount *= p
-    }
-    for (const r of ctx.utilityInputs) {
-      if (r.consumable !== false && r.consumable_probability !== 0) r.amount *= p
-    }
-    for (const r of ctx.utilityOutputs) {
-      if (r.consumable !== false && r.consumable_probability !== 0) r.amount *= p
-    }
-  }
-
-  if (effect.durationMultiplier !== undefined) {
-    ctx.durationSeconds *= effect.durationMultiplier
-    ctx.durationSeconds = Math.max(0.05, ctx.durationSeconds)
-  }
-
-  if (effect.utilityMultipliers) {
-    for (const r of ctx.utilityInputs) {
-      if (r.utility_type) {
-        const mult = effect.utilityMultipliers[r.utility_type]
-        if (mult !== undefined) r.amount *= mult
-      }
-    }
-  }
-
-  if (effect.outputMultipliers) {
-    for (const r of ctx.recipeOutputs) {
-      const mult = effect.outputMultipliers[r.id]
-      if (mult !== undefined) r.amount *= mult
-    }
-  }
-
-  if (effect.machineStopped) {
-    ctx.machineStopped = true
-    for (const r of ctx.recipeOutputs) r.amount = 0
-  }
-
-  if (effect.removedInputs) {
-    const removeSet = new Set(effect.removedInputs)
-    ctx.recipeInputs = ctx.recipeInputs.filter((r) => !removeSet.has(r.id))
-    ctx.utilityInputs = ctx.utilityInputs.filter((r) => !removeSet.has(r.id))
-  }
-
-  if (effect.removedOutputs) {
-    const removeSet = new Set(effect.removedOutputs)
-    ctx.recipeOutputs = ctx.recipeOutputs.filter((r) => !removeSet.has(r.id))
-    ctx.utilityOutputs = ctx.utilityOutputs.filter((r) => !removeSet.has(r.id))
-  }
-
-  if (effect.addedInputs) {
-    for (const res of effect.addedInputs) {
-      if (res.is_utility) {
-        ctx.utilityInputs.push(res)
-      } else {
-        ctx.recipeInputs.push(res)
-      }
-    }
-  }
-
-  if (effect.addedOutputs) {
-    for (const res of effect.addedOutputs) {
-      if (res.is_utility) {
-        ctx.utilityOutputs.push(res)
-      } else {
-        ctx.recipeOutputs.push(res)
-      }
-    }
+    hardware_specs,
   }
 }
 
@@ -253,13 +167,14 @@ export function normalizeRate(res: Resource, dur: number): number {
 
 export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayload {
   const normalized = ensureRecipeDataShape(rawData)
-  const ctx: PipelineContext = {
+  let ctx: PipelineContext = {
     recipeInputs: deepCloneResources(normalized.base_inputs ?? []),
     recipeOutputs: deepCloneResources(normalized.base_outputs ?? []),
     utilityInputs: deepCloneResources(normalized.base_utility_inputs ?? []),
     utilityOutputs: deepCloneResources(normalized.base_utility_outputs ?? []),
     durationSeconds: normalized.base_duration_seconds ?? 0,
     machineStopped: false,
+    hardwareSpecs: normalized.hardware_specs ?? {},
   }
 
   for (const modifierId of normalized.active_modifiers ?? []) {
@@ -267,11 +182,9 @@ export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayloa
     if (!modifier) continue
 
     const uiState = normalized.modifier_states?.[modifierId] ?? createDefaultModifierState(modifierId)
-    const effect = modifier.evaluate(ctx, uiState)
-    applyEffect(ctx, effect)
+    ctx = modifier.evaluate(ctx, uiState)
   }
 
-  // ── Rate Normalization — all amounts → rate/sec ──
   const dur = Math.max(0.05, ctx.durationSeconds)
 
   const toNormalized = (resources: Resource[]): NormalizedResource[] =>
@@ -299,8 +212,6 @@ export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayloa
     duration_seconds: dur,
   }
 }
-
-// ── API Flattening: merge recipe + utility → minimal payload for backend ──
 
 export function flattenForBackend(payload: ComputedNodePayload): {
   inputs: Record<string, number>

@@ -6,7 +6,7 @@ import { useRecipeStore } from '../stores/recipeStore'
 import { SettingsUI } from './SettingsUI'
 import { ensureRecipeDataShape, runModifierPipeline } from '../modifiers/calculate'
 import { createDefaultModifierState } from '../modifiers/state'
-import { resolveRecipePowerProfile } from '../modifiers/gtMultiblock'
+import { resolveRecipePowerProfile } from '../modifiers/gtOverclocker'
 import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArchetype } from '../data/archetypes/index'
 import './RecipeEditorModal.css'
 
@@ -20,6 +20,7 @@ export type RecipeFormData = {
   archetype_id: string
   active_modifiers: string[]
   modifier_states: Record<string, Record<string, unknown>>
+  hardware_specs: Record<string, unknown>
 }
 
 type EditorTarget = {
@@ -45,6 +46,7 @@ function buildFormDefaults(node: EditorTarget | null, stored?: RecipeNodeData): 
       archetype_id: 'custom_generic',
       active_modifiers: [],
       modifier_states: {},
+      hardware_specs: {},
     }
   }
 
@@ -59,6 +61,7 @@ function buildFormDefaults(node: EditorTarget | null, stored?: RecipeNodeData): 
     archetype_id: source.archetype_id ?? getDefaultArchetypeIdForSystem(source.system ?? 'custom'),
     active_modifiers: [...(source.active_modifiers ?? [])],
     modifier_states: source.modifier_states ? { ...source.modifier_states } : {},
+    hardware_specs: source.hardware_specs ? { ...source.hardware_specs } : {},
   }
 }
 
@@ -123,27 +126,46 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
 
   const isOpen = Boolean(node)
 
-  const formValues = watch()
+  const watchedArchetypeId = watch('archetype_id')
+  const watchedMachineName = watch('machine_name')
+  const watchedBaseDuration = watch('base_duration_seconds')
+  const watchedBaseInputs = watch('base_inputs') as Resource[]
+  const watchedBaseOutputs = watch('base_outputs') as Resource[]
+  const watchedBaseUtilityInputs = watch('base_utility_inputs') as Resource[]
+  const watchedBaseUtilityOutputs = watch('base_utility_outputs') as Resource[]
+  const watchedActiveModifiers = watch('active_modifiers') as string[]
+  const watchedModifierStates = watch('modifier_states') as Record<string, Record<string, unknown>>
+  const watchedHardwareSpecs = watch('hardware_specs') as Record<string, unknown>
 
   const liveData = useMemo(() => {
     if (!node) return null
     return ensureRecipeDataShape({
       ...node.data,
-      machine_name: formValues.machine_name.trim() || 'Custom Machine',
-      archetype_id: formValues.archetype_id,
+      machine_name: (watchedMachineName || '').trim() || 'Custom Machine',
+      archetype_id: watchedArchetypeId,
       metadata,
-      base_inputs: formValues.base_inputs,
-      base_outputs: formValues.base_outputs,
-      base_utility_inputs: formValues.base_utility_inputs,
-      base_utility_outputs: formValues.base_utility_outputs,
-      base_duration_seconds: Number(formValues.base_duration_seconds) || 0,
-      duration_seconds: Number(formValues.base_duration_seconds) || 0,
-      active_modifiers: formValues.active_modifiers,
-      modifier_states: formValues.modifier_states,
+      base_inputs: watchedBaseInputs,
+      base_outputs: watchedBaseOutputs,
+      base_utility_inputs: watchedBaseUtilityInputs,
+      base_utility_outputs: watchedBaseUtilityOutputs,
+      base_duration_seconds: Number(watchedBaseDuration) || 0,
+      duration_seconds: Number(watchedBaseDuration) || 0,
+      active_modifiers: watchedActiveModifiers,
+      modifier_states: watchedModifierStates,
+      hardware_specs: watchedHardwareSpecs,
     })
   }, [
     node,
-    formValues,
+    watchedArchetypeId,
+    watchedMachineName,
+    watchedBaseDuration,
+    watchedBaseInputs,
+    watchedBaseOutputs,
+    watchedBaseUtilityInputs,
+    watchedBaseUtilityOutputs,
+    watchedActiveModifiers,
+    watchedModifierStates,
+    watchedHardwareSpecs,
     metadata,
   ])
 
@@ -190,6 +212,7 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
       duration_seconds: Number(formData.base_duration_seconds) || 0,
       active_modifiers: formData.active_modifiers,
       modifier_states: formData.modifier_states,
+      hardware_specs: formData.hardware_specs,
     })
 
     useRecipeStore.getState().setRecipe(node.id, assembled)
@@ -237,7 +260,7 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
               utilityInputFields={utilityInputFields}
               utilityOutputFields={utilityOutputFields}
               onArchetypeChange={handleArchetypeChange}
-              previewDurationSeconds={livePayload?.duration_seconds ?? (formValues.base_duration_seconds ?? 0)}
+              previewDurationSeconds={livePayload?.duration_seconds ?? (watchedBaseDuration ?? 0)}
               previewInputRates={allInputRates}
               previewOutputRates={allOutputRates}
               previewPowerActualEu={livePowerPreview.actualEuPerTick}

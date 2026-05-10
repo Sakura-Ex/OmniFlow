@@ -91,7 +91,7 @@ subject to  A_ub x ≤ b_ub
       measure_mode: 'rate_per_tick' // EU 按 Tick 消耗
     }
   },
-  default_modifiers: ['gt_multiblock']  // 默认激活多方块能源舱修饰器
+  default_modifiers: ['gt_overclocker']  // 默认激活超频修饰器
 }
 ```
 
@@ -123,7 +123,7 @@ Phase 4: Output Probability   — 概率产出（如副产物 5% 概率）
 Phase 5: Duration & Rate      — 归一化到 Rate/s
 ```
 
-以格雷科技多方块为例，`gt_multiblock` 修饰器严格执行：
+以格雷科技多方块为例，`gt_overclocker` 修饰器严格执行：
 1. 根据能源舱配置计算总输入 EU/t
 2. 无损并行 = `min(floor(total_eu / recipe_eu), parallelLimit)`
 3. 若剩余功率充足，执行超频（电压 ×4，完美超频时持续时间 ÷4，普通超频 ÷2）
@@ -289,7 +289,7 @@ OmniFlow/
 │   │   └── validators.ts           # 数据规范化与迁移
 │   ├── modifiers/                  # 修饰器引擎
 │   │   ├── calculate.ts            # 核心 5 阶段修饰器管线 + 速率归一化
-│   │   ├── gtMultiblock.ts         # GT 多方块能源舱与超频逻辑
+│   │   ├── gtOverclocker.ts       # GT 超频逻辑
 │   │   ├── chanceOutput.ts         # 概率产出修饰器
 │   │   ├── registry.ts             # 修饰器注册表（ID → IMachineModifier）
 │   │   ├── state.ts                # 默认 UI 状态工厂

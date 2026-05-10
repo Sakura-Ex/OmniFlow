@@ -23,9 +23,11 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GT_VOLTAGE_TIERS, evaluateGtMultiblockState } from '../modifiers/gtMultiblock'
 import { listModifiers } from '../modifiers/registry'
-import { createDefaultModifierState, patchModifierSchemaWithNodeResources } from '../modifiers/state'
+import { createDefaultModifierState } from '../modifiers/state'
+import { ModifierCardShell } from './ModifierCardShell'
+import { GT_VOLTAGE_TIERS, computePowerPool, normalizeGtHatches } from '../modifiers/gtOverclocker'
+import type { GtEnergyHatch } from '../modifiers/gtOverclocker'
 import { getMachineArchetype, machineArchetypes } from '../data/archetypes/index'
 import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { buildUnitSuffix } from '../registry/units'
@@ -69,127 +71,6 @@ function buildRateMap(rates: Resource[]): Map<string, number> {
     map.set(key, (map.get(key) ?? 0) + rate.amount)
   }
   return map
-}
-
-function normalizeGtHatches(state: Record<string, unknown>): Array<{ tier: string; amps: number }> {
-  if (!Array.isArray(state.energyHatches)) return [{ tier: 'LV', amps: 1 }]
-  const rows = (state.energyHatches as Array<Record<string, unknown>>)
-    .map((row: Record<string, unknown>) => ({
-      tier: typeof row?.tier === 'string' ? row.tier : 'LV',
-      amps: Number.isFinite(Number(row?.amps)) ? Math.max(0, Number(row.amps)) : 0,
-    }))
-    .filter((row: { amps: number }) => row.amps > 0)
-  return rows.length > 0 ? rows : [{ tier: 'LV', amps: 1 }]
-}
-
-interface ModifierCardProps {
-  modifier: ReturnType<typeof patchModifierSchemaWithNodeResources>
-  state: Record<string, unknown>
-  isFixedModifier: boolean
-  onRemove: () => void
-  onChange: (key: string, value: unknown) => void
-  readOnly?: boolean
-}
-
-function ModifierCard({ modifier, state, isFixedModifier, onRemove, onChange, readOnly }: ModifierCardProps) {
-  return (
-    <div className="recipe-settings__modifier-card">
-      <div className="recipe-settings__modifier-card-header">
-        <h6>{modifier.name}</h6>
-        {!readOnly && (
-          <button
-            className={`recipe-editor__icon-action${isFixedModifier ? '' : ' recipe-editor__icon-action--danger'}`}
-            type="button"
-            onClick={onRemove}
-            title={isFixedModifier ? '范式固定修饰器，不可卸载' : '卸载修饰器'}
-            aria-label={isFixedModifier ? '范式固定修饰器，不可卸载' : '卸载修饰器'}
-            disabled={isFixedModifier}
-          >
-            {isFixedModifier ? '🔒' : '🗑️'}
-          </button>
-        )}
-      </div>
-      {modifier.ui_schema.map((control) => {
-        const currentValue = state[control.key]
-        if (control.type === 'toggle') {
-          return (
-            <label className="recipe-settings__control" key={control.key}>
-              <span>{control.label}</span>
-              <input
-                type="checkbox"
-                checked={Boolean(currentValue)}
-                onChange={readOnly ? undefined : (e) => onChange(control.key, e.target.checked)}
-                readOnly={readOnly}
-              />
-            </label>
-          )
-        }
-        if (control.type === 'select') {
-          const options = control.options ?? []
-          if (readOnly) {
-            return (
-              <label className="recipe-settings__control" key={control.key}>
-                <span>{control.label}</span>
-                <span style={{ color: 'var(--text-strong)', fontFamily: 'var(--mono)', fontSize: 12 }}>
-                  {String(currentValue ?? '')}
-                </span>
-              </label>
-            )
-          }
-          return (
-            <label className="recipe-settings__control" key={control.key}>
-              <span>{control.label}</span>
-              <select
-                value={String(currentValue ?? '')}
-                onChange={(e) => onChange(control.key, e.target.value)}
-              >
-                {options.map((option) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
-            </label>
-          )
-        }
-        if (control.type === 'slider') {
-          return (
-            <label className="recipe-settings__control" key={control.key}>
-              <span>{control.label}</span>
-              <input
-                type="range"
-                min={0}
-                max={8}
-                step={1}
-                value={Number(currentValue ?? 0)}
-                onChange={readOnly ? undefined : (e) => onChange(control.key, Number(e.target.value))}
-                readOnly={readOnly}
-                style={readOnly ? { pointerEvents: 'none' } : undefined}
-              />
-            </label>
-          )
-        }
-        if (readOnly) {
-          return (
-            <label className="recipe-settings__control" key={control.key}>
-              <span>{control.label}</span>
-              <span style={{ color: 'var(--text-strong)', fontFamily: 'var(--mono)', fontSize: 12 }}>
-                {Number(currentValue ?? 0)}
-              </span>
-            </label>
-          )
-        }
-        return (
-          <label className="recipe-settings__control" key={control.key}>
-            <span>{control.label}</span>
-            <input
-              type="number"
-              value={Number(currentValue ?? 0)}
-              onChange={(e) => onChange(control.key, Number(e.target.value))}
-            />
-          </label>
-        )
-      })}
-    </div>
-  )
 }
 
 function SortableModifierCard({ id, children }: { id: string; children: React.ReactNode }) {
@@ -249,6 +130,7 @@ export function SettingsUI(props: SettingsUIProps) {
   const baseDurationSeconds = watch('base_duration_seconds')
   const activeModifiers = watch('active_modifiers')
   const modifierStates = watch('modifier_states')
+  const hardwareSpecs = watch('hardware_specs') as Record<string, unknown> | undefined
 
   const emptyResource = useCallback((): Resource => ({
     category: 'item',
@@ -466,6 +348,11 @@ export function SettingsUI(props: SettingsUIProps) {
     })
   }
 
+  const setHardwareSpecsValue = (key: string, value: unknown) => {
+    const currentSpecs = getValues('hardware_specs') ?? {}
+    setValue('hardware_specs', { ...currentSpecs, [key]: value })
+  }
+
   return (
     <div className="recipe-settings__layout">
       <section className="recipe-settings__column">
@@ -521,8 +408,88 @@ export function SettingsUI(props: SettingsUIProps) {
           </div>
         </label>
 
+        {archetype.traits && Object.keys(archetype.traits).length > 0 && (
+          <div className="recipe-settings__modifier-pool">
+            <h5>Hardware Specs</h5>
+            {Object.entries(archetype.traits).map(([traitKey, traitDef]) => {
+              if (traitKey === 'energyHatches') {
+                const hatchRows = normalizeGtHatches({ energyHatches: hardwareSpecs?.energyHatches ?? traitDef.default })
+                const { totalEuPerTick, highestTier } = computePowerPool(hatchRows)
+
+                const updateHatchRows = (nextRows: GtEnergyHatch[]) => {
+                  setHardwareSpecsValue('energyHatches', nextRows)
+                }
+
+                return (
+                  <div key={traitKey}>
+                    <span className="recipe-settings__utility-label-text">{traitDef.label}</span>
+                    <div className="recipe-settings__hatch-table" style={{ marginTop: 6 }}>
+                      {hatchRows.map((row, rowIndex) => (
+                        <div className="recipe-settings__hatch-row" key={`hs-hatch-${rowIndex}`}>
+                          <select
+                            value={row.tier}
+                            onChange={(e) => {
+                              const nextRows = hatchRows.map((entry, idx) => (idx === rowIndex ? { ...entry, tier: e.target.value } : entry))
+                              updateHatchRows(nextRows)
+                            }}
+                          >
+                            {GT_VOLTAGE_TIERS.map((tier) => (
+                              <option key={tier.id} value={tier.id}>{tier.id} ({tier.euPerAmp} EU/A)</option>
+                            ))}
+                          </select>
+                          <div className="recipe-editor__input-wrap">
+                            <input
+                              type="number"
+                              min={0}
+                              step={1}
+                              value={row.amps}
+                              onChange={(e) => {
+                                const nextRows = hatchRows.map((entry, idx) => (idx === rowIndex ? { ...entry, amps: Number(e.target.value) || 0 } : entry))
+                                updateHatchRows(nextRows)
+                              }}
+                            />
+                            <span className="recipe-editor__input-suffix">A</span>
+                          </div>
+                          <button
+                            className="recipe-editor__icon-action recipe-editor__icon-action--danger"
+                            type="button"
+                            onClick={() => {
+                              const nextRows = hatchRows.filter((_, idx) => idx !== rowIndex)
+                              updateHatchRows(nextRows.length > 0 ? nextRows : [{ tier: 'LV', amps: 1 }])
+                            }}
+                            title="删除能源仓"
+                            aria-label="删除能源仓"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        className="recipe-editor__btn recipe-editor__btn--ghost"
+                        type="button"
+                        onClick={() => updateHatchRows(hatchRows.concat({ tier: 'LV', amps: 1 }))}
+                      >
+                        ➕ 添加能源仓
+                      </button>
+                    </div>
+                    <div className="recipe-settings__multiblock-summary" style={{ marginTop: 6 }}>
+                      <span>⚡ 总能量池: {totalEuPerTick} EU/t {highestTier !== 'N/A' ? `(${highestTier})` : ''}</span>
+                    </div>
+                  </div>
+                )
+              }
+              return (
+                <div className="recipe-settings__control" key={traitKey}>
+                  <span>{traitDef.label}</span>
+                  <span style={{ color: 'var(--muted)', fontSize: 12 }}>{JSON.stringify(hardwareSpecs?.[traitKey] ?? traitDef.default)}</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
         <div className="recipe-settings__modifier-pool">
-          <h5>Machine Utilities</h5>
+          <h5>UTILITY I/O</h5>
           <ResourceDefinitionList<Resource & Record<string, unknown>>
             items={utilityItems}
             columns={UTILITY_COLUMNS}
@@ -582,202 +549,15 @@ export function SettingsUI(props: SettingsUIProps) {
               if (!rawModifier) return null
               const isFixedModifier = defaultModifierSet.has(modifierId)
 
-              const modifier = patchModifierSchemaWithNodeResources(rawModifier, baseOutputs)
               const state = {
                 ...createDefaultModifierState(modifierId),
                 ...(modifierStates[modifierId] ?? {}),
               }
 
-              if (modifierId === 'gt_multiblock') {
-                const hatchRows = normalizeGtHatches(state)
-                const baseEuInput = baseUtilityInputs.find((r) => r.category === 'energy:gt_eu')
-                const baseEuPerTick = baseEuInput ? baseEuInput.amount : 0
-                const summary = evaluateGtMultiblockState(
-                  { ...state, energyHatches: hatchRows },
-                  baseEuPerTick
-                )
-
-                const updateHatchRows = (nextRows: Array<{ tier: string; amps: number }>) => {
-                  setModifierValue(modifierId, 'energyHatches', nextRows)
-                }
-
-                return (
-                  <SortableModifierCard key={modifierId} id={modifierId}>
-                    <div className="recipe-settings__modifier-card">
-                      <div className="recipe-settings__modifier-card-header">
-                        <h6>{modifier.name}</h6>
-                        <button
-                          className={`recipe-editor__icon-action${isFixedModifier ? '' : ' recipe-editor__icon-action--danger'}`}
-                          type="button"
-                          onClick={() => removeModifier(modifierId)}
-                          title={isFixedModifier ? '范式固定修饰器，不可卸载' : '卸载修饰器'}
-                          aria-label={isFixedModifier ? '范式固定修饰器，不可卸载' : '卸载修饰器'}
-                          disabled={isFixedModifier}
-                        >
-                          {isFixedModifier ? '🔒' : '🗑️'}
-                        </button>
-                      </div>
-
-                      <div className="recipe-settings__hatch-table">
-                        {hatchRows.map((row, rowIndex) => (
-                          <div className="recipe-settings__hatch-row" key={`${modifierId}-hatch-${rowIndex}`}>
-                            <select
-                              value={row.tier}
-                              onChange={(e) => {
-                                const nextRows = hatchRows.map((entry, idx) => (idx === rowIndex ? { ...entry, tier: e.target.value } : entry))
-                                updateHatchRows(nextRows)
-                              }}
-                            >
-                              {GT_VOLTAGE_TIERS.map((tier) => (
-                                <option key={tier.id} value={tier.id}>{tier.id} ({tier.euPerAmp} EU/A)</option>
-                              ))}
-                            </select>
-                            <div className="recipe-editor__input-wrap">
-                              <input
-                                type="number"
-                                min={0}
-                                step={1}
-                                value={row.amps}
-                                onChange={(e) => {
-                                  const nextRows = hatchRows.map((entry, idx) => (idx === rowIndex ? { ...entry, amps: Number(e.target.value) || 0 } : entry))
-                                  updateHatchRows(nextRows)
-                                }}
-                              />
-                              <span className="recipe-editor__input-suffix">A</span>
-                            </div>
-                            <button
-                              className="recipe-editor__icon-action recipe-editor__icon-action--danger"
-                              type="button"
-                              onClick={() => {
-                                const nextRows = hatchRows.filter((_, idx) => idx !== rowIndex)
-                                updateHatchRows(nextRows.length > 0 ? nextRows : [{ tier: 'LV', amps: 1 }])
-                              }}
-                              title="删除能源仓"
-                              aria-label="删除能源仓"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))}
-                        <button
-                          className="recipe-editor__btn recipe-editor__btn--ghost"
-                          type="button"
-                          onClick={() => updateHatchRows(hatchRows.concat({ tier: 'LV', amps: 1 }))}
-                        >
-                          ➕ 添加能源仓
-                        </button>
-                      </div>
-
-                      {(() => {
-                        const PARALLEL_PRESETS = [1, 4, 16, 64, 256, 1024, 4096, 16384, 65536, 262144, 1048576]
-                        const rawValue = state.parallelLimit ?? 4
-                        const currentParallel = typeof rawValue === 'string' ? rawValue : Math.max(1, Math.floor(Number(rawValue)))
-                        const isOpen = dropdownOpen[modifierId] ?? false
-
-                        const handleSelectPreset = (value: number) => {
-                          setModifierValue(modifierId, 'parallelLimit', value)
-                          setDropdownOpen((prev) => ({ ...prev, [modifierId]: false }))
-                        }
-
-                        return (
-                          <div className="recipe-settings__control" key="parallelLimit" style={{ position: 'relative' }}>
-                            <span>并行控制仓上限</span>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={String(currentParallel)}
-                              onFocus={() => setDropdownOpen((prev) => ({ ...prev, [modifierId]: true }))}
-                              onChange={(e) => {
-                                const val = e.target.value.trim()
-                                if (val === '') {
-                                  setModifierValue(modifierId, 'parallelLimit', '')
-                                } else {
-                                  const num = Math.floor(Number(val) || 1)
-                                  if (num >= 1) setModifierValue(modifierId, 'parallelLimit', num)
-                                }
-                                setDropdownOpen((prev) => ({ ...prev, [modifierId]: true }))
-                              }}
-                              onBlur={() => {
-                                setTimeout(() => setDropdownOpen((prev) => ({ ...prev, [modifierId]: false })), 200)
-                                if (String(currentParallel).trim() === '') {
-                                  setModifierValue(modifierId, 'parallelLimit', 4)
-                                }
-                              }}
-                              style={{ minWidth: 0 }}
-                            />
-                            {isOpen && (
-                              <div
-                                style={{
-                                  position: 'absolute',
-                                  top: '100%',
-                                  left: 0,
-                                  right: 0,
-                                  marginTop: 2,
-                                  backgroundColor: 'rgba(3, 8, 16, 1)',
-                                  border: '1px solid rgba(148, 163, 184, 0.3)',
-                                  borderRadius: 8,
-                                  maxHeight: 200,
-                                  overflowY: 'auto',
-                                  zIndex: 10,
-                                }}
-                              >
-                                {PARALLEL_PRESETS.map((v) => (
-                                  <div
-                                    key={v}
-                                    onMouseDown={(e) => {
-                                      e.preventDefault()
-                                      handleSelectPreset(v)
-                                    }}
-                                    style={{
-                                      padding: '8px 12px',
-                                      cursor: 'pointer',
-                                      backgroundColor: String(currentParallel) === String(v) ? 'rgba(59, 130, 246, 0.3)' : 'transparent',
-                                      borderBottom: '1px solid rgba(148, 163, 184, 0.1)',
-                                      fontSize: 12,
-                                    }}
-                                  >
-                                    {v}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })()}
-
-                      <label className="recipe-settings__control recipe-settings__control--inline" key="perfectOverclock">
-                        <span>完美超频</span>
-                        <input
-                          type="checkbox"
-                          checked={Boolean(state.perfectOverclock)}
-                          onChange={(e) => setModifierValue(modifierId, 'perfectOverclock', e.target.checked)}
-                        />
-                      </label>
-
-                      <div className="recipe-settings__multiblock-summary">
-                        <span>⚡ 机器总能量池: {formatPower(summary.totalEuPerTick)} {buildUnitSuffix(resolveResourceProps('energy:gt_eu').unit, 'rate_per_tick')}</span>
-                        <span>👑 最高运行层级: {summary.highestTier}</span>
-                        {!summary.canStart && baseEuPerTick > 0 && (
-                          <span style={{ color: 'var(--color-danger, #f87171)' }}>⛔ 能量池不足，无法启动</span>
-                        )}
-                        {summary.canStart && (
-                          <>
-                            <span>🔁 实际并行: ×{summary.actualParallel}</span>
-                            <span>🔁 实际超频: {summary.actualOverclockCount} 次</span>
-                            <span>⚡ 最终功耗: {formatPower(summary.finalEuPerTick)} {buildUnitSuffix(resolveResourceProps('energy:gt_eu').unit, 'rate_per_tick')}</span>
-                            <span>⏱️ 时间缩放: ×{formatTimeScale(summary.finalDurationScale)}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </SortableModifierCard>
-                )
-              }
-
               return (
                 <SortableModifierCard key={modifierId} id={modifierId}>
-                  <ModifierCard
-                    modifier={modifier}
+                  <ModifierCardShell
+                    modifier={rawModifier}
                     state={state}
                     isFixedModifier={isFixedModifier}
                     onRemove={() => removeModifier(modifierId)}
@@ -795,20 +575,10 @@ export function SettingsUI(props: SettingsUIProps) {
                 ...createDefaultModifierState(activeDragId),
                 ...(modifierStates[activeDragId] ?? {}),
               }
-              const patchedModifier = patchModifierSchemaWithNodeResources(overlayModifier, baseOutputs)
-              if (activeDragId === 'gt_multiblock') {
-                return (
-                  <div className="recipe-settings__modifier-card" style={{ opacity: 0.92, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', cursor: 'grabbing' }}>
-                    <div className="recipe-settings__modifier-card-header">
-                      <h6>{patchedModifier.name}</h6>
-                    </div>
-                  </div>
-                )
-              }
               return (
                 <div style={{ opacity: 0.92, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', cursor: 'grabbing' }}>
-                  <ModifierCard
-                    modifier={patchedModifier}
+                  <ModifierCardShell
+                    modifier={overlayModifier}
                     state={overlayState}
                     isFixedModifier={defaultModifierSet.has(activeDragId)}
                     onRemove={() => {}}

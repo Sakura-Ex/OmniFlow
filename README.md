@@ -91,7 +91,7 @@ Thoroughly separates **inherent machine properties** (energy type, cooling mediu
       measure_mode: 'rate_per_tick' // EU consumed per tick
     }
   },
-  default_modifiers: ['gt_multiblock']  // Activate multiblock energy hatch modifier by default
+  default_modifiers: ['gt_overclocker']  // Activate overclocker modifier by default
 }
 ```
 
@@ -123,7 +123,7 @@ Phase 4: Output Probability   — Probabilistic output (e.g., 5% byproduct chanc
 Phase 5: Duration & Rate      — Normalize to Rate/s
 ```
 
-For GregTech multiblocks, the `gt_multiblock` modifier strictly executes:
+For GregTech multiblocks, the `gt_overclocker` modifier strictly executes:
 1. Calculate total input EU/t based on energy hatch configuration
 2. Lossless parallel = `min(floor(total_eu / recipe_eu), parallelLimit)`
 3. If remaining power is sufficient, execute overclocking (voltage ×4, perfect overclock duration ÷4, normal overclock ÷2)
@@ -289,7 +289,7 @@ OmniFlow/
 │   │   └── validators.ts           # Data normalization & migration
 │   ├── modifiers/                  # Modifier engine
 │   │   ├── calculate.ts            # Core 5-phase modifier pipeline + rate normalization
-│   │   ├── gtMultiblock.ts         # GT multiblock energy hatch & overclock logic
+│   │   ├── gtOverclocker.ts       # GT overclock logic
 │   │   ├── chanceOutput.ts         # Probabilistic output modifier
 │   │   ├── registry.ts             # Modifier registry (ID → IMachineModifier)
 │   │   ├── state.ts                # Default UI state factory

@@ -78,6 +78,7 @@ export interface RecipeNodeData {
   base_duration?: number
   active_modifiers?: string[]
   modifier_states?: Record<string, Record<string, unknown>>
+  hardware_specs?: Record<string, unknown>
   mode?: RecipeNodeMode
   /** @deprecated 由 mode 替代，保留以兼容旧存档 */
   is_auto?: boolean

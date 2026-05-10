@@ -1,4 +1,5 @@
 import type { Resource } from '../types/types'
+import type { ReactNode, FC } from 'react'
 
 export type ModifierUIControlType = 'toggle' | 'select' | 'number' | 'slider'
 
@@ -20,24 +21,18 @@ export interface PipelineContext {
   utilityOutputs: Resource[]
   durationSeconds: number
   machineStopped: boolean
+  hardwareSpecs: Record<string, unknown>
 }
 
-export interface ModifierEffect {
-  statMultipliers?: {
-    duration?: number
-    recipeInput?: number
-    recipeOutput?: number
-    utility?: number
-  }
-  parallelMultiplier?: number
-  durationMultiplier?: number
-  utilityMultipliers?: Record<string, number>
-  outputMultipliers?: Record<string, number>
-  machineStopped?: boolean
-  addedInputs?: Resource[]
-  addedOutputs?: Resource[]
-  removedInputs?: string[]
-  removedOutputs?: string[]
+export interface ModifierCardRenderProps {
+  state: Record<string, unknown>
+  onChange: (key: string, value: unknown) => void
+  readOnly?: boolean
+  Field: FC<{ label: string; children: ReactNode }>
+  Toggle: FC<{ label: string; checked: boolean; onChange: (v: boolean) => void }>
+  Select: FC<{ label: string; value: string; options: string[]; onChange: (v: string) => void }>
+  Slider: FC<{ label: string; value: number; min: number; max: number; onChange: (v: number) => void }>
+  Input: FC<{ label: string; value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number }>
 }
 
 export interface IMachineModifier {
@@ -48,5 +43,6 @@ export interface IMachineModifier {
   evaluate: (
     ctx: PipelineContext,
     uiState: Record<string, unknown>
-  ) => ModifierEffect
+  ) => PipelineContext
+  renderBody?: (props: ModifierCardRenderProps) => ReactNode
 }

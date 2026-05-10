@@ -22,17 +22,17 @@ export const chanceOutputModifier: IMachineModifier = {
     const prob = Number(uiState.probability)
     const normalizedProb = Number.isFinite(prob) ? Math.max(0, Math.min(1, prob)) : 1
     const targetId = String(uiState.targetResourceId || '')
-    const allOutputs = [...ctx.recipeOutputs, ...ctx.utilityOutputs]
 
-    const outputMultipliers: Record<string, number> = {}
-    if (targetId) {
-      outputMultipliers[targetId] = normalizedProb
-    } else {
-      for (const out of allOutputs) {
-        outputMultipliers[out.id] = normalizedProb
-      }
+    const scaleOutputs = (arr: typeof ctx.recipeOutputs) =>
+      arr.map((r) => {
+        if (targetId && r.id !== targetId) return { ...r }
+        return { ...r, amount: r.amount * normalizedProb }
+      })
+
+    return {
+      ...ctx,
+      recipeOutputs: scaleOutputs(ctx.recipeOutputs),
+      utilityOutputs: scaleOutputs(ctx.utilityOutputs),
     }
-
-    return { outputMultipliers }
   },
 }
