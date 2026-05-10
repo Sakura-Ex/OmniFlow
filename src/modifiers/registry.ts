@@ -4,6 +4,7 @@ import { chanceOutputModifier } from './chanceOutput'
 import { gtOverclockerModifier } from './gtOverclocker'
 import { gtParallelModifier } from './gtParallel'
 import { energyMultiplierModifier } from './energyMultiplier'
+import { timeMultiplierModifier } from './timeMultiplier'
 
 export const modifierRegistry: Record<string, IMachineModifier> = {
   [baseChassisEfficiencyModifier.id]: baseChassisEfficiencyModifier,
@@ -11,6 +12,7 @@ export const modifierRegistry: Record<string, IMachineModifier> = {
   [gtOverclockerModifier.id]: gtOverclockerModifier,
   [gtParallelModifier.id]: gtParallelModifier,
   [energyMultiplierModifier.id]: energyMultiplierModifier,
+  [timeMultiplierModifier.id]: timeMultiplierModifier,
 }
 
 export function listModifiers(): IMachineModifier[] {

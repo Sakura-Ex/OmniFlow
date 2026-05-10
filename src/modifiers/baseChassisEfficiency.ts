@@ -1,8 +1,5 @@
 import type { IMachineModifier, PipelineContext } from './types'
-
-function deepCloneResources(arr: typeof import('./types').PipelineContext.prototype.recipeInputs) {
-  return arr.map((r) => ({ ...r }))
-}
+import type { Resource } from '../types/types'
 
 export const baseChassisEfficiencyModifier: IMachineModifier = {
   id: 'base_chassis_efficiency',
@@ -19,14 +16,15 @@ export const baseChassisEfficiencyModifier: IMachineModifier = {
     },
   ],
   evaluate: (ctx: PipelineContext, uiState: Record<string, unknown>) => {
-    const efficiency = Number(uiState.efficiency) || 1.0
+    const m = Number(uiState.efficiency) || 1.0
+    const mul = (r: Resource) => ({ ...r, amount: r.amount * m })
     return {
-      recipeInputs: deepCloneResources(ctx.recipeInputs).map((r) => ({ ...r, amount: r.amount * efficiency })),
-      recipeOutputs: deepCloneResources(ctx.recipeOutputs).map((r) => ({ ...r, amount: r.amount * efficiency })),
-      utilityInputs: deepCloneResources(ctx.utilityInputs).map((r) => ({ ...r, amount: r.amount * efficiency })),
-      utilityOutputs: deepCloneResources(ctx.utilityOutputs).map((r) => ({ ...r, amount: r.amount * efficiency })),
-      durationSeconds: ctx.durationSeconds * efficiency,
-      machineStopped: ctx.machineStopped,
+      ...ctx,
+      recipeInputs: ctx.recipeInputs.map(mul),
+      recipeOutputs: ctx.recipeOutputs.map(mul),
+      utilityInputs: ctx.utilityInputs.map(mul),
+      utilityOutputs: ctx.utilityOutputs.map(mul),
+      durationSeconds: ctx.durationSeconds * m,
     }
   },
 }
