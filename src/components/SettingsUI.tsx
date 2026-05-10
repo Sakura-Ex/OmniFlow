@@ -157,7 +157,9 @@ export function SettingsUI(props: SettingsUIProps) {
   const outputRateMap = useMemo(() => buildRateMap(previewOutputRates), [previewOutputRates])
   const availableModifiers = useMemo(
     () => modifiers.filter((modifier) => {
-      if (activeModifiers.includes(modifier.id)) return false
+      const count = activeModifiers.filter((id) => id === modifier.id).length
+      const maxP = modifier.max_placements ?? 1
+      if (count >= maxP) return false
       const allowed = modifier.compatible_archetypes
       if (!allowed || allowed.length === 0) return true
       return allowed.includes(archetypeId)
@@ -285,27 +287,37 @@ export function SettingsUI(props: SettingsUIProps) {
 
   const addModifier = (modifierId: string) => {
     const currentActive = getValues('active_modifiers')
-    if (!currentActive.includes(modifierId)) {
-      setValue('active_modifiers', [...currentActive, modifierId])
-    }
+    const modifier = modifiers.find((m) => m.id === modifierId)
+    const maxP = modifier?.max_placements ?? 1
+    const count = currentActive.filter((id) => id === modifierId).length
+    if (count >= maxP) return
+    setValue('active_modifiers', [...currentActive, modifierId])
     const currentStates = getValues('modifier_states')
-    setValue('modifier_states', {
-      ...currentStates,
-      [modifierId]: {
-        ...createDefaultModifierState(modifierId),
-        ...(currentStates[modifierId] ?? {}),
-      },
-    })
+    if (!(modifierId in currentStates)) {
+      setValue('modifier_states', {
+        ...currentStates,
+        [modifierId]: {
+          ...createDefaultModifierState(modifierId),
+          ...(currentStates[modifierId] ?? {}),
+        },
+      })
+    }
     setModifierPopoverOpen(false)
   }
 
-  const removeModifier = (modifierId: string) => {
+  const removeModifier = (index: number) => {
     const currentActive = getValues('active_modifiers')
-    setValue('active_modifiers', currentActive.filter((id) => id !== modifierId))
-    const currentStates = getValues('modifier_states')
-    const next = { ...currentStates }
-    delete next[modifierId]
-    setValue('modifier_states', next)
+    const removedId = currentActive[index]
+    const nextActive = [...currentActive]
+    nextActive.splice(index, 1)
+    setValue('active_modifiers', nextActive)
+    const stillPresent = nextActive.includes(removedId)
+    if (!stillPresent) {
+      const currentStates = getValues('modifier_states')
+      const next = { ...currentStates }
+      delete next[removedId]
+      setValue('modifier_states', next)
+    }
   }
 
   const moveModifier = (fromIndex: number, toIndex: number) => {
@@ -328,12 +340,9 @@ export function SettingsUI(props: SettingsUIProps) {
     const { active, over } = event
     setActiveDragId(null)
     if (!over || active.id === over.id) return
-
-    const currentActive = getValues('active_modifiers')
-    const oldIndex = currentActive.indexOf(String(active.id))
-    const newIndex = currentActive.indexOf(String(over.id))
-    if (oldIndex === -1 || newIndex === -1) return
-
+    const oldIndex = Number(active.id)
+    const newIndex = Number(over.id)
+    if (!Number.isFinite(oldIndex) || !Number.isFinite(newIndex)) return
     moveModifier(oldIndex, newIndex)
   }
 
@@ -543,10 +552,11 @@ export function SettingsUI(props: SettingsUIProps) {
         </div>
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <SortableContext items={activeModifiers} strategy={verticalListSortingStrategy}>
-            {activeModifiers.map((modifierId) => {
+          <SortableContext items={activeModifiers.map((_, idx) => String(idx))} strategy={verticalListSortingStrategy}>
+            {activeModifiers.map((modifierId, idx) => {
               const rawModifier = modifiers.find((m) => m.id === modifierId)
               if (!rawModifier) return null
+              const modifier = rawModifier
               const isFixedModifier = defaultModifierSet.has(modifierId)
 
               const state = {
@@ -555,12 +565,12 @@ export function SettingsUI(props: SettingsUIProps) {
               }
 
               return (
-                <SortableModifierCard key={modifierId} id={modifierId}>
+                <SortableModifierCard key={`${modifierId}__${idx}`} id={String(idx)}>
                   <ModifierCardShell
-                    modifier={rawModifier}
+                    modifier={modifier}
                     state={state}
                     isFixedModifier={isFixedModifier}
-                    onRemove={() => removeModifier(modifierId)}
+                    onRemove={() => removeModifier(idx)}
                     onChange={(key, value) => setModifierValue(modifierId, key, value)}
                   />
                 </SortableModifierCard>
@@ -569,18 +579,20 @@ export function SettingsUI(props: SettingsUIProps) {
           </SortableContext>
           <DragOverlay dropAnimation={null}>
             {activeDragId && (() => {
-              const overlayModifier = modifiers.find((m) => m.id === activeDragId)
+              const dragIdx = Number(activeDragId)
+              const dragModifierId = activeModifiers[dragIdx]
+              const overlayModifier = dragModifierId ? modifiers.find((m) => m.id === dragModifierId) : null
               if (!overlayModifier) return null
               const overlayState = {
-                ...createDefaultModifierState(activeDragId),
-                ...(modifierStates[activeDragId] ?? {}),
+                ...createDefaultModifierState(dragModifierId),
+                ...(modifierStates[dragModifierId] ?? {}),
               }
               return (
                 <div style={{ opacity: 0.92, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', cursor: 'grabbing' }}>
                   <ModifierCardShell
                     modifier={overlayModifier}
                     state={overlayState}
-                    isFixedModifier={defaultModifierSet.has(activeDragId)}
+                    isFixedModifier={defaultModifierSet.has(dragModifierId)}
                     onRemove={() => {}}
                     onChange={() => {}}
                     readOnly

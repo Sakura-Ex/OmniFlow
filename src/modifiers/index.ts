@@ -2,9 +2,6 @@ export type { ModifierUIConfig, ModifierUIControlType, IMachineModifier, Pipelin
 export type { GtVoltageTier, GtEnergyHatch, ResolvedPowerProfile } from './gtOverclocker'
 export {
   GT_VOLTAGE_TIERS,
-  TIER_MAP,
-  evaluateGtOverclockerState,
-  evaluateGtParallel,
   evaluateGtOverclock,
   computePowerPool,
   normalizeGtHatches,
@@ -13,7 +10,7 @@ export {
   toFiniteNumber,
   gtOverclockerModifier,
 } from './gtOverclocker'
-export { gtParallelModifier } from './gtParallel'
+export { gtParallelModifier, evaluateGtParallel } from './gtParallel'
 export { ParallelCardBody } from './gtParallelCard'
 export { OverclockerCardBody } from './gtOverclockerCard'
 export { energyMultiplierModifier } from './energyMultiplier'

@@ -189,7 +189,7 @@ export function buildCalculationPayload(
         const subId = `${n.id}__p${pi}`
 
         const rawNetId = netLookup.get(key)
-        const netId = rawNetId && isNetName(rawNetId) ? rawNetId : qualifiedId
+        const netId = rawNetId && (isNetName(rawNetId) || isVoidName(rawNetId)) ? rawNetId : qualifiedId
 
         if (n.type === 'targetNode' && (mode === 'demand' || mode === 'maximize')) {
           equalityTargetItems.add(netId)

@@ -8,15 +8,10 @@ import { runModifierPipeline } from '../modifiers/calculate'
 import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { resolveCategoryDef } from '../utils/endpointNorm'
 import { formatPortAmount, formatRateValue } from '../utils/resourceFormat'
-import { formatOpExRate, formatProbability, formatMachineExact, formatCapEx } from '../utils/formatters'
+import { formatProbability, formatMachineExact, formatCapEx } from '../utils/formatters'
 import type { ResourceCategoryDef } from '../registry/types'
 import type { TimeBase, NormalizedResource, ComputedNodePayload } from '../types/types'
 import './RecipeNode.css'
-
-function formatDisplayValue(value: number | undefined) {
-  if (typeof value !== 'number' || Number.isNaN(value)) return ''
-  return formatOpExRate(value)
-}
 
 function formatMachineCount(value: number | undefined, isExact: boolean) {
   if (typeof value !== 'number' || Number.isNaN(value)) return ''
@@ -67,7 +62,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
     })
 
     if (nextMode === 'limit') {
-      setDraftManualMachines(formatMachineCount(nextManual, false) || String(nextManual))
+      setDraftManualMachines(String(nextManual))
     }
   }
 
@@ -289,7 +284,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
           </span>
           <div className="recipe-node__machine-field">
             <input
-              type="number"
+              type={isLimit ? 'number' : 'text'}
               className={`recipe-node__machine-input nodrag${!isLimit ? ' recipe-node__machine-input--auto' : ''}`}
               value={
                 isLimit

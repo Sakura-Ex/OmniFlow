@@ -18,47 +18,24 @@ export const GT_VOLTAGE_TIERS: GtVoltageTier[] = [
   { id: 'ZPM', euPerAmp: 131072 },
   { id: 'UV', euPerAmp: 524288 },
   { id: 'UHV', euPerAmp: 2097152 },
+  { id: 'UEV', euPerAmp: 8388608 },
+  { id: 'UIV', euPerAmp: 33554432 },
+  { id: 'UXV', euPerAmp: 134217728 },
+  { id: 'OpV', euPerAmp: 536870912 },
+  { id: 'MAX', euPerAmp: 2147483648 },
 ]
 
-export const TIER_MAP: Record<string, { index: number; voltage: number }> = {
-  ULV:  { index: 0, voltage: 8 },
-  LV:   { index: 1, voltage: 32 },
-  MV:   { index: 2, voltage: 128 },
-  HV:   { index: 3, voltage: 512 },
-  EV:   { index: 4, voltage: 2048 },
-  IV:   { index: 5, voltage: 8192 },
-  LuV:  { index: 6, voltage: 32768 },
-  ZPM:  { index: 7, voltage: 131072 },
-  UV:   { index: 8, voltage: 524288 },
-  UHV:  { index: 9, voltage: 2097152 },
+function tierIndex(tierId: string): number {
+  return GT_VOLTAGE_TIERS.findIndex((t) => t.id === tierId)
 }
 
-function recipeTierFromEu(euPerTick: number): string {
-  if (euPerTick <= 0) return GT_VOLTAGE_TIERS[0]?.id ?? 'ULV'
-  const sorted = GT_VOLTAGE_TIERS.slice().sort((a, b) => a.euPerAmp - b.euPerAmp)
-  for (let i = 0; i < sorted.length; i++) {
-    if (euPerTick <= sorted[i].euPerAmp) {
-      return sorted[i].id
-    }
-  }
-  return sorted[sorted.length - 1].id
+function secondsToTicks(seconds: number): number {
+  return Math.max(1, Math.floor(seconds * 20))
 }
 
 export type GtEnergyHatch = {
   tier: string
   amps: number
-}
-
-type GtOverclockerSummary = {
-  totalEuPerTick: number
-  highestTier: string
-  parallelLimit: number
-  perfectOverclock: boolean
-  canStart: boolean
-  actualParallel: number
-  actualOverclockCount: number
-  finalEuPerTick: number
-  finalDurationScale: number
 }
 
 export type ResolvedPowerProfile = {
@@ -76,11 +53,10 @@ export function toFiniteNumber(value: unknown, fallback = 0): number {
 export function toGtHatches(value: unknown): GtEnergyHatch[] {
   if (!Array.isArray(value)) return []
   return value
-    .map((row) => {
-      const tier = typeof row?.tier === 'string' ? row.tier : 'HV'
-      const amps = Math.max(0, toFiniteNumber(row?.amps, 1))
-      return { tier, amps }
-    })
+    .map((row) => ({
+      tier: typeof row?.tier === 'string' ? row.tier : 'HV',
+      amps: Math.max(0, toFiniteNumber(row?.amps, 1)),
+    }))
     .filter((row) => row.amps > 0)
 }
 
@@ -113,92 +89,65 @@ export function computePowerPool(hatches: GtEnergyHatch[]): { totalEuPerTick: nu
   return { totalEuPerTick, highestTier }
 }
 
-export function evaluateGtParallel(
-  uiState: Record<string, unknown>,
-  baseEuPerTick: number
-): { canStart: boolean; actualParallel: number; totalEuPerTick: number; highestTier: string } {
-  const hatches = toGtHatches(uiState.energyHatches)
-  const { totalEuPerTick, highestTier } = computePowerPool(hatches)
-
-  if (baseEuPerTick <= 0 || totalEuPerTick <= 0) {
-    return { canStart: false, actualParallel: 0, totalEuPerTick, highestTier }
-  }
-
-  const parallelLimit = Math.max(1, Math.min(1048576, Math.floor(toFiniteNumber(uiState.parallelLimit, 4))))
-  const theoreticalParallel = Math.floor(totalEuPerTick / baseEuPerTick)
-  const actualParallel = Math.min(theoreticalParallel, parallelLimit)
-
-  if (actualParallel <= 0) {
-    return { canStart: false, actualParallel: 0, totalEuPerTick, highestTier }
-  }
-
-  return { canStart: true, actualParallel, totalEuPerTick, highestTier }
+type GtOverclockResult = {
+  canStart: boolean
+  actualOverclockCount: number
+  finalEuPerTick: number
+  finalDurationScale: number
+  finalTicks: number
+  finalDurationSeconds: number
+  totalEuPerTick: number
+  highestTier: string
 }
 
+/** 逐级检查功率与 ticks 约束，返回最大可行超频结果 */
 export function evaluateGtOverclock(
   uiState: Record<string, unknown>,
-  currentEuPerTick: number
-): { canStart: boolean; actualOverclockCount: number; finalEuPerTick: number; finalDurationScale: number; totalEuPerTick: number; highestTier: string } {
+  currentEuPerTick: number,
+  baseDurationSeconds: number
+): GtOverclockResult {
   const hatches = toGtHatches(uiState.energyHatches)
   const { totalEuPerTick, highestTier } = computePowerPool(hatches)
 
-  if (currentEuPerTick <= 0 || totalEuPerTick <= 0) {
-    return { canStart: false, actualOverclockCount: 0, finalEuPerTick: currentEuPerTick, finalDurationScale: 1, totalEuPerTick, highestTier }
+  const baseTicks = secondsToTicks(baseDurationSeconds)
+
+  const noop = (eu: number): GtOverclockResult => ({
+    canStart: false, actualOverclockCount: 0,
+    finalEuPerTick: eu, finalDurationScale: 1,
+    finalTicks: baseTicks, finalDurationSeconds: baseTicks / 20,
+    totalEuPerTick, highestTier,
+  })
+
+  if (currentEuPerTick <= 0 || totalEuPerTick <= 0) return noop(currentEuPerTick)
+
+  if (tierIndex('ULV') < 0 /* tiers not loaded */) return noop(currentEuPerTick)
+
+  const recipeTierIdx = tierIndex(
+    GT_VOLTAGE_TIERS.find((t) => t.euPerAmp >= currentEuPerTick)?.id ?? ''
+  )
+  const maxTierIdx = tierIndex(highestTier)
+
+  if (recipeTierIdx > maxTierIdx || currentEuPerTick > totalEuPerTick) return noop(currentEuPerTick)
+
+  const perfect = Boolean(uiState.perfectOverclock)
+  const timeDivisor = perfect ? 4 : 2
+  let eu = currentEuPerTick
+  let ticks = baseTicks
+  let oc = 0
+
+  while (eu * 4 <= totalEuPerTick) {
+    const nextTicks = Math.floor(baseTicks / Math.pow(timeDivisor, oc + 1))
+    if (nextTicks < 1) break
+    eu *= 4
+    ticks = nextTicks
+    oc++
   }
-
-  const recipeTier = recipeTierFromEu(currentEuPerTick)
-  const recipeTierIndex = TIER_MAP[recipeTier]?.index ?? 0
-  const maxTierIndex = TIER_MAP[highestTier]?.index ?? 0
-
-  if (recipeTierIndex > maxTierIndex || currentEuPerTick > totalEuPerTick) {
-    return { canStart: false, actualOverclockCount: 0, finalEuPerTick: currentEuPerTick, finalDurationScale: 1, totalEuPerTick, highestTier }
-  }
-
-  const perfectOverclock = Boolean(uiState.perfectOverclock)
-  let currentEu = currentEuPerTick
-  let ocCount = 0
-  let durationScale = 1
-
-  while (currentEu * 4 <= totalEuPerTick) {
-    currentEu *= 4
-    durationScale /= perfectOverclock ? 4 : 2
-    ocCount++
-  }
-  durationScale = Math.max(0.05, durationScale)
-
-  return { canStart: true, actualOverclockCount: ocCount, finalEuPerTick: currentEu, finalDurationScale: durationScale, totalEuPerTick, highestTier }
-}
-
-export function evaluateGtOverclockerState(uiState: Record<string, unknown>, baseEuPerTick = 0): GtOverclockerSummary {
-  const parallelResult = evaluateGtParallel(uiState, baseEuPerTick)
-
-  if (!parallelResult.canStart) {
-    return {
-      totalEuPerTick: parallelResult.totalEuPerTick,
-      highestTier: parallelResult.highestTier,
-      parallelLimit: Math.max(1, Math.floor(toFiniteNumber(uiState.parallelLimit, 4))),
-      perfectOverclock: Boolean(uiState.perfectOverclock),
-      canStart: false,
-      actualParallel: 0,
-      actualOverclockCount: 0,
-      finalEuPerTick: baseEuPerTick,
-      finalDurationScale: 1,
-    }
-  }
-
-  const currentEuAfterParallel = baseEuPerTick * parallelResult.actualParallel
-  const ocResult = evaluateGtOverclock(uiState, currentEuAfterParallel)
 
   return {
-    totalEuPerTick: parallelResult.totalEuPerTick,
-    highestTier: parallelResult.highestTier,
-    parallelLimit: Math.max(1, Math.floor(toFiniteNumber(uiState.parallelLimit, 4))),
-    perfectOverclock: Boolean(uiState.perfectOverclock),
-    canStart: ocResult.canStart,
-    actualParallel: parallelResult.actualParallel,
-    actualOverclockCount: ocResult.actualOverclockCount,
-    finalEuPerTick: ocResult.finalEuPerTick,
-    finalDurationScale: ocResult.finalDurationScale,
+    canStart: true, actualOverclockCount: oc,
+    finalEuPerTick: eu, finalDurationScale: oc === 0 ? 1 : 1 / Math.pow(timeDivisor, oc),
+    finalTicks: ticks, finalDurationSeconds: ticks / 20,
+    totalEuPerTick, highestTier,
   }
 }
 
@@ -209,35 +158,30 @@ export function resolveRecipePowerProfile(
     modifier_states?: Record<string, Record<string, unknown>>
     base_inputs?: Resource[]
     base_utility_inputs?: Resource[]
+    base_duration_seconds?: number
   },
   transformedInputs?: Resource[]
 ): ResolvedPowerProfile {
   const metadataEu = Number(data.metadata?.eu_per_tick ?? 0)
   const utilityEu = Number(
-    data.base_utility_inputs?.find((resource) => resource.utility_type === 'energy:gt_eu')?.amount ?? 0
+    data.base_utility_inputs?.find((r) => r.utility_type === 'energy:gt_eu')?.amount ?? 0
   )
   const baseEuPerTick = utilityEu > 0 ? utilityEu : metadataEu
 
   const actualEuPerTick = transformedInputs
     ? Math.max(0, Number(
-        transformedInputs.find((resource) => resource.utility_type === 'energy:gt_eu' && resource.is_utility)?.amount ?? baseEuPerTick
+        transformedInputs.find((r) => r.utility_type === 'energy:gt_eu' && r.is_utility)?.amount ?? baseEuPerTick
       ))
     : Math.max(0, baseEuPerTick)
 
   const hasOverclocker = Boolean(data.active_modifiers?.includes('gt_overclocker'))
   let highestTier = 'N/A'
   if (hasOverclocker) {
-    const summary = evaluateGtOverclockerState(data.modifier_states?.gt_overclocker ?? {})
-    highestTier = summary.highestTier
+    const hatches = normalizeGtHatches(data.modifier_states?.gt_overclocker ?? {})
+    highestTier = computePowerPool(hatches).highestTier
   }
 
-  const hasPowerSetting = baseEuPerTick > 0 || hasOverclocker
-  return {
-    hasPowerSetting,
-    baseEuPerTick,
-    actualEuPerTick,
-    highestTier,
-  }
+  return { hasPowerSetting: baseEuPerTick > 0 || hasOverclocker, baseEuPerTick, actualEuPerTick, highestTier }
 }
 
 export const gtOverclockerModifier: IMachineModifier = {
@@ -259,24 +203,24 @@ export const gtOverclockerModifier: IMachineModifier = {
 
     if (currentEuPerTick <= 0) return { ...ctx }
 
-    const result = evaluateGtOverclock({ ...uiState, energyHatches: ctx.hardwareSpecs.energyHatches }, currentEuPerTick)
+    const result = evaluateGtOverclock(
+      { ...uiState, energyHatches: ctx.hardwareSpecs.energyHatches },
+      currentEuPerTick,
+      ctx.durationSeconds
+    )
 
     if (!result.canStart) {
       return { ...ctx, machineStopped: true, recipeOutputs: ctx.recipeOutputs.map((r) => ({ ...r, amount: 0 })) }
     }
 
-    if (result.actualOverclockCount === 0) {
-      return { ...ctx }
-    }
-
-    const ocPowerMultiplier = Math.pow(4, result.actualOverclockCount)
+    if (result.actualOverclockCount === 0) return { ...ctx }
 
     return {
       ...ctx,
-      durationSeconds: ctx.durationSeconds * result.finalDurationScale,
+      durationSeconds: result.finalDurationSeconds,
       utilityInputs: ctx.utilityInputs.map((r) =>
         r.utility_type === 'energy:gt_eu'
-          ? { ...r, amount: r.amount * ocPowerMultiplier }
+          ? { ...r, amount: r.amount * Math.pow(4, result.actualOverclockCount) }
           : { ...r }
       ),
     }

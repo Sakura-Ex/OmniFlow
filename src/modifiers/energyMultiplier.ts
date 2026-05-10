@@ -3,6 +3,7 @@ import type { IMachineModifier, PipelineContext } from './types'
 export const energyMultiplierModifier: IMachineModifier = {
   id: 'energy_multiplier',
   name: 'Energy Multiplier',
+  max_placements: 4,
   compatible_archetypes: ['gt_electric'],
   ui_schema: [
     {

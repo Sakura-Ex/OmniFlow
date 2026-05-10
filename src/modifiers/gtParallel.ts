@@ -1,6 +1,28 @@
 import type { IMachineModifier, PipelineContext } from './types'
-import { GT_VOLTAGE_TIERS, toGtHatches, toFiniteNumber } from './gtOverclocker'
+import type { Resource } from '../types/types'
+import { computePowerPool, toGtHatches, toFiniteNumber } from './gtOverclocker'
 import { ParallelCardBody } from './gtParallelCard'
+
+export function evaluateGtParallel(
+  uiState: Record<string, unknown>,
+  baseEuPerTick: number
+): { canStart: boolean; actualParallel: number; totalEuPerTick: number; highestTier: string } {
+  const hatches = toGtHatches(uiState.energyHatches)
+  const { totalEuPerTick, highestTier } = computePowerPool(hatches)
+
+  if (baseEuPerTick <= 0 || totalEuPerTick <= 0) {
+    return { canStart: false, actualParallel: 0, totalEuPerTick, highestTier }
+  }
+
+  const parallelLimit = Math.max(1, Math.min(1048576, Math.floor(toFiniteNumber(uiState.parallelLimit, 4))))
+  const actualParallel = Math.min(Math.floor(totalEuPerTick / baseEuPerTick), parallelLimit)
+
+  if (actualParallel <= 0) {
+    return { canStart: false, actualParallel: 0, totalEuPerTick, highestTier }
+  }
+
+  return { canStart: true, actualParallel, totalEuPerTick, highestTier }
+}
 
 export const gtParallelModifier: IMachineModifier = {
   id: 'gt_parallel',
@@ -19,29 +41,25 @@ export const gtParallelModifier: IMachineModifier = {
   evaluate: (ctx: PipelineContext, uiState: Record<string, unknown>) => {
     const euInput = ctx.utilityInputs.find((r) => r.utility_type === 'energy:gt_eu')
     const baseEuPerTick = euInput ? euInput.amount : 0
-    if (baseEuPerTick <= 0) return { ...ctx }
 
-    const hatches = toGtHatches(ctx.hardwareSpecs.energyHatches)
-    let totalEuPerTick = 0
-    for (const hatch of hatches) {
-      const tier = GT_VOLTAGE_TIERS.find((item) => item.id === hatch.tier)
-      if (!tier) continue
-      totalEuPerTick += tier.euPerAmp * hatch.amps
+    const result = evaluateGtParallel({ ...uiState, energyHatches: ctx.hardwareSpecs.energyHatches }, baseEuPerTick)
+
+    if (!result.canStart) {
+      return { ...ctx, machineStopped: true, recipeOutputs: ctx.recipeOutputs.map((r) => ({ ...r, amount: 0 })) }
     }
 
-    const parallelLimit = Math.max(1, Math.min(1048576, Math.floor(toFiniteNumber(uiState.parallelLimit, 4))))
-    const theoreticalParallel = totalEuPerTick > 0 ? Math.floor(totalEuPerTick / baseEuPerTick) : 0
-    const actualParallel = Math.min(theoreticalParallel, parallelLimit)
+    if (result.actualParallel <= 1) return { ...ctx }
 
-    if (actualParallel <= 0) return { ...ctx, machineStopped: true, recipeOutputs: ctx.recipeOutputs.map((r) => ({ ...r, amount: 0 })) }
+    const p = result.actualParallel
+    const mul = (r: Resource) =>
+      r.consumable === false || r.consumable_probability === 0 ? { ...r } : { ...r, amount: r.amount * p }
 
-    const p = actualParallel
     return {
       ...ctx,
-      recipeInputs: ctx.recipeInputs.map((r) => (r.consumable === false || r.consumable_probability === 0) ? { ...r } : { ...r, amount: r.amount * p }),
-      recipeOutputs: ctx.recipeOutputs.map((r) => (r.consumable === false || r.consumable_probability === 0) ? { ...r } : { ...r, amount: r.amount * p }),
-      utilityInputs: ctx.utilityInputs.map((r) => (r.consumable === false || r.consumable_probability === 0) ? { ...r } : { ...r, amount: r.amount * p }),
-      utilityOutputs: ctx.utilityOutputs.map((r) => (r.consumable === false || r.consumable_probability === 0) ? { ...r } : { ...r, amount: r.amount * p }),
+      recipeInputs: ctx.recipeInputs.map(mul),
+      recipeOutputs: ctx.recipeOutputs.map(mul),
+      utilityInputs: ctx.utilityInputs.map(mul),
+      utilityOutputs: ctx.utilityOutputs.map(mul),
     }
   },
 }

@@ -5,15 +5,9 @@ import { useEndpointEditor } from '../EndpointEditorContext'
 import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { buildUnitSuffix } from '../registry/units'
 import { normalizeEndpointPorts, resolveCategoryDef } from '../utils/endpointNorm'
+import { formatOpExRate } from '../utils/formatters'
 import type { SourceNodeData, SourceNodeMode } from '../types/recipe'
 import './SourceNode.css'
-
-import { formatOpExRate } from '../utils/formatters'
-
-function formatValue(value: number | undefined) {
-  if (typeof value !== 'number' || Number.isNaN(value)) return ''
-  return formatOpExRate(value)
-}
 
 export function SourceNode({ id, data }: NodeProps<SourceNodeData>) {
   const { updateNodeData } = useNodeData()
@@ -99,9 +93,9 @@ export function SourceNode({ id, data }: NodeProps<SourceNodeData>) {
             const handleId = `${portCategory}:${port.id}`
             const actualAmt = data.actual_amounts?.[port.id]
             const draftAmount = draftAmounts[index]
-            const displayValue = isEditable
-              ? (draftAmount !== undefined ? draftAmount : formatValue(port.amount) || String(port.amount))
-              : (actualAmt !== undefined ? formatValue(actualAmt) : '')
+            const inputValue = isEditable
+              ? (draftAmount !== undefined ? draftAmount : String(port.amount ?? ''))
+              : (actualAmt !== undefined ? formatOpExRate(actualAmt) : '')
 
             const isGlobal = port.routing_mode === 'global'
 
@@ -110,9 +104,9 @@ export function SourceNode({ id, data }: NodeProps<SourceNodeData>) {
                 <div className="recipe-node__port-core recipe-node__port-core--right">
                   <div className="endpoint-inline-stat">
                     <input
-                      type="number"
+                      type={isEditable ? 'number' : 'text'}
                       className={`endpoint-inline-input nodrag${!isEditable ? ' endpoint-inline-input--readonly' : ''}`}
-                      value={displayValue}
+                      value={inputValue}
                       readOnly={!isEditable}
                       onChange={(e) => isEditable && setDraftAmounts((prev) => ({ ...prev, [index]: e.target.value }))}
                       onBlur={isEditable ? () => commitAmount(index) : undefined}

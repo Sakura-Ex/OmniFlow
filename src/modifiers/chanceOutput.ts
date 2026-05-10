@@ -3,6 +3,7 @@ import type { IMachineModifier, PipelineContext } from './types'
 export const chanceOutputModifier: IMachineModifier = {
   id: 'chance_output',
   name: 'Chance Output',
+  max_placements: 4,
   ui_schema: [
     {
       key: 'targetResourceId',

@@ -40,6 +40,8 @@ export interface IMachineModifier {
   name: string
   ui_schema: ModifierUIConfig[]
   compatible_archetypes?: string[]
+  /** 最多可放置几次（默认 1）。> 1 时允许在 active_modifiers 中出现重复条目 */
+  max_placements?: number
   evaluate: (
     ctx: PipelineContext,
     uiState: Record<string, unknown>

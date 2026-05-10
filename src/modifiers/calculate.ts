@@ -108,11 +108,13 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
   }))
   const base_duration_seconds = normalizeDurationSeconds(data)
   const archetype = getMachineArchetype(archetype_id)
-  const activeModifierSet = new Set<string>([
-    ...archetype.default_modifiers,
-    ...(Array.isArray(data.active_modifiers) ? data.active_modifiers : []),
-  ])
-  let active_modifiers = Array.from(activeModifierSet)
+
+  // 保留用户已有修饰器的顺序，仅补充完全缺失的默认修饰器
+  // 允许重复条目（max_placements > 1 的修饰器可放置多次）
+  const userModifiers = Array.isArray(data.active_modifiers) ? data.active_modifiers : []
+  const userModifierSet = new Set(userModifiers)
+  const missingDefaults = (archetype.default_modifiers ?? []).filter((m) => !userModifierSet.has(m))
+  let active_modifiers = [...userModifiers, ...missingDefaults]
 
   active_modifiers = active_modifiers.filter((modifierId) => {
     const modifier = getModifierById(modifierId)
@@ -120,6 +122,16 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
     const allowed = modifier.compatible_archetypes
     if (!allowed || allowed.length === 0) return true
     return allowed.includes(archetype_id)
+  })
+
+  // 根据 max_placements 截断超出的重复条目
+  const occurrenceCount = new Map<string, number>()
+  active_modifiers = active_modifiers.filter((modifierId) => {
+    const modifier = getModifierById(modifierId)
+    const maxP = modifier?.max_placements ?? 1
+    const count = occurrenceCount.get(modifierId) ?? 0
+    occurrenceCount.set(modifierId, count + 1)
+    return count < maxP
   })
 
   const modifier_states = { ...(data.modifier_states ?? {}) }

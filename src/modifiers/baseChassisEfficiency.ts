@@ -7,6 +7,7 @@ function deepCloneResources(arr: typeof import('./types').PipelineContext.protot
 export const baseChassisEfficiencyModifier: IMachineModifier = {
   id: 'base_chassis_efficiency',
   name: 'Base Chassis Efficiency',
+  max_placements: 4,
   ui_schema: [
     {
       key: 'efficiency',

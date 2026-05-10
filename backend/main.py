@@ -173,6 +173,8 @@ async def calculate_flow(request: CalculateRequest):
         item_id: np.zeros(total_vars, dtype=float)
         for item_id in items
     }
+
+    # 步骤 2：写入所有节点的物品系数（必须在构建 spill 之前完成）
     for col, recipe in enumerate(recipe_nodes):
         recipe_data: RecipeNodeData = recipe["data"]
         for item_id, rate in recipe_data.outputs.items():
@@ -180,8 +182,37 @@ async def calculate_flow(request: CalculateRequest):
         for item_id, rate in recipe_data.inputs.items():
             item_rows[item_id][col] -= rate
 
+    source_specs: List[Dict[str, Any]] = []
+    for offset, source in enumerate(source_nodes):
+        source_data: SourceNodeData = source["data"]
+        source_col = source_start + offset
+        src_mode = getattr(source_data, 'mode', None) or ('infinite' if source_data.is_auto else 'limit')
+        item_rows[source_data.id][source_col] += 1.0
+        source_specs.append({
+            "node_id": source["node_id"],
+            "item_id": source_data.id,
+            "col": source_col,
+            "mode": src_mode,
+            "amount": source_data.amount,
+        })
+
+    sink_specs: List[Dict[str, Any]] = []
+    for offset, target in enumerate(target_nodes):
+        target_data: TargetNodeData = target["data"]
+        sink_col = sink_start + offset
+        tgt_mode = getattr(target_data, 'mode', None) or ('maximize' if target_data.is_auto else 'demand')
+        item_rows[target_data.id][sink_col] -= 1.0
+        sink_specs.append({
+            "node_id": target["node_id"],
+            "item_id": target_data.id,
+            "col": sink_col,
+            "mode": tgt_mode,
+            "amount": target_data.amount,
+        })
+
     # 步骤 2.5：识别溢流物品，扩展矩阵维度（白皮书 §7.2.2）
     # Void_ 端口 = 直接排空，不进入守恒约束，不分配溢流变量
+    # 注意：必须在写入所有节点系数之后构建，否则无法检测 source/target 的正系数
     equality_items_set = set(request.equality_items)
 
     spill_items: List[str] = []
@@ -218,42 +249,23 @@ async def calculate_flow(request: CalculateRequest):
             manual_cap = max(0.0, float(recipe_data.manual_machines))
             bounds.append((0, manual_cap))
 
-    source_specs: List[Dict[str, Any]] = []
-    for offset, source in enumerate(source_nodes):
-        source_data: SourceNodeData = source["data"]
-        source_col = source_start + offset
-        src_mode = getattr(source_data, 'mode', None) or ('infinite' if source_data.is_auto else 'limit')
-        item_rows[source_data.id][source_col] += 1.0
-        upper_bound = max(0.0, float(source_data.amount)) if src_mode == 'limit' else None
+    for source in source_specs:
+        src_mode = source["mode"]
+        upper_bound = max(0.0, float(source["amount"])) if src_mode == 'limit' else None
         bounds.append((0, upper_bound))
-        source_specs.append({
-            "node_id": source["node_id"],
-            "item_id": source_data.id,
-            "col": source_col,
-        })
 
-    sink_specs: List[Dict[str, Any]] = []
-    for offset, target in enumerate(target_nodes):
-        target_data: TargetNodeData = target["data"]
-        sink_col = sink_start + offset
-        tgt_mode = getattr(target_data, 'mode', None) or ('maximize' if target_data.is_auto else 'demand')
-        demand_amt = max(0.0, float(target_data.amount))
-        item_rows[target_data.id][sink_col] -= 1.0
+    for sink in sink_specs:
+        tgt_mode = sink["mode"]
+        demand_amt = max(0.0, float(sink["amount"]))
         if tgt_mode == 'demand':
-            c[sink_col] = 0.0
+            c[sink["col"]] = 0.0
             bounds.append((demand_amt, None))
         elif tgt_mode == 'maximize':
-            c[sink_col] = -10000.0
+            c[sink["col"]] = -10000.0
             bounds.append((0, None))
         else:
-            c[sink_col] = 0.001
+            c[sink["col"]] = 0.001
             bounds.append((0, None))
-
-        sink_specs.append({
-            "node_id": target["node_id"],
-            "item_id": target_data.id,
-            "col": sink_col,
-        })
 
     for i in range(spill_count):
         c[spill_start + i] = _spill_m
@@ -281,6 +293,63 @@ async def calculate_flow(request: CalculateRequest):
     b_eq_arr = np.array(b_eq, dtype=float) if b_eq else None
     A_ub = np.array(A_ub_rows, dtype=float) if A_ub_rows else None
     b_ub_arr = np.array(b_ub, dtype=float) if b_ub else None
+
+    # ── DEBUG: 写矩阵诊断到文件 ──
+    import json as _json
+    from datetime import datetime as _datetime
+    from pathlib import Path as _Path
+    _debug = {
+        "time": _datetime.now().isoformat(timespec="seconds"),
+        "nodes": len(recipe_nodes) + len(source_nodes) + len(target_nodes),
+        "recipes": [r["node_id"] for r in recipe_nodes],
+        "sources": [s["node_id"] for s in source_nodes],
+        "targets": [t["node_id"] for t in target_nodes],
+        "total_vars": total_vars,
+        "spill_count": spill_count,
+        "spill_m": _spill_m,
+        "spill_items": spill_items,
+        "items": items,
+        "edges": [(e.source, e.target, e.sourceHandle, e.targetHandle) for e in edges],
+        "equality_items": list(equality_items_set),
+        "vars": [],
+        "constraints": [],
+    }
+    for recipe in recipe_nodes:
+        rd: RecipeNodeData = recipe["data"]
+        _debug["vars"].append({
+            "type": "recipe", "node_id": recipe["node_id"],
+            "mode": getattr(rd, 'mode', None) or ('auto' if rd.is_auto else 'limit'),
+            "manual_machines": rd.manual_machines,
+        })
+    for source in source_nodes:
+        sd: SourceNodeData = source["data"]
+        _debug["vars"].append({
+            "type": "source", "node_id": source["node_id"], "id": sd.id,
+            "mode": getattr(sd, 'mode', None) or ('infinite' if sd.is_auto else 'limit'),
+            "amount": sd.amount,
+        })
+    for target in target_nodes:
+        td: TargetNodeData = target["data"]
+        _debug["vars"].append({
+            "type": "target", "node_id": target["node_id"], "id": td.id,
+            "mode": getattr(td, 'mode', None) or ('maximize' if td.is_auto else 'demand'),
+            "amount": td.amount,
+        })
+    for item_id in items:
+        row = item_rows[item_id]
+        _debug["constraints"].append({
+            "item": item_id,
+            "row": [round(float(v), 6) for v in row.tolist()],
+            "equality": item_id in equality_items_set,
+            "spill": item_id in spill_index,
+            "has_pos": bool(np.any(row > 1e-12)),
+        })
+    _log_dir = _Path(__file__).resolve().parent / "logs"
+    _log_dir.mkdir(exist_ok=True)
+    _ts = _datetime.now().strftime("%Y%m%d_%H%M%S")
+    _log_path = _log_dir / f"debug_{_ts}.json"
+    _log_path.write_text(_json.dumps(_debug, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"[DEBUG] written to {_log_path}")
 
     # 步骤 5：调用 SciPy 求解
     if total_vars == 0:
@@ -425,6 +494,8 @@ async def debug_matrix(request: CalculateRequest):
         item_id: np.zeros(total_vars, dtype=float)
         for item_id in items
     }
+
+    # 写入所有节点的物品系数（必须在构建 spill 之前完成）
     for col, recipe in enumerate(recipe_nodes):
         recipe_data: RecipeNodeData = recipe["data"]
         for item_id, rate in recipe_data.outputs.items():
@@ -432,8 +503,37 @@ async def debug_matrix(request: CalculateRequest):
         for item_id, rate in recipe_data.inputs.items():
             item_rows[item_id][col] -= rate
 
+    source_specs: List[Dict[str, Any]] = []
+    for offset, source in enumerate(source_nodes):
+        source_data: SourceNodeData = source["data"]
+        source_col = source_start + offset
+        src_mode = getattr(source_data, 'mode', None) or ('infinite' if source_data.is_auto else 'limit')
+        item_rows[source_data.id][source_col] += 1.0
+        source_specs.append({
+            "node_id": source["node_id"],
+            "item_id": source_data.id,
+            "col": source_col,
+            "mode": src_mode,
+            "amount": source_data.amount,
+        })
+
+    sink_specs: List[Dict[str, Any]] = []
+    for offset, target in enumerate(target_nodes):
+        target_data: TargetNodeData = target["data"]
+        sink_col = sink_start + offset
+        tgt_mode = getattr(target_data, 'mode', None) or ('maximize' if target_data.is_auto else 'demand')
+        item_rows[target_data.id][sink_col] -= 1.0
+        sink_specs.append({
+            "node_id": target["node_id"],
+            "item_id": target_data.id,
+            "col": sink_col,
+            "mode": tgt_mode,
+            "amount": target_data.amount,
+        })
+
     # 步骤 2.5：识别溢流物品（§7.2.2）
     # Void_ 端口 = 直接排空，不进入守恒约束，不分配溢流变量
+    # 注意：必须在写入所有节点系数之后构建，否则无法检测 source/target 的正系数
     equality_items_set = set(request.equality_items)
     spill_items2: List[str] = []
     spill_index2: Dict[str, int] = {}
@@ -468,45 +568,23 @@ async def debug_matrix(request: CalculateRequest):
             manual_cap = max(0.0, float(recipe_data.manual_machines))
             bounds.append((0, manual_cap))
 
-    source_specs: List[Dict[str, Any]] = []
-    for offset, source in enumerate(source_nodes):
-        source_data: SourceNodeData = source["data"]
-        source_col = source_start + offset
-        src_mode = getattr(source_data, 'mode', None) or ('infinite' if source_data.is_auto else 'limit')
-        item_rows[source_data.id][source_col] += 1.0
-        upper_bound = max(0.0, float(source_data.amount)) if src_mode == 'limit' else None
+    for source in source_specs:
+        src_mode = source["mode"]
+        upper_bound = max(0.0, float(source["amount"])) if src_mode == 'limit' else None
         bounds.append((0, upper_bound))
-        source_specs.append({
-            "node_id": source["node_id"],
-            "item_id": source_data.id,
-            "col": source_col,
-            "mode": src_mode,
-            "upper_bound": upper_bound,
-        })
 
-    sink_specs: List[Dict[str, Any]] = []
-    for offset, target in enumerate(target_nodes):
-        target_data: TargetNodeData = target["data"]
-        sink_col = sink_start + offset
-        tgt_mode = getattr(target_data, 'mode', None) or ('maximize' if target_data.is_auto else 'demand')
-        demand_amt = max(0.0, float(target_data.amount))
-        item_rows[target_data.id][sink_col] -= 1.0
+    for sink in sink_specs:
+        tgt_mode = sink["mode"]
+        demand_amt = max(0.0, float(sink["amount"]))
         if tgt_mode == 'demand':
-            c[sink_col] = 0.0
+            c[sink["col"]] = 0.0
             bounds.append((demand_amt, None))
         elif tgt_mode == 'maximize':
-            c[sink_col] = -10000.0
+            c[sink["col"]] = -10000.0
             bounds.append((0, None))
         else:
-            c[sink_col] = 0.001
+            c[sink["col"]] = 0.001
             bounds.append((0, None))
-        sink_specs.append({
-            "node_id": target["node_id"],
-            "item_id": target_data.id,
-            "col": sink_col,
-            "mode": tgt_mode,
-            "demand": demand_amt,
-        })
 
     for i in range(spill_count2):
         c[spill_start2 + i] = _spill_m2
