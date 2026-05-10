@@ -58,6 +58,12 @@ export interface TargetNodeData {
 
 export type MachineSystem = 'gregtech' | 'enderio' | 'thermal' | 'vanilla' | string
 
+export interface ActiveModifier {
+  instance_id: string
+  definition_id: string
+  uiState: Record<string, unknown>
+}
+
 export interface RecipeNodeData {
   recipe_id: string
   machine_name: string
@@ -76,7 +82,7 @@ export interface RecipeNodeData {
   base_duration_seconds?: number
   /** @deprecated legacy tick field retained only for backward compatibility */
   base_duration?: number
-  active_modifiers?: string[]
+  active_modifiers?: ActiveModifier[]
   modifier_states?: Record<string, Record<string, unknown>>
   hardware_specs?: Record<string, unknown>
   mode?: RecipeNodeMode

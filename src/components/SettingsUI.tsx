@@ -5,6 +5,7 @@ import { toggleRouting } from '../utils/canvasUtils'
 import { generateId } from '../utils/generateId'
 import type { UseFieldArrayReturn } from 'react-hook-form'
 import type { RecipeFormData } from './RecipeEditorModal'
+import type { ActiveModifier } from '../types/recipe'
 import type { Resource, TimeBase } from '../types/types'
 import {
   DndContext,
@@ -128,8 +129,7 @@ export function SettingsUI(props: SettingsUIProps) {
   const baseUtilityOutputs = watch('base_utility_outputs') as Resource[]
   const machineName = watch('machine_name')
   const baseDurationSeconds = watch('base_duration_seconds')
-  const activeModifiers = watch('active_modifiers')
-  const modifierStates = watch('modifier_states')
+  const activeModifiers = watch('active_modifiers') as ActiveModifier[]
   const hardwareSpecs = watch('hardware_specs') as Record<string, unknown> | undefined
 
   const emptyResource = useCallback((): Resource => ({
@@ -157,7 +157,7 @@ export function SettingsUI(props: SettingsUIProps) {
   const outputRateMap = useMemo(() => buildRateMap(previewOutputRates), [previewOutputRates])
   const availableModifiers = useMemo(
     () => modifiers.filter((modifier) => {
-      const count = activeModifiers.filter((id) => id === modifier.id).length
+      const count = activeModifiers.filter((m) => m.definition_id === modifier.id).length
       const maxP = modifier.max_placements ?? 1
       if (count >= maxP) return false
       const allowed = modifier.compatible_archetypes
@@ -286,44 +286,28 @@ export function SettingsUI(props: SettingsUIProps) {
   }, [utilityInputFields, utilityOutputFields, getValues])
 
   const addModifier = (modifierId: string) => {
-    const currentActive = getValues('active_modifiers')
+    const currentActive = getValues('active_modifiers') as ActiveModifier[]
     const modifier = modifiers.find((m) => m.id === modifierId)
     const maxP = modifier?.max_placements ?? 1
-    const count = currentActive.filter((id) => id === modifierId).length
+    const count = currentActive.filter((m) => m.definition_id === modifierId).length
     if (count >= maxP) return
-    setValue('active_modifiers', [...currentActive, modifierId])
-    const currentStates = getValues('modifier_states')
-    if (!(modifierId in currentStates)) {
-      setValue('modifier_states', {
-        ...currentStates,
-        [modifierId]: {
-          ...createDefaultModifierState(modifierId),
-          ...(currentStates[modifierId] ?? {}),
-        },
-      })
+    const newInstance: ActiveModifier = {
+      instance_id: generateId(),
+      definition_id: modifierId,
+      uiState: createDefaultModifierState(modifierId),
     }
+    setValue('active_modifiers', [...currentActive, newInstance])
     setModifierPopoverOpen(false)
   }
 
-  const removeModifier = (index: number) => {
-    const currentActive = getValues('active_modifiers')
-    const removedId = currentActive[index]
-    const nextActive = [...currentActive]
-    nextActive.splice(index, 1)
-    setValue('active_modifiers', nextActive)
-    const stillPresent = nextActive.includes(removedId)
-    if (!stillPresent) {
-      const currentStates = getValues('modifier_states')
-      const next = { ...currentStates }
-      delete next[removedId]
-      setValue('modifier_states', next)
-    }
+  const removeModifier = (instanceId: string) => {
+    const currentActive = getValues('active_modifiers') as ActiveModifier[]
+    setValue('active_modifiers', currentActive.filter((m) => m.instance_id !== instanceId))
   }
 
   const moveModifier = (fromIndex: number, toIndex: number) => {
-    const currentActive = getValues('active_modifiers')
-    const next = arrayMove(currentActive, fromIndex, toIndex)
-    setValue('active_modifiers', next)
+    const currentActive = getValues('active_modifiers') as ActiveModifier[]
+    setValue('active_modifiers', arrayMove(currentActive, fromIndex, toIndex))
   }
 
   const [activeDragId, setActiveDragId] = useState<string | null>(null)
@@ -340,21 +324,20 @@ export function SettingsUI(props: SettingsUIProps) {
     const { active, over } = event
     setActiveDragId(null)
     if (!over || active.id === over.id) return
-    const oldIndex = Number(active.id)
-    const newIndex = Number(over.id)
-    if (!Number.isFinite(oldIndex) || !Number.isFinite(newIndex)) return
+    const currentActive = getValues('active_modifiers') as ActiveModifier[]
+    const oldIndex = currentActive.findIndex((m) => m.instance_id === active.id)
+    const newIndex = currentActive.findIndex((m) => m.instance_id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
     moveModifier(oldIndex, newIndex)
   }
 
-  const setModifierValue = (modifierId: string, key: string, value: unknown) => {
-    const currentStates = getValues('modifier_states')
-    setValue('modifier_states', {
-      ...currentStates,
-      [modifierId]: {
-        ...(currentStates[modifierId] ?? {}),
-        [key]: value,
-      },
-    })
+  const setModifierValue = (instanceId: string, key: string, value: unknown) => {
+    const currentActive = getValues('active_modifiers') as ActiveModifier[]
+    setValue('active_modifiers', currentActive.map((m) =>
+      m.instance_id === instanceId
+        ? { ...m, uiState: { ...m.uiState, [key]: value } }
+        : m
+    ))
   }
 
   const setHardwareSpecsValue = (key: string, value: unknown) => {
@@ -552,26 +535,26 @@ export function SettingsUI(props: SettingsUIProps) {
         </div>
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <SortableContext items={activeModifiers.map((_, idx) => String(idx))} strategy={verticalListSortingStrategy}>
-            {activeModifiers.map((modifierId, idx) => {
-              const rawModifier = modifiers.find((m) => m.id === modifierId)
+          <SortableContext items={activeModifiers.map((m) => m.instance_id)} strategy={verticalListSortingStrategy}>
+            {activeModifiers.map((m) => {
+              const rawModifier = modifiers.find((mod) => mod.id === m.definition_id)
               if (!rawModifier) return null
               const modifier = rawModifier
-              const isFixedModifier = defaultModifierSet.has(modifierId)
+              const isFixedModifier = defaultModifierSet.has(m.definition_id)
 
               const state = {
-                ...createDefaultModifierState(modifierId),
-                ...(modifierStates[modifierId] ?? {}),
+                ...createDefaultModifierState(m.definition_id),
+                ...(m.uiState ?? {}),
               }
 
               return (
-                <SortableModifierCard key={`${modifierId}__${idx}`} id={String(idx)}>
+                <SortableModifierCard key={m.instance_id} id={m.instance_id}>
                   <ModifierCardShell
                     modifier={modifier}
                     state={state}
                     isFixedModifier={isFixedModifier}
-                    onRemove={() => removeModifier(idx)}
-                    onChange={(key, value) => setModifierValue(modifierId, key, value)}
+                    onRemove={() => removeModifier(m.instance_id)}
+                    onChange={(key, value) => setModifierValue(m.instance_id, key, value)}
                   />
                 </SortableModifierCard>
               )
@@ -579,20 +562,20 @@ export function SettingsUI(props: SettingsUIProps) {
           </SortableContext>
           <DragOverlay dropAnimation={null}>
             {activeDragId && (() => {
-              const dragIdx = Number(activeDragId)
-              const dragModifierId = activeModifiers[dragIdx]
-              const overlayModifier = dragModifierId ? modifiers.find((m) => m.id === dragModifierId) : null
+              const dragInstance = activeModifiers.find((m) => m.instance_id === activeDragId)
+              if (!dragInstance) return null
+              const overlayModifier = modifiers.find((mod) => mod.id === dragInstance.definition_id)
               if (!overlayModifier) return null
               const overlayState = {
-                ...createDefaultModifierState(dragModifierId),
-                ...(modifierStates[dragModifierId] ?? {}),
+                ...createDefaultModifierState(dragInstance.definition_id),
+                ...(dragInstance.uiState ?? {}),
               }
               return (
                 <div style={{ opacity: 0.92, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', cursor: 'grabbing' }}>
                   <ModifierCardShell
                     modifier={overlayModifier}
                     state={overlayState}
-                    isFixedModifier={defaultModifierSet.has(dragModifierId)}
+                    isFixedModifier={defaultModifierSet.has(dragInstance.definition_id)}
                     onRemove={() => {}}
                     onChange={() => {}}
                     readOnly

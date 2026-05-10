@@ -1,4 +1,4 @@
-import type { RecipeNodeData, RecipePort } from '../types/recipe'
+import type { RecipeNodeData, RecipePort, ActiveModifier } from '../types/recipe'
 import type { Resource, ResourceCategory, RoutingMode, ComputedNodePayload, NormalizedResource } from '../types/types'
 import { createDefaultModifierState } from './state'
 import { getModifierById } from './registry'
@@ -6,6 +6,7 @@ import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArche
 import { DEFAULT_RESOURCE_CATEGORIES } from '../registry/defaults'
 import type { PipelineContext } from './types'
 import { getCategory } from '../utils/resourceIdentifier'
+import { generateId } from '../utils/generateId'
 
 export const GAME_BASE_TPS = 20
 
@@ -109,15 +110,32 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
   const base_duration_seconds = normalizeDurationSeconds(data)
   const archetype = getMachineArchetype(archetype_id)
 
-  // 保留用户已有修饰器的顺序，仅补充完全缺失的默认修饰器
-  // 允许重复条目（max_placements > 1 的修饰器可放置多次）
-  const userModifiers = Array.isArray(data.active_modifiers) ? data.active_modifiers : []
-  const userModifierSet = new Set(userModifiers)
-  const missingDefaults = (archetype.default_modifiers ?? []).filter((m) => !userModifierSet.has(m))
-  let active_modifiers = [...userModifiers, ...missingDefaults]
+  // 迁移旧格式（string[]）到新格式（ActiveModifier[]）
+  let userModifiers: ActiveModifier[] = (() => {
+    const raw = data.active_modifiers ?? []
+    if (raw.length === 0) return []
+    if (typeof raw[0] === 'object' && 'instance_id' in raw[0]) return raw as ActiveModifier[]
 
-  active_modifiers = active_modifiers.filter((modifierId) => {
-    const modifier = getModifierById(modifierId)
+    // 旧 string[] 格式 → 转换为 ActiveModifier[]
+    const oldStates = data.modifier_states ?? {}
+    return (raw as unknown as string[]).map((defId, idx) => {
+      const state = oldStates[String(idx)] ?? oldStates[defId] ?? createDefaultModifierState(defId)
+      return { instance_id: generateId(), definition_id: defId, uiState: state }
+    })
+  })()
+
+  const userDefIds = new Set(userModifiers.map((m) => m.definition_id))
+  const missingDefaults = (archetype.default_modifiers ?? [])
+    .filter((d) => !userDefIds.has(d))
+    .map((d) => ({
+      instance_id: generateId(),
+      definition_id: d,
+      uiState: createDefaultModifierState(d),
+    }))
+  let active_modifiers: ActiveModifier[] = [...userModifiers, ...missingDefaults]
+
+  active_modifiers = active_modifiers.filter((m) => {
+    const modifier = getModifierById(m.definition_id)
     if (!modifier) return false
     const allowed = modifier.compatible_archetypes
     if (!allowed || allowed.length === 0) return true
@@ -126,22 +144,13 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
 
   // 根据 max_placements 截断超出的重复条目
   const occurrenceCount = new Map<string, number>()
-  active_modifiers = active_modifiers.filter((modifierId) => {
-    const modifier = getModifierById(modifierId)
+  active_modifiers = active_modifiers.filter((m) => {
+    const modifier = getModifierById(m.definition_id)
     const maxP = modifier?.max_placements ?? 1
-    const count = occurrenceCount.get(modifierId) ?? 0
-    occurrenceCount.set(modifierId, count + 1)
+    const count = occurrenceCount.get(m.definition_id) ?? 0
+    occurrenceCount.set(m.definition_id, count + 1)
     return count < maxP
   })
-
-  const modifier_states = { ...(data.modifier_states ?? {}) }
-  for (const modifierId of active_modifiers) {
-    const defaults = createDefaultModifierState(modifierId)
-    modifier_states[modifierId] = {
-      ...defaults,
-      ...(modifier_states[modifierId] ?? {}),
-    }
-  }
 
   const traits = archetype.traits ?? {}
   const hardware_specs: Record<string, unknown> = {}
@@ -160,7 +169,6 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
     duration_seconds: base_duration_seconds,
     base_duration: secondsToTicks(base_duration_seconds),
     active_modifiers,
-    modifier_states,
     hardware_specs,
   }
 }
@@ -189,12 +197,11 @@ export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayloa
     hardwareSpecs: normalized.hardware_specs ?? {},
   }
 
-  for (const modifierId of normalized.active_modifiers ?? []) {
-    const modifier = getModifierById(modifierId)
+  for (const inst of normalized.active_modifiers ?? []) {
+    const modifier = getModifierById(inst.definition_id)
     if (!modifier) continue
 
-    const uiState = normalized.modifier_states?.[modifierId] ?? createDefaultModifierState(modifierId)
-    ctx = modifier.evaluate(ctx, uiState)
+    ctx = modifier.evaluate(ctx, inst.uiState)
   }
 
   const dur = Math.max(0.05, ctx.durationSeconds)

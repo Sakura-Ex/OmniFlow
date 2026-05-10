@@ -1,3 +1,4 @@
+import type { ActiveModifier } from '../types/recipe'
 import type { Resource } from '../types/types'
 import type { IMachineModifier, PipelineContext } from './types'
 import { OverclockerCardBody } from './gtOverclockerCard'
@@ -154,8 +155,7 @@ export function evaluateGtOverclock(
 export function resolveRecipePowerProfile(
   data: {
     metadata?: Record<string, unknown>
-    active_modifiers?: string[]
-    modifier_states?: Record<string, Record<string, unknown>>
+    active_modifiers?: ActiveModifier[]
     base_inputs?: Resource[]
     base_utility_inputs?: Resource[]
     base_duration_seconds?: number
@@ -174,10 +174,11 @@ export function resolveRecipePowerProfile(
       ))
     : Math.max(0, baseEuPerTick)
 
-  const hasOverclocker = Boolean(data.active_modifiers?.includes('gt_overclocker'))
+  const ocInstance = data.active_modifiers?.find((m) => m.definition_id === 'gt_overclocker')
+  const hasOverclocker = Boolean(ocInstance)
   let highestTier = 'N/A'
-  if (hasOverclocker) {
-    const hatches = normalizeGtHatches(data.modifier_states?.gt_overclocker ?? {})
+  if (ocInstance) {
+    const hatches = normalizeGtHatches(ocInstance.uiState)
     highestTier = computePowerPool(hatches).highestTier
   }
 

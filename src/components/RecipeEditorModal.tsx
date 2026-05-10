@@ -1,10 +1,11 @@
 import { useMemo, useEffect } from 'react'
 import { useForm, useFieldArray, FormProvider } from 'react-hook-form'
-import type { RecipeNodeData } from '../types/recipe'
+import type { RecipeNodeData, ActiveModifier } from '../types/recipe'
 import type { Resource } from '../types/types'
 import { useRecipeStore } from '../stores/recipeStore'
 import { SettingsUI } from './SettingsUI'
 import { ensureRecipeDataShape, runModifierPipeline } from '../modifiers/calculate'
+import { generateId } from '../utils/generateId'
 import { createDefaultModifierState } from '../modifiers/state'
 import { resolveRecipePowerProfile } from '../modifiers/gtOverclocker'
 import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArchetype } from '../data/archetypes/index'
@@ -18,8 +19,7 @@ export type RecipeFormData = {
   base_utility_inputs: Resource[]
   base_utility_outputs: Resource[]
   archetype_id: string
-  active_modifiers: string[]
-  modifier_states: Record<string, Record<string, unknown>>
+  active_modifiers: ActiveModifier[]
   hardware_specs: Record<string, unknown>
 }
 
@@ -45,7 +45,6 @@ function buildFormDefaults(node: EditorTarget | null, stored?: RecipeNodeData): 
       base_utility_outputs: [],
       archetype_id: 'custom_generic',
       active_modifiers: [],
-      modifier_states: {},
       hardware_specs: {},
     }
   }
@@ -59,8 +58,7 @@ function buildFormDefaults(node: EditorTarget | null, stored?: RecipeNodeData): 
     base_utility_inputs: (source.base_utility_inputs ?? []).map((item) => ({ ...item })),
     base_utility_outputs: (source.base_utility_outputs ?? []).map((item) => ({ ...item })),
     archetype_id: source.archetype_id ?? getDefaultArchetypeIdForSystem(source.system ?? 'custom'),
-    active_modifiers: [...(source.active_modifiers ?? [])],
-    modifier_states: source.modifier_states ? { ...source.modifier_states } : {},
+    active_modifiers: (source.active_modifiers ?? []).map((m) => ({ ...m })),
     hardware_specs: source.hardware_specs ? { ...source.hardware_specs } : {},
   }
 }
@@ -109,18 +107,17 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
     const defaults = getMachineArchetype(nextArchetypeId).default_modifiers
     if (defaults.length > 0) {
       const currentActive = getValues('active_modifiers')
-      const nextActive = Array.from(new Set([...defaults, ...currentActive]))
-      setValue('active_modifiers', nextActive)
-
-      const currentStates = getValues('modifier_states')
-      const nextStates = { ...currentStates }
-      for (const modifierId of defaults) {
-        nextStates[modifierId] = {
-          ...createDefaultModifierState(modifierId),
-          ...(nextStates[modifierId] ?? {}),
-        }
+      const currentDefIds = new Set(currentActive.map((m) => m.definition_id))
+      const newInstances = defaults
+        .filter((d) => !currentDefIds.has(d))
+        .map((d) => ({
+          instance_id: generateId(),
+          definition_id: d,
+          uiState: createDefaultModifierState(d),
+        }))
+      if (newInstances.length > 0) {
+        setValue('active_modifiers', [...currentActive, ...newInstances])
       }
-      setValue('modifier_states', nextStates)
     }
   }
 
@@ -133,8 +130,7 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
   const watchedBaseOutputs = watch('base_outputs') as Resource[]
   const watchedBaseUtilityInputs = watch('base_utility_inputs') as Resource[]
   const watchedBaseUtilityOutputs = watch('base_utility_outputs') as Resource[]
-  const watchedActiveModifiers = watch('active_modifiers') as string[]
-  const watchedModifierStates = watch('modifier_states') as Record<string, Record<string, unknown>>
+  const watchedActiveModifiers = watch('active_modifiers') as ActiveModifier[]
   const watchedHardwareSpecs = watch('hardware_specs') as Record<string, unknown>
 
   const liveData = useMemo(() => {
@@ -151,7 +147,6 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
       base_duration_seconds: Number(watchedBaseDuration) || 0,
       duration_seconds: Number(watchedBaseDuration) || 0,
       active_modifiers: watchedActiveModifiers,
-      modifier_states: watchedModifierStates,
       hardware_specs: watchedHardwareSpecs,
     })
   }, [
@@ -164,7 +159,6 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
     watchedBaseUtilityInputs,
     watchedBaseUtilityOutputs,
     watchedActiveModifiers,
-    watchedModifierStates,
     watchedHardwareSpecs,
     metadata,
   ])
@@ -211,7 +205,6 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
       base_duration_seconds: Number(formData.base_duration_seconds) || 0,
       duration_seconds: Number(formData.base_duration_seconds) || 0,
       active_modifiers: formData.active_modifiers,
-      modifier_states: formData.modifier_states,
       hardware_specs: formData.hardware_specs,
     })
 
