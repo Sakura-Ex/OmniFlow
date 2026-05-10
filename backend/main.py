@@ -36,10 +36,11 @@ app = FastAPI(
 )
 
 # 配置 CORS，允许前端跨域访问
-# 允许来自 Vite 默认本地开发端口的请求，线上环境需根据实际域名配置
+# 开发环境放行 localhost，线上环境根据实际域名配置
 origins = [
     "http://localhost:5173",
-    # "*", # 如果你需要无条件放行全局，可以取消注释此行
+    "http://127.0.0.1:5173",
+    "*",  # 内网测试可临时放开，生产环境建议配置具体域名
 ]
 
 app.add_middleware(
@@ -289,63 +290,6 @@ async def calculate_flow(request: CalculateRequest):
             "system_inputs": {},
             "system_outputs": {},
         }
-
-    # ── DEBUG: 写矩阵诊断到文件 ──
-    import json as _json
-    from datetime import datetime as _datetime
-    from pathlib import Path as _Path
-    _debug = {
-        "time": _datetime.now().isoformat(timespec="seconds"),
-        "nodes": len(recipe_nodes) + len(source_nodes) + len(target_nodes),
-        "recipes": [r["node_id"] for r in recipe_nodes],
-        "sources": [s["node_id"] for s in source_nodes],
-        "targets": [t["node_id"] for t in target_nodes],
-        "total_vars": total_vars,
-        "spill_count": spill_count,
-        "spill_m": _spill_m,
-        "spill_items": spill_items,
-        "items": items,
-        "edges": [(e.source, e.target, e.sourceHandle, e.targetHandle) for e in edges],
-        "equality_items": list(equality_items_set),
-        "vars": [],
-        "constraints": [],
-    }
-    for recipe in recipe_nodes:
-        rd: RecipeNodeData = recipe["data"]
-        _debug["vars"].append({
-            "type": "recipe", "node_id": recipe["node_id"],
-            "mode": getattr(rd, 'mode', None) or ('auto' if rd.is_auto else 'limit'),
-            "manual_machines": rd.manual_machines,
-        })
-    for source in source_nodes:
-        sd: SourceNodeData = source["data"]
-        _debug["vars"].append({
-            "type": "source", "node_id": source["node_id"], "id": sd.id,
-            "mode": getattr(sd, 'mode', None) or ('infinite' if sd.is_auto else 'limit'),
-            "amount": sd.amount,
-        })
-    for target in target_nodes:
-        td: TargetNodeData = target["data"]
-        _debug["vars"].append({
-            "type": "target", "node_id": target["node_id"], "id": td.id,
-            "mode": getattr(td, 'mode', None) or ('maximize' if td.is_auto else 'demand'),
-            "amount": td.amount,
-        })
-    for item_id in items:
-        row = item_rows[item_id]
-        _debug["constraints"].append({
-            "item": item_id,
-            "row": [round(float(v), 6) for v in row.tolist()],
-            "equality": item_id in equality_items_set,
-            "spill": item_id in spill_index,
-            "has_pos": bool(np.any(row > 1e-12)),
-        })
-    _log_dir = _Path(__file__).resolve().parent / "logs"
-    _log_dir.mkdir(exist_ok=True)
-    _ts = _datetime.now().strftime("%Y%m%d_%H%M%S")
-    _log_path = _log_dir / f"debug_{_ts}.json"
-    _log_path.write_text(_json.dumps(_debug, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"[DEBUG] written to {_log_path}")
 
     res = linprog(
         c,

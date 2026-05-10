@@ -2,6 +2,7 @@ import { useMemo, useState, useRef, useCallback } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { useClickOutside } from '../hooks/useClickOutside'
 import { toggleRouting } from '../utils/canvasUtils'
+import { generateId } from '../utils/generateId'
 import type { UseFieldArrayReturn } from 'react-hook-form'
 import type { RecipeFormData } from './RecipeEditorModal'
 import type { Resource, TimeBase } from '../types/types'
@@ -101,7 +102,7 @@ export function SettingsUI(props: SettingsUIProps) {
     time_base: 'per_cycle',
     routing_mode: 'wired',
     routing_locked: false,
-    _uid: crypto.randomUUID(),
+    _uid: generateId(),
   }), [])
 
   const categoryOptions = useMemo(

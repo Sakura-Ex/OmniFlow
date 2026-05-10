@@ -3,6 +3,7 @@ import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import type { ResourceCategoryDef, UnitOverride, ResourceEntry } from '../registry/types'
 import type { TimeBase } from '../types/types'
 import { parseResourceId } from '../utils/resourceIdentifier'
+import { generateId } from '../utils/generateId'
 import './ResourceRegistryPanel.css'
 
 type ResourceRegistryPanelProps = {
@@ -75,7 +76,7 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
   }
 
   const handleAddCategory = () => {
-    const key = `__new_${crypto.randomUUID()}`
+    const key = `__new_${generateId()}`
     addCat({
       id: key,
       displayName: '',
@@ -123,7 +124,7 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
   }
 
   const handleAddOverride = () => {
-    const key = `__new_ov_${crypto.randomUUID()}`
+    const key = `__new_ov_${generateId()}`
     addOv(key, {})
   }
 

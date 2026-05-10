@@ -4,6 +4,8 @@ import type { RecipeNodeData, SourceNodeData, TargetNodeData } from '../types/re
 import type { EndpointEditorTarget } from '../EndpointEditorContext'
 import { useRecipeStore } from '../stores/recipeStore'
 import { useCanvasStore } from '../stores/canvasStore'
+import { useGlobalResourceTable } from '../registry/globalResourceTable'
+import { buildResourceId } from '../utils/resourceIdentifier'
 
 type UseNodeEditorParams = {
   setNodes: (nodes: Node[]) => void
@@ -44,6 +46,17 @@ export function useNodeEditor({ setNodes, takeSnapshot, updateNodeInternals }: U
 
   const handleSaveEndpoint = useCallback((id: string, patch: Partial<SourceNodeData & TargetNodeData>) => {
     takeSnapshot()
+    const ports = patch.ports
+    const grt = useGlobalResourceTable.getState()
+    if (Array.isArray(ports)) {
+      for (const port of ports) {
+        if (port.id && String(port.id).trim().length > 0) {
+          grt.ensureEntry(buildResourceId(port.category ?? 'item', String(port.id)))
+        }
+      }
+    } else if (typeof patch.id === 'string' && patch.id.trim().length > 0) {
+      grt.ensureEntry(buildResourceId(patch.category ?? 'item', patch.id))
+    }
     const prev = useCanvasStore.getState().nodes
     setNodes(prev.map((node) =>
       node.id !== id ? node : { ...node, data: { ...node.data, ...patch } }

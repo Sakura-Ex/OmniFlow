@@ -1,6 +1,7 @@
 import type { Node, Edge } from 'reactflow'
 import type { RecipeNodeData } from '../../types/recipe'
 import { buildResourceId } from '../../utils/resourceIdentifier'
+import { generateId } from '../../utils/generateId'
 
 export type ComputeAutoFillParams = {
   nodeId: string
@@ -90,7 +91,7 @@ export function computeAutoFillEndpoints(params: ComputeAutoFillParams): AutoFil
         is_auto: true,
         actual_amount: cachedAmount,
         category: cat,
-        ports: [{ id: input.id, amount: cachedAmount ?? 9999, category: cat, _uid: crypto.randomUUID() }],
+        ports: [{ id: input.id, amount: cachedAmount ?? 9999, category: cat, _uid: generateId() }],
       },
     })
 
@@ -124,7 +125,7 @@ export function computeAutoFillEndpoints(params: ComputeAutoFillParams): AutoFil
         is_auto: true,
         actual_amount: cachedAmount,
         category: cat,
-        ports: [{ id: output.id, amount: cachedAmount ?? 0, category: cat, _uid: crypto.randomUUID() }],
+        ports: [{ id: output.id, amount: cachedAmount ?? 0, category: cat, _uid: generateId() }],
       },
     })
 

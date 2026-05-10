@@ -3,6 +3,7 @@ import type { SourceNodeData, TargetNodeData, EndpointPort } from '../types/reci
 import type { EndpointEditorTarget } from '../EndpointEditorContext'
 import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { normalizeEndpointPorts, emptyEndpointPort } from '../utils/endpointNorm'
+import { generateId } from '../utils/generateId'
 import { ResourceDefinitionList, ENDPOINT_COLUMNS } from './ResourceDefinitionList'
 import './EndpointEditorModal.css'
 
@@ -24,7 +25,7 @@ export function EndpointEditorModal({ node, onClose, onSave }: Props) {
   const initialPorts = node ? normalizeEndpointPorts(node.data) : []
   const [ports, setPorts] = useState<EndpointPort[]>(
     initialPorts.length > 0
-      ? initialPorts.map((p) => ({ ...p, _uid: p._uid ?? crypto.randomUUID() }))
+      ? initialPorts.map((p) => ({ ...p, _uid: p._uid ?? generateId() }))
       : [emptyEndpointPort()]
   )
 
