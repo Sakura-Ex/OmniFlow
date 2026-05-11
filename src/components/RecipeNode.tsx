@@ -27,6 +27,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   const storedPayload = useRecipeStore((state) => state.getPayload(id))
   const recipe = useRecipeStore((state) => state.recipes[id])
   const machineName = recipe?.machine_name ?? data.machine_name
+  const isImplemented = recipe?.is_implemented ?? false
 
   const payload: ComputedNodePayload = storedPayload ?? runModifierPipeline(data)
   const hasZeroOutput =
@@ -64,6 +65,10 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
     if (nextMode === 'limit') {
       setDraftManualMachines(String(nextManual))
     }
+  }
+
+  const handleToggleImplemented = () => {
+    useRecipeStore.getState().updateRecipe(id, { is_implemented: !isImplemented })
   }
 
   const renderResourceRows = (
@@ -194,7 +199,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
 
   return (
     <article
-      className={`recipe-node recipe-node--${mode}${hasZeroOutput ? ' recipe-node--zero-output' : ''}`}
+      className={`recipe-node recipe-node--${mode}${hasZeroOutput ? ' recipe-node--zero-output' : ''}${isImplemented ? ' recipe-node--implemented' : ''}`}
     >
       <header className="recipe-node__header">
         <div className="recipe-node__header-main">
@@ -204,6 +209,13 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
           </div>
         </div>
         <div className="recipe-node__header-actions">
+          <button
+            className={`recipe-node__implement-btn nodrag${isImplemented ? ' is-active' : ''}`}
+            onClick={handleToggleImplemented}
+            title={isImplemented ? '已实装' : '未实装'}
+          >
+            ✅
+          </button>
           <button
             className="recipe-node__autofill-btn"
             onClick={() => onAutoFill(id)}
