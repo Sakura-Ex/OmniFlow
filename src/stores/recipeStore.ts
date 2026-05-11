@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { RecipeNodeData } from '../types/recipe'
 import type { ComputedNodePayload } from '../types/types'
-import { ensureRecipeDataShape, runModifierPipeline } from '../modifiers/calculate'
+import { ensureRecipeDataShape, runModifierPipeline } from '../modifiers/pipeline'
 import { applyArchetypeToInputs } from '../data/archetypes/index'
 import { useGlobalResourceTable } from '../registry/globalResourceTable'
 

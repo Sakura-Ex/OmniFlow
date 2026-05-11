@@ -22,6 +22,14 @@ export interface PipelineContext {
   durationSeconds: number
   machineStopped: boolean
   hardwareSpecs: Record<string, unknown>
+  /** 修饰器执行前的原始快照 — 不可变对照本，供需要原始值的修饰器（如 GT Overclocker）读取 */
+  baseline: {
+    recipeInputs: Resource[]
+    recipeOutputs: Resource[]
+    utilityInputs: Resource[]
+    utilityOutputs: Resource[]
+    durationSeconds: number
+  }
 }
 
 export interface ModifierCardRenderProps {

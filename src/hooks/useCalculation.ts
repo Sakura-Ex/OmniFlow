@@ -41,7 +41,7 @@ export function useCalculation() {
     canvasStore.setGlobalInputIds(Array.from(result.globalInputSet))
     canvasStore.setGlobalOutputIds(Array.from(result.globalOutputSet))
 
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || `http://${window.location.hostname}:8000`
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || `http://${window.location.hostname}:7998`
     const apiUrl = `${backendUrl}/api/calculate`
 
     try {

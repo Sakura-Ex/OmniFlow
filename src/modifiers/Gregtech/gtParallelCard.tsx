@@ -1,4 +1,4 @@
-import type { ModifierCardRenderProps } from './types'
+import type { ModifierCardRenderProps } from '../types'
 
 export function ParallelCardBody({ state, onChange, Select }: ModifierCardRenderProps) {
   return (

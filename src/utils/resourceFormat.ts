@@ -1,6 +1,7 @@
 import type { TimeBase } from '../types/types'
 import type { ResourceCategoryDef } from '../registry/types'
 import { formatOpExRate, sanitizeFloat } from './formatters'
+import { useSettingsStore } from '../stores/settingsStore'
 
 export function formatPortAmount(
   ratePerSec: number,
@@ -18,7 +19,7 @@ export function formatPortAmount(
 
 export function formatRateValue(value: number | undefined, mMode?: TimeBase): string {
   if (typeof value !== 'number' || Number.isNaN(value)) return ''
-  const displayValue = mMode === 'rate_per_tick' ? value / 20 : value
+  const displayValue = mMode === 'rate_per_tick' ? value / useSettingsStore.getState().tps : value
   const suffix = mMode === 'rate_per_tick' ? '/t' : '/s'
   return `${formatOpExRate(displayValue)}${suffix}`
 }

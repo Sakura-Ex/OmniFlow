@@ -1,7 +1,6 @@
-import type { ActiveModifier } from '../types/recipe'
-import type { Resource } from '../types/types'
-import type { IMachineModifier, PipelineContext } from './types'
+import type { IMachineModifier, PipelineContext } from '../types'
 import { OverclockerCardBody } from './gtOverclockerCard'
+import { secondsToTicks, ticksToSeconds } from '../../utils/time'
 
 export type GtVoltageTier = {
   id: string
@@ -30,20 +29,9 @@ function tierIndex(tierId: string): number {
   return GT_VOLTAGE_TIERS.findIndex((t) => t.id === tierId)
 }
 
-function secondsToTicks(seconds: number): number {
-  return Math.max(1, Math.floor(seconds * 20))
-}
-
 export type GtEnergyHatch = {
   tier: string
   amps: number
-}
-
-export type ResolvedPowerProfile = {
-  hasPowerSetting: boolean
-  baseEuPerTick: number
-  actualEuPerTick: number
-  highestTier: string
 }
 
 export function toFiniteNumber(value: unknown, fallback = 0): number {
@@ -110,12 +98,12 @@ export function evaluateGtOverclock(
   const hatches = toGtHatches(uiState.energyHatches)
   const { totalEuPerTick, highestTier } = computePowerPool(hatches)
 
-  const baseTicks = secondsToTicks(baseDurationSeconds)
+  const baseTicks = Math.max(1, Math.floor(secondsToTicks(baseDurationSeconds)))
 
   const noop = (eu: number): GtOverclockResult => ({
     canStart: false, actualOverclockCount: 0,
     finalEuPerTick: eu, finalDurationScale: 1,
-    finalTicks: baseTicks, finalDurationSeconds: baseTicks / 20,
+    finalTicks: baseTicks, finalDurationSeconds: ticksToSeconds(baseTicks),
     totalEuPerTick, highestTier,
   })
 
@@ -147,42 +135,9 @@ export function evaluateGtOverclock(
   return {
     canStart: true, actualOverclockCount: oc,
     finalEuPerTick: eu, finalDurationScale: oc === 0 ? 1 : 1 / Math.pow(timeDivisor, oc),
-    finalTicks: ticks, finalDurationSeconds: ticks / 20,
+    finalTicks: ticks, finalDurationSeconds: ticksToSeconds(ticks),
     totalEuPerTick, highestTier,
   }
-}
-
-export function resolveRecipePowerProfile(
-  data: {
-    metadata?: Record<string, unknown>
-    active_modifiers?: ActiveModifier[]
-    base_inputs?: Resource[]
-    base_utility_inputs?: Resource[]
-    base_duration_seconds?: number
-  },
-  transformedInputs?: Resource[]
-): ResolvedPowerProfile {
-  const metadataEu = Number(data.metadata?.eu_per_tick ?? 0)
-  const utilityEu = Number(
-    data.base_utility_inputs?.find((r) => r.utility_type === 'energy:gt_eu')?.amount ?? 0
-  )
-  const baseEuPerTick = utilityEu > 0 ? utilityEu : metadataEu
-
-  const actualEuPerTick = transformedInputs
-    ? Math.max(0, Number(
-        transformedInputs.find((r) => r.utility_type === 'energy:gt_eu' && r.is_utility)?.amount ?? baseEuPerTick
-      ))
-    : Math.max(0, baseEuPerTick)
-
-  const ocInstance = data.active_modifiers?.find((m) => m.definition_id === 'gt_overclocker')
-  const hasOverclocker = Boolean(ocInstance)
-  let highestTier = 'N/A'
-  if (ocInstance) {
-    const hatches = normalizeGtHatches(ocInstance.uiState)
-    highestTier = computePowerPool(hatches).highestTier
-  }
-
-  return { hasPowerSetting: baseEuPerTick > 0 || hasOverclocker, baseEuPerTick, actualEuPerTick, highestTier }
 }
 
 export const gtOverclockerModifier: IMachineModifier = {
@@ -199,14 +154,12 @@ export const gtOverclockerModifier: IMachineModifier = {
   ],
   renderBody: OverclockerCardBody,
   evaluate: (ctx: PipelineContext, uiState: Record<string, unknown>) => {
-    const euInput = ctx.utilityInputs.find((r) => r.utility_type === 'energy:gt_eu')
-    const currentEuPerTick = euInput ? euInput.amount : 0
-
-    if (currentEuPerTick <= 0) return { ...ctx }
+    const baseEu = ctx.baseline.utilityInputs.find((r) => r.utility_type === 'energy:gt_eu')?.amount ?? 0
+    if (baseEu <= 0) return { ...ctx }
 
     const result = evaluateGtOverclock(
       { ...uiState, energyHatches: ctx.hardwareSpecs.energyHatches },
-      currentEuPerTick,
+      baseEu,
       ctx.durationSeconds
     )
 

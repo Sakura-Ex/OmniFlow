@@ -1,5 +1,5 @@
-import type { IMachineModifier, PipelineContext } from './types'
-import type { Resource } from '../types/types'
+import type { IMachineModifier, PipelineContext } from '../types'
+import type { Resource } from '../../types/types'
 import { computePowerPool, toGtHatches, toFiniteNumber } from './gtOverclocker'
 import { ParallelCardBody } from './gtParallelCard'
 
@@ -39,10 +39,8 @@ export const gtParallelModifier: IMachineModifier = {
   ],
   renderBody: ParallelCardBody,
   evaluate: (ctx: PipelineContext, uiState: Record<string, unknown>) => {
-    const euInput = ctx.utilityInputs.find((r) => r.utility_type === 'energy:gt_eu')
-    const baseEuPerTick = euInput ? euInput.amount : 0
-
-    const result = evaluateGtParallel({ ...uiState, energyHatches: ctx.hardwareSpecs.energyHatches }, baseEuPerTick)
+    const baseEu = ctx.baseline.utilityInputs.find((r) => r.utility_type === 'energy:gt_eu')?.amount ?? 0
+    const result = evaluateGtParallel({ ...uiState, energyHatches: ctx.hardwareSpecs.energyHatches }, baseEu)
 
     if (!result.canStart) {
       return { ...ctx, machineStopped: true, recipeOutputs: ctx.recipeOutputs.map((r) => ({ ...r, amount: 0 })) }

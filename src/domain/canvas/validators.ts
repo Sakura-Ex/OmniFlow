@@ -1,6 +1,6 @@
 import type { Node } from 'reactflow'
 import type { RecipeNodeData } from '../../types/recipe'
-import { ensureRecipeDataShape } from '../../modifiers/calculate'
+import { ensureRecipeDataShape } from '../../modifiers/normalize'
 import { resolveAutoMode } from '../../utils/canvasUtils'
 
 export function normalizeCanvasNode(node: Node): Node {

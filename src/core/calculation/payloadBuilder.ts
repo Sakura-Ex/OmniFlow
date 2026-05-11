@@ -1,7 +1,7 @@
 import type { Edge, Node } from 'reactflow'
 import type { RecipeNodeData, SourceNodeData, TargetNodeData } from '../../types/recipe'
 import type { ComputedNodePayload } from '../../types/types'
-import { runModifierPipeline, flattenForBackend } from '../../modifiers/calculate'
+import { runModifierPipeline, flattenForBackend } from '../../modifiers/pipeline'
 import { normalizeEndpointPorts } from '../../utils/endpointNorm'
 import { buildTopologicalNets } from './topology'
 import { isNetName, isVoidName, buildResourceId } from '../../utils/resourceIdentifier'
@@ -243,9 +243,9 @@ export function buildCalculationPayload(
         duration_ticks: 20,
         inputs: translatedInputs,
         outputs: translatedOutputs,
-        mode: shaped.mode,
+        mode: payload.duration_seconds <= 0 ? 'auto' : shaped.mode,
         is_auto: shaped.is_auto ?? true,
-        manual_machines: shaped.manual_machines,
+        manual_machines: payload.duration_seconds <= 0 ? undefined : shaped.manual_machines,
         metadata: shaped.metadata ?? {},
       },
     })

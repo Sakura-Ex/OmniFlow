@@ -1,31 +1,11 @@
 import type { RecipeNodeData, RecipePort, ActiveModifier } from '../types/recipe'
-import type { Resource, ResourceCategory, RoutingMode, ComputedNodePayload, NormalizedResource } from '../types/types'
+import type { Resource, ResourceCategory, RoutingMode } from '../types/types'
+import { ticksToSeconds } from '../utils/time'
+import { secondsToTicks } from '../utils/time'
 import { createDefaultModifierState } from './state'
 import { getModifierById } from './registry'
 import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArchetype } from '../data/archetypes/index'
-import { DEFAULT_RESOURCE_CATEGORIES } from '../registry/defaults'
-import type { PipelineContext } from './types'
-import { getCategory } from '../utils/resourceIdentifier'
 import { generateId } from '../utils/generateId'
-
-export const GAME_BASE_TPS = 20
-
-const MAX_INSTANT_RATE = 1e9
-const TICKS_PER_SECOND = GAME_BASE_TPS
-
-function deepCloneResources(resources: Resource[]): Resource[] {
-  return resources.map((res) => ({ ...res }))
-}
-
-export function ticksToSeconds(value: number | undefined): number {
-  const ticks = Number(value)
-  return Number.isFinite(ticks) ? ticks / TICKS_PER_SECOND : 0
-}
-
-export function secondsToTicks(value: number | undefined): number {
-  const seconds = Number(value)
-  return Number.isFinite(seconds) ? seconds * TICKS_PER_SECOND : 0
-}
 
 function normalizeDurationSeconds(data: RecipeNodeData): number {
   if (typeof data.base_duration_seconds === 'number') return Math.max(0, data.base_duration_seconds)
@@ -110,13 +90,11 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
   const base_duration_seconds = normalizeDurationSeconds(data)
   const archetype = getMachineArchetype(archetype_id)
 
-  // 迁移旧格式（string[]）到新格式（ActiveModifier[]）
   let userModifiers: ActiveModifier[] = (() => {
     const raw = data.active_modifiers ?? []
     if (raw.length === 0) return []
     if (typeof raw[0] === 'object' && 'instance_id' in raw[0]) return raw as ActiveModifier[]
 
-    // 旧 string[] 格式 → 转换为 ActiveModifier[]
     const oldStates = data.modifier_states ?? {}
     return (raw as unknown as string[]).map((defId, idx) => {
       const state = oldStates[String(idx)] ?? oldStates[defId] ?? createDefaultModifierState(defId)
@@ -142,7 +120,6 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
     return allowed.includes(archetype_id)
   })
 
-  // 根据 max_placements 截断超出的重复条目
   const occurrenceCount = new Map<string, number>()
   active_modifiers = active_modifiers.filter((m) => {
     const modifier = getModifierById(m.definition_id)
@@ -171,93 +148,4 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
     active_modifiers,
     hardware_specs,
   }
-}
-
-export function normalizeRate(res: Resource, dur: number): number {
-  const probability = res.consumable_probability ?? 1
-  if (res.consumable === false || probability === 0) return 0
-  const mMode = res.time_base ?? 'per_cycle'
-  const baseRate = mMode === 'rate_per_tick'
-    ? res.amount * GAME_BASE_TPS
-    : mMode === 'rate_per_sec'
-      ? res.amount
-      : dur > 0 ? res.amount / dur : MAX_INSTANT_RATE
-  return baseRate * probability
-}
-
-export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayload {
-  const normalized = ensureRecipeDataShape(rawData)
-  let ctx: PipelineContext = {
-    recipeInputs: deepCloneResources(normalized.base_inputs ?? []),
-    recipeOutputs: deepCloneResources(normalized.base_outputs ?? []),
-    utilityInputs: deepCloneResources(normalized.base_utility_inputs ?? []),
-    utilityOutputs: deepCloneResources(normalized.base_utility_outputs ?? []),
-    durationSeconds: normalized.base_duration_seconds ?? 0,
-    machineStopped: false,
-    hardwareSpecs: normalized.hardware_specs ?? {},
-  }
-
-  for (const inst of normalized.active_modifiers ?? []) {
-    const modifier = getModifierById(inst.definition_id)
-    if (!modifier) continue
-
-    ctx = modifier.evaluate(ctx, inst.uiState)
-  }
-
-  const dur = Math.max(0.05, ctx.durationSeconds)
-
-  const toNormalized = (resources: Resource[]): NormalizedResource[] =>
-    resources.map((res) => ({
-      category: res.category,
-      id: res.id,
-      amount: normalizeRate(res, dur),
-      time_base: res.time_base ?? 'per_cycle',
-      consumable: res.consumable,
-      consumable_probability: res.consumable_probability,
-      probability: res.probability,
-      routing_mode: res.routing_mode,
-      routing_locked: res.routing_locked,
-      is_utility: Boolean(res.is_utility),
-      utility_type: res.utility_type,
-      amount_mutable: res.amount_mutable,
-      _uid: res._uid,
-    }))
-
-  return {
-    recipe_inputs: toNormalized(ctx.recipeInputs),
-    recipe_outputs: toNormalized(ctx.recipeOutputs),
-    utility_inputs: toNormalized(ctx.utilityInputs),
-    utility_outputs: toNormalized(ctx.utilityOutputs),
-    duration_seconds: dur,
-  }
-}
-
-export function flattenForBackend(payload: ComputedNodePayload): {
-  inputs: Record<string, number>
-  outputs: Record<string, number>
-} {
-  const inputs: Record<string, number> = {}
-  const outputs: Record<string, number> = {}
-
-  const knownCategories = new Set(DEFAULT_RESOURCE_CATEGORIES.map((c) => c.id))
-
-  const isUnknownResource = (category: string): boolean => {
-    const dimensionId = category.includes(':') ? getCategory(category) : category
-    return !knownCategories.has(dimensionId)
-  }
-
-  for (const r of [...payload.recipe_inputs, ...payload.utility_inputs]) {
-    if (r.consumable === false || r.consumable_probability === 0) continue
-    if (isUnknownResource(r.category)) continue
-    const key = `${r.category}:${r.id}`
-    inputs[key] = (inputs[key] ?? 0) + r.amount
-  }
-  for (const r of [...payload.recipe_outputs, ...payload.utility_outputs]) {
-    if (r.consumable === false || r.consumable_probability === 0) continue
-    if (isUnknownResource(r.category)) continue
-    const key = `${r.category}:${r.id}`
-    outputs[key] = (outputs[key] ?? 0) + r.amount
-  }
-
-  return { inputs, outputs }
 }

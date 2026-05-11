@@ -36,6 +36,7 @@ type MenuBarProps = {
   handleFitView: () => void
   handleCalculate: () => Promise<void>
   onOpenRegistry: () => void
+  onOpenTpsSettings: () => void
 }
 
 export function MenuBar({
@@ -69,6 +70,7 @@ export function MenuBar({
   handleFitView,
   handleCalculate,
   onOpenRegistry,
+  onOpenTpsSettings,
 }: MenuBarProps) {
   return (
     <div className="menu-bar" ref={menuRef}>
@@ -205,6 +207,13 @@ export function MenuBar({
           onClick={() => handleMenuAction(onOpenRegistry)}
         >
           ⚙️ 全局资源字典
+        </button>
+        <button
+          className="menu-button menu-button--theme"
+          type="button"
+          onClick={() => handleMenuAction(onOpenTpsSettings)}
+        >
+          ⏱️ TPS 设置
         </button>
       </div>
 

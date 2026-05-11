@@ -11,6 +11,7 @@ import { RecipeEditorModal } from './components/RecipeEditorModal'
 import { EndpointEditorModal } from './components/EndpointEditorModal'
 import { SystemHUD } from './components/SystemHUD'
 import { ResourceRegistryPanel } from './components/ResourceRegistryPanel'
+import { TpsSettingsPanel } from './components/TpsSettingsPanel'
 import { RecipeEditorProvider } from './RecipeEditorContext'
 import { EndpointEditorProvider } from './EndpointEditorContext'
 import { NodeDataProvider } from './NodeDataContext'
@@ -64,6 +65,7 @@ export default function App() {
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const { theme, toggleTheme } = useTheme()
   const [showRegistry, setShowRegistry] = useState(false)
+  const [showTpsSettings, setShowTpsSettings] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const reactFlowRef = useRef<ReactFlowInstance | null>(null)
   const menuRef = useRef<HTMLDivElement | null>(null)
@@ -229,6 +231,7 @@ export default function App() {
           onSave={handleSaveEndpoint}
         />
         {showRegistry && <ResourceRegistryPanel onClose={() => setShowRegistry(false)} />}
+        {showTpsSettings && <TpsSettingsPanel onClose={() => setShowTpsSettings(false)} />}
 
         {error && (
           <div className="toast-error" onClick={dismissError}>
@@ -281,6 +284,7 @@ export default function App() {
           handleFitView={handleFitView}
           handleCalculate={handleCalculate}
           onOpenRegistry={() => setShowRegistry(true)}
+          onOpenTpsSettings={() => setShowTpsSettings(true)}
         />
 
         <RecipeEditorProvider value={{ onEdit: handleEditNode, onAutoFill: autoFillEndpoints }}>

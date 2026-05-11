@@ -1,8 +1,8 @@
 import type { IMachineModifier } from './types'
 import { baseChassisEfficiencyModifier } from './baseChassisEfficiency'
 import { chanceOutputModifier } from './chanceOutput'
-import { gtOverclockerModifier } from './gtOverclocker'
-import { gtParallelModifier } from './gtParallel'
+import { gtOverclockerModifier } from './Gregtech/gtOverclocker'
+import { gtParallelModifier } from './Gregtech/gtParallel'
 import { energyMultiplierModifier } from './energyMultiplier'
 import { timeMultiplierModifier } from './timeMultiplier'
 
