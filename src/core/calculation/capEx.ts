@@ -20,7 +20,7 @@ export function computeCapexList(
 
     for (const r of allRes) {
       if (
-        (r.consumable !== false && r.consumable_probability !== 0) ||
+        (r.consumable !== false && r.probability !== 0) ||
         !r.id
       )
         continue

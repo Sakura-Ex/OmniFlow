@@ -555,6 +555,9 @@ export function SettingsUI(props: SettingsUIProps) {
                     isFixedModifier={isFixedModifier}
                     onRemove={() => removeModifier(m.instance_id)}
                     onChange={(key, value) => setModifierValue(m.instance_id, key, value)}
+                    recipeInputs={baseInputs}
+                    recipeOutputs={baseOutputs}
+                    hardwareSpecs={hardwareSpecs}
                   />
                 </SortableModifierCard>
               )
@@ -579,6 +582,9 @@ export function SettingsUI(props: SettingsUIProps) {
                     onRemove={() => {}}
                     onChange={() => {}}
                     readOnly
+                    recipeInputs={baseInputs}
+                    recipeOutputs={baseOutputs}
+                    hardwareSpecs={hardwareSpecs}
                   />
                 </div>
               )

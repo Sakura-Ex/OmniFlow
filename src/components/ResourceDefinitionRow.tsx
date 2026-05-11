@@ -86,7 +86,6 @@ type RowItem = {
   routing_mode?: string
   routing_locked?: boolean
   consumable?: boolean
-  consumable_probability?: number
   probability?: number
   is_utility?: boolean
   is_utility_output?: boolean
@@ -265,13 +264,13 @@ export function ResourceDefinitionRow({
                   min={0}
                   max={1}
                   step={0.01}
-                   disabled={probabilityLocked}
-                  value={item.consumable === false ? 0 : (item.consumable_probability ?? 1)}
+                  disabled={probabilityLocked}
+                  value={item.consumable === false ? 0 : (item.probability ?? 1)}
                   onChange={(e) => {
                     const v = Math.max(0, Math.min(1, Number(e.target.value) || 0))
                     onUpdate(index, {
                       consumable: v === 0 ? false : undefined,
-                      consumable_probability: v,
+                      probability: v,
                     })
                   }}
                 />

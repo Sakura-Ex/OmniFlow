@@ -10,7 +10,6 @@ export interface Resource {
   amount: number
   time_base?: TimeBase
   consumable?: boolean
-  consumable_probability?: number
   probability?: number
   routing_mode?: RoutingMode
   routing_locked?: boolean
@@ -29,7 +28,6 @@ export interface NormalizedResource {
   amount: number
   time_base?: TimeBase
   consumable?: boolean
-  consumable_probability?: number
   probability?: number
   routing_mode?: RoutingMode
   routing_locked?: boolean

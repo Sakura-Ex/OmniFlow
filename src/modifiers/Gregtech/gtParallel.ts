@@ -50,7 +50,7 @@ export const gtParallelModifier: IMachineModifier = {
 
     const p = result.actualParallel
     const mul = (r: Resource) =>
-      r.consumable === false || r.consumable_probability === 0 ? { ...r } : { ...r, amount: r.amount * p }
+      r.consumable === false || r.probability === 0 ? { ...r } : { ...r, amount: r.amount * p }
 
     return {
       ...ctx,

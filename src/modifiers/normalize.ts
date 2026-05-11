@@ -33,6 +33,7 @@ export function toResource(port: Partial<RecipePort> | Partial<Resource>): Resou
     id: String((port as Partial<Resource>).id ?? ''),
     amount: normalizeAmount((port as Partial<Resource>).amount),
     time_base: (port as Partial<Resource>).time_base,
+    consumable: typeof (port as Partial<Resource>).consumable === 'boolean' ? (port as Partial<Resource>).consumable : undefined,
     probability: typeof (port as Partial<Resource>).probability === 'number' ? (port as Partial<Resource>).probability : undefined,
     routing_mode,
     routing_locked: Boolean((port as Partial<Resource>).routing_locked),

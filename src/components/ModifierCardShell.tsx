@@ -1,5 +1,6 @@
 import type { ReactNode, FC } from 'react'
 import type { IMachineModifier, ModifierCardRenderProps } from '../modifiers/types'
+import type { Resource } from '../types/types'
 
 interface ModifierCardShellProps {
   modifier: IMachineModifier
@@ -8,6 +9,9 @@ interface ModifierCardShellProps {
   onRemove: () => void
   onChange: (key: string, value: unknown) => void
   readOnly?: boolean
+  recipeInputs?: Resource[]
+  recipeOutputs?: Resource[]
+  hardwareSpecs?: Record<string, unknown>
 }
 
 const Field: FC<{ label: string; children: ReactNode }> = ({ label, children }) => (
@@ -56,8 +60,11 @@ export function ModifierCardShell({
   onRemove,
   onChange,
   readOnly,
+  recipeInputs,
+  recipeOutputs,
+  hardwareSpecs,
 }: ModifierCardShellProps) {
-  const renderProps: ModifierCardRenderProps = { state, onChange, readOnly, Field, Toggle, Select, Slider, Input }
+  const renderProps: ModifierCardRenderProps = { state, onChange, readOnly, Field, Toggle, Select, Slider, Input, recipeInputs, recipeOutputs, hardwareSpecs }
 
   if (modifier.renderBody) {
     return (

@@ -41,6 +41,9 @@ export interface ModifierCardRenderProps {
   Select: FC<{ label: string; value: string; options: string[]; onChange: (v: string) => void }>
   Slider: FC<{ label: string; value: number; min: number; max: number; onChange: (v: number) => void }>
   Input: FC<{ label: string; value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number }>
+  recipeInputs?: Resource[]
+  recipeOutputs?: Resource[]
+  hardwareSpecs?: Record<string, unknown>
 }
 
 export interface IMachineModifier {

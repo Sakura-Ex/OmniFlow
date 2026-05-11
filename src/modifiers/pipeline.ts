@@ -16,7 +16,7 @@ function deepCloneResources(resources: Resource[]): Resource[] {
 }
 
 export function normalizeRate(res: Resource, dur: number): number {
-  const probability = res.consumable_probability ?? 1
+  const probability = res.probability ?? 1
   if (res.consumable === false || probability === 0) return 0
   const mMode = res.time_base ?? 'per_cycle'
   const baseRate = mMode === 'rate_per_tick'
@@ -70,7 +70,6 @@ export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayloa
       amount: normalizeRate(res, dur),
       time_base: res.time_base ?? 'per_cycle',
       consumable: res.consumable,
-      consumable_probability: res.consumable_probability,
       probability: res.probability,
       routing_mode: res.routing_mode,
       routing_locked: res.routing_locked,
@@ -104,13 +103,13 @@ export function flattenForBackend(payload: ComputedNodePayload): {
   }
 
   for (const r of [...payload.recipe_inputs, ...payload.utility_inputs]) {
-    if (r.consumable === false || r.consumable_probability === 0) continue
+    if (r.consumable === false || r.probability === 0) continue
     if (isUnknownResource(r.category)) continue
     const key = `${r.category}:${r.id}`
     inputs[key] = (inputs[key] ?? 0) + r.amount
   }
   for (const r of [...payload.recipe_outputs, ...payload.utility_outputs]) {
-    if (r.consumable === false || r.consumable_probability === 0) continue
+    if (r.probability === 0) continue
     if (isUnknownResource(r.category)) continue
     const key = `${r.category}:${r.id}`
     outputs[key] = (outputs[key] ?? 0) + r.amount

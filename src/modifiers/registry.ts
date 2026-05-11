@@ -3,6 +3,7 @@ import { baseChassisEfficiencyModifier } from './baseChassisEfficiency'
 import { chanceOutputModifier } from './chanceOutput'
 import { gtOverclockerModifier } from './Gregtech/gtOverclocker'
 import { gtParallelModifier } from './Gregtech/gtParallel'
+import { gtProbabilityOutputModifier } from './Gregtech/gtProbabilityOutput'
 import { energyMultiplierModifier } from './energyMultiplier'
 import { timeMultiplierModifier } from './timeMultiplier'
 
@@ -11,6 +12,7 @@ export const modifierRegistry: Record<string, IMachineModifier> = {
   [chanceOutputModifier.id]: chanceOutputModifier,
   [gtOverclockerModifier.id]: gtOverclockerModifier,
   [gtParallelModifier.id]: gtParallelModifier,
+  [gtProbabilityOutputModifier.id]: gtProbabilityOutputModifier,
   [energyMultiplierModifier.id]: energyMultiplierModifier,
   [timeMultiplierModifier.id]: timeMultiplierModifier,
 }
