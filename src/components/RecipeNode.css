@@ -28,10 +28,11 @@
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18), 0 14px 30px rgba(2, 6, 23, 0.3);
 }
 
-/* 实装标记 → 草绿色边框（仅未选中时） */
+/* 实装标记 → 草绿色边框 + 70% 透明度（仅未选中时） */
 .react-flow__node:not(.selected) .recipe-node--implemented {
   border-color: rgba(74, 222, 128, 0.55);
-  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.14), 0 14px 30px rgba(2, 6, 23, 0.3);
+  /* box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.14), 0 14px 30px rgba(2, 6, 23, 0.3); */
+  opacity: 0.4;
 }
 
 .react-flow__node.selected .recipe-node {
