@@ -8,6 +8,7 @@ type UseCanvasOperationsParams = {
   setNodes: (nodes: Node[]) => void
   setEdges: (edges: Edge[]) => void
   takeSnapshot: () => void
+  getViewportCenter: () => { x: number; y: number }
 }
 
 function makeId() {
@@ -18,6 +19,7 @@ export function useCanvasOperations({
   setNodes,
   setEdges,
   takeSnapshot,
+  getViewportCenter,
 }: UseCanvasOperationsParams) {
   const isValidConnection = useCallback((connection: Connection) => {
     return connection.sourceHandle === connection.targetHandle
@@ -46,18 +48,20 @@ export function useCanvasOperations({
   const handleAddSource = useCallback(() => {
     takeSnapshot()
     const id = makeId()
+    const center = getViewportCenter()
     const newNode: Node = {
       id,
       type: 'sourceNode',
-      position: { x: 320 + Math.random() * 50, y: 180 + Math.random() * 50 },
+      position: { x: center.x + (Math.random() - 0.5) * 100, y: center.y + (Math.random() - 0.5) * 100 },
       data: { id: `item_${id.slice(-4)}`, label: `item_${id.slice(-4)}`, amount: 100, is_auto: true, category: 'item' },
     }
     useCanvasStore.getState().addNode(newNode)
-  }, [takeSnapshot])
+  }, [takeSnapshot, getViewportCenter])
 
   const handleAddFurnace = useCallback(() => {
     takeSnapshot()
     const id = makeId()
+    const center = getViewportCenter()
     const nodeData: RecipeNodeData = {
       recipe_id: `recipe_${id}`,
       machine_name: 'Generic Machine',
@@ -71,15 +75,16 @@ export function useCanvasOperations({
     const newNode: Node<RecipeNodeData> = {
       id,
       type: 'recipeNode',
-      position: { x: 320 + Math.random() * 50, y: 180 + Math.random() * 50 },
+      position: { x: center.x + (Math.random() - 0.5) * 100, y: center.y + (Math.random() - 0.5) * 100 },
       data: nodeData,
     }
     useCanvasStore.getState().addRecipeNode(id, nodeData, newNode)
-  }, [takeSnapshot])
+  }, [takeSnapshot, getViewportCenter])
 
   const handleAddCustomRecipe = useCallback(() => {
     takeSnapshot()
     const id = makeId()
+    const center = getViewportCenter()
     const nodeData: RecipeNodeData = {
       recipe_id: `custom_${id}`,
       machine_name: 'Custom Machine',
@@ -93,23 +98,24 @@ export function useCanvasOperations({
     const newNode: Node<RecipeNodeData> = {
       id,
       type: 'recipeNode',
-      position: { x: 320 + Math.random() * 50, y: 180 + Math.random() * 50 },
+      position: { x: center.x + (Math.random() - 0.5) * 100, y: center.y + (Math.random() - 0.5) * 100 },
       data: nodeData,
     }
     useCanvasStore.getState().addRecipeNode(id, nodeData, newNode)
-  }, [takeSnapshot])
+  }, [takeSnapshot, getViewportCenter])
 
   const handleAddTarget = useCallback(() => {
     takeSnapshot()
     const id = makeId()
+    const center = getViewportCenter()
     const newNode: Node = {
       id,
       type: 'targetNode',
-      position: { x: 320 + Math.random() * 50, y: 180 + Math.random() * 50 },
+      position: { x: center.x + (Math.random() - 0.5) * 100, y: center.y + (Math.random() - 0.5) * 100 },
       data: { id: `demand_${id.slice(-4)}`, label: `demand_${id.slice(-4)}`, amount: 100, is_auto: true, category: 'item' },
     }
     useCanvasStore.getState().addNode(newNode)
-  }, [takeSnapshot])
+  }, [takeSnapshot, getViewportCenter])
 
   const handleClear = useCallback(() => {
     takeSnapshot()
