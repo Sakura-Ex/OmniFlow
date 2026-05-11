@@ -89,10 +89,14 @@ type GtOverclockResult = {
   highestTier: string
 }
 
-/** 逐级检查功率与 ticks 约束，返回最大可行超频结果 */
+/** 逐级检查功率与 ticks 约束，返回最大可行超频结果
+ * @param baseEuPerTick 配方原始电压（用于级别判定，取自 baseline，不受 energyMultiplier 等影响）
+ * @param workingEuPerTick 管线当前电压（用于超频算力与容量校验，已叠加 energyMultiplier 等修饰器）
+ */
 export function evaluateGtOverclock(
   uiState: Record<string, unknown>,
-  currentEuPerTick: number,
+  baseEuPerTick: number,
+  workingEuPerTick: number,
   baseDurationSeconds: number
 ): GtOverclockResult {
   const hatches = toGtHatches(uiState.energyHatches)
@@ -107,20 +111,20 @@ export function evaluateGtOverclock(
     totalEuPerTick, highestTier,
   })
 
-  if (currentEuPerTick <= 0 || totalEuPerTick <= 0) return noop(currentEuPerTick)
+  if (workingEuPerTick <= 0 || totalEuPerTick <= 0) return noop(workingEuPerTick)
 
-  if (tierIndex('ULV') < 0 /* tiers not loaded */) return noop(currentEuPerTick)
+  if (tierIndex('ULV') < 0) return noop(workingEuPerTick)
 
   const recipeTierIdx = tierIndex(
-    GT_VOLTAGE_TIERS.find((t) => t.euPerAmp >= currentEuPerTick)?.id ?? ''
+    GT_VOLTAGE_TIERS.find((t) => t.euPerAmp >= baseEuPerTick)?.id ?? ''
   )
   const maxTierIdx = tierIndex(highestTier)
 
-  if (recipeTierIdx > maxTierIdx || currentEuPerTick > totalEuPerTick) return noop(currentEuPerTick)
+  if (recipeTierIdx > maxTierIdx || workingEuPerTick > totalEuPerTick) return noop(workingEuPerTick)
 
   const perfect = Boolean(uiState.perfectOverclock)
   const timeDivisor = perfect ? 4 : 2
-  let eu = currentEuPerTick
+  let eu = workingEuPerTick
   let ticks = baseTicks
   let oc = 0
 
@@ -155,11 +159,13 @@ export const gtOverclockerModifier: IMachineModifier = {
   renderBody: OverclockerCardBody,
   evaluate: (ctx: PipelineContext, uiState: Record<string, unknown>) => {
     const baseEu = ctx.baseline.utilityInputs.find((r) => r.utility_type === 'energy:gt_eu')?.amount ?? 0
+    const workingEu = ctx.utilityInputs.find((r) => r.utility_type === 'energy:gt_eu')?.amount ?? 0
     if (baseEu <= 0) return { ...ctx }
 
     const result = evaluateGtOverclock(
       { ...uiState, energyHatches: ctx.hardwareSpecs.energyHatches },
       baseEu,
+      workingEu,
       ctx.durationSeconds
     )
 
