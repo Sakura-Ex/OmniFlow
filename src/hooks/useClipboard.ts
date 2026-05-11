@@ -46,8 +46,17 @@ export function useClipboard({
   const buildCopyPayload = useCallback((): ClipboardPayload | null => {
     const { selectedNodes, selectedEdges } = collectSelection()
     if (selectedNodes.length === 0) return null
+
+    const recipes = useRecipeStore.getState().recipes
+    const enrichedNodes = selectedNodes.map((node) => {
+      if (node.type === 'recipeNode' && recipes[node.id]) {
+        return { ...node, data: recipes[node.id] }
+      }
+      return { ...node }
+    })
+
     return {
-      nodes: stripState(JSON.parse(JSON.stringify(selectedNodes))),
+      nodes: stripState(JSON.parse(JSON.stringify(enrichedNodes))),
       edges: stripState(JSON.parse(JSON.stringify(selectedEdges))),
     }
   }, [collectSelection])
