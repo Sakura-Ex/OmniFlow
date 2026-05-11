@@ -50,6 +50,25 @@
   pointer-events: auto;
 }
 
+.system-hud__right-col {
+  position: absolute;
+  right: 24px;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 260px;
+  pointer-events: none;
+  max-height: 70vh;
+}
+
+.system-hud__right-col .system-hud__panel {
+  position: static;
+  pointer-events: auto;
+  max-height: 35vh;
+  overflow-y: auto;
+}
+
 .system-hud__title {
   font-size: 12px;
   font-weight: 700;

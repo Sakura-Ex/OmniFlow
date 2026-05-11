@@ -104,7 +104,7 @@ class GraphEdge(BaseModel):
 class CalculateRequest(BaseModel):
     nodes: List[GraphNode] = Field(..., description="前端传递的所有工艺图节点")
     edges: List[GraphEdge] = Field(..., description="前端传递的所有工艺图连线")
-    equality_items: List[str] = Field(default_factory=list, description="需要等式约束（sum=0）的物品 ID 列表。前端通过 Edge 连通性判定：产出端有下游连线的物品进入此列表")
+    equality_items: List[str] = Field(default_factory=list, description="[已弃用] 统一使用 spill 软约束，此字段保留以兼容旧请求")
 
 
 # =====================================================================
@@ -213,7 +213,8 @@ async def calculate_flow(request: CalculateRequest):
     # 步骤 2.5：识别溢流物品，扩展矩阵维度（白皮书 §7.2.2）
     # Void_ 端口 = 直接排空，不进入守恒约束，不分配溢流变量
     # 注意：必须在写入所有节点系数之后构建，否则无法检测 source/target 的正系数
-    equality_items_set = set(request.equality_items)
+    # 统一使用 spill 软约束：所有非 Void 物品走 Ax - v_k = 0
+    # Target 需求由 bounds 下界保证，equality_items 已移除
 
     spill_items: List[str] = []
     spill_index: Dict[str, int] = {}
@@ -221,7 +222,7 @@ async def calculate_flow(request: CalculateRequest):
         if is_void_name(item_id):
             continue
         row = item_rows[item_id]
-        if item_id not in equality_items_set and bool(np.any(row > 1e-12)):
+        if bool(np.any(row > 1e-12)):
             spill_items.append(item_id)
             spill_index[item_id] = len(spill_items) - 1
 
@@ -233,8 +234,6 @@ async def calculate_flow(request: CalculateRequest):
         item_rows[item_id] = np.append(item_rows[item_id], np.zeros(spill_count, dtype=float))
     for spill_item in spill_items:
         item_rows[spill_item][spill_start + spill_index[spill_item]] = -1.0
-
-    _spill_m = 10000.0 * max(1, recipe_count)
 
     # 步骤 3：构建目标函数 c 与变量边界 bounds
     c = np.zeros(total_vars, dtype=float)
@@ -267,6 +266,10 @@ async def calculate_flow(request: CalculateRequest):
             c[sink["col"]] = 0.001
             bounds.append((0, None))
 
+    # 动态大 M（白皮书 §7.3.4）：溢流惩罚 = max(1,000,000, max(|c_user|) × 10)
+    user_weights = [abs(c[col]) for col in range(spill_start) if abs(c[col]) > 0]
+    _spill_m = max(1_000_000, (max(user_weights) * 10) if user_weights else 1)
+
     for i in range(spill_count):
         c[spill_start + i] = _spill_m
         bounds.append((0, None))
@@ -282,10 +285,7 @@ async def calculate_flow(request: CalculateRequest):
         row = item_rows[item_id]
         if is_void_name(item_id):
             continue
-        if item_id in equality_items_set:
-            A_eq_rows.append(row.tolist())
-            b_eq.append(0.0)
-        elif item_id in spill_index:
+        if item_id in spill_index:
             A_eq_rows.append(row.tolist())
             b_eq.append(0.0)
 
@@ -310,7 +310,6 @@ async def calculate_flow(request: CalculateRequest):
         "spill_items": spill_items,
         "items": items,
         "edges": [(e.source, e.target, e.sourceHandle, e.targetHandle) for e in edges],
-        "equality_items": list(equality_items_set),
         "vars": [],
         "constraints": [],
     }
@@ -340,7 +339,6 @@ async def calculate_flow(request: CalculateRequest):
         _debug["constraints"].append({
             "item": item_id,
             "row": [round(float(v), 6) for v in row.tolist()],
-            "equality": item_id in equality_items_set,
             "spill": item_id in spill_index,
             "has_pos": bool(np.any(row > 1e-12)),
         })
@@ -534,14 +532,15 @@ async def debug_matrix(request: CalculateRequest):
     # 步骤 2.5：识别溢流物品（§7.2.2）
     # Void_ 端口 = 直接排空，不进入守恒约束，不分配溢流变量
     # 注意：必须在写入所有节点系数之后构建，否则无法检测 source/target 的正系数
-    equality_items_set = set(request.equality_items)
+    # 统一使用 spill 软约束：所有非 Void 物品走 Ax - v_k = 0
+
     spill_items2: List[str] = []
     spill_index2: Dict[str, int] = {}
     for item_id in items:
         if is_void_name(item_id):
             continue
         row = item_rows[item_id]
-        if item_id not in equality_items_set and bool(np.any(row > 1e-12)):
+        if bool(np.any(row > 1e-12)):
             spill_items2.append(item_id)
             spill_index2[item_id] = len(spill_items2) - 1
 
@@ -553,8 +552,6 @@ async def debug_matrix(request: CalculateRequest):
         item_rows[item_id] = np.append(item_rows[item_id], np.zeros(spill_count2, dtype=float))
     for spill_item in spill_items2:
         item_rows[spill_item][spill_start2 + spill_index2[spill_item]] = -1.0
-
-    _spill_m2 = 10000.0 * max(1, recipe_count)
 
     c = np.zeros(total_vars, dtype=float)
     bounds: List[tuple[float, Optional[float]]] = []
@@ -586,6 +583,10 @@ async def debug_matrix(request: CalculateRequest):
             c[sink["col"]] = 0.001
             bounds.append((0, None))
 
+    # 动态大 M（白皮书 §7.3.4）
+    user_weights2 = [abs(c[col]) for col in range(spill_start2) if abs(c[col]) > 0]
+    _spill_m2 = max(1_000_000, (max(user_weights2) * 10) if user_weights2 else 1)
+
     for i in range(spill_count2):
         c[spill_start2 + i] = _spill_m2
         bounds.append((0, None))
@@ -602,15 +603,10 @@ async def debug_matrix(request: CalculateRequest):
         detail = {
             "item_id": item_id,
             "row": [round(v, 6) for v in row.tolist()],
-            "in_equality": item_id in equality_items_set,
             "has_positive": bool(np.any(row > 1e-12)),
             "has_negative": bool(np.any(row < -1e-12)),
         }
-        if item_id in equality_items_set:
-            A_eq_rows.append(row.tolist())
-            b_eq.append(0.0)
-            detail["constraint"] = "hard_eq (Target)"
-        elif is_void_name(item_id):
+        if is_void_name(item_id):
             detail["constraint"] = "skip (Void — 直接排空)"
         elif item_id in spill_index2:
             A_eq_rows.append(row.tolist())
@@ -647,7 +643,6 @@ async def debug_matrix(request: CalculateRequest):
             {"source": e.source, "target": e.target, "sourceHandle": e.sourceHandle, "targetHandle": e.targetHandle}
             for e in edges
         ],
-        "equality_items_received": request.equality_items,
         "items": items,
         "constraint_details": constraint_details,
         "equality_rows_count": len(A_eq_rows),
