@@ -173,7 +173,10 @@ export const gtOverclockerModifier: IMachineModifier = {
       return { ...ctx, machineStopped: true, recipeOutputs: ctx.recipeOutputs.map((r) => ({ ...r, amount: 0 })) }
     }
 
-    if (result.actualOverclockCount === 0) return { ...ctx }
+    if (result.actualOverclockCount === 0) return {
+      ...ctx,
+      durationSeconds: result.finalDurationSeconds,
+    }
 
     return {
       ...ctx,

@@ -1,10 +1,10 @@
 import type { ResourceCategoryDef, UnitOverride } from './types'
 
 export const DEFAULT_RESOURCE_CATEGORIES: ResourceCategoryDef[] = [
-  { id: 'item',   displayName: '物品', base_unit: '个', themeColor: '#e5e7eb', preferred_time_base: 'rate_per_sec' },
-  { id: 'fluid',  displayName: '流体', base_unit: 'mB', themeColor: '#4ddcff', preferred_time_base: 'rate_per_sec' },
+  { id: 'item',   displayName: '物品', base_unit: '个', themeColor: '#e5e7eb', preferred_time_base: 'per_cycle' },
+  { id: 'fluid',  displayName: '流体', base_unit: 'mB', themeColor: '#4ddcff', preferred_time_base: 'per_cycle' },
   { id: 'energy', displayName: '能源', base_unit: 'EU', themeColor: '#f59e0b', preferred_time_base: 'rate_per_tick' },
-  { id: 'stress', displayName: '应力', base_unit: 'su', themeColor: '#c084fc', preferred_time_base: 'rate_per_sec' },
+  { id: 'stress', displayName: '应力', base_unit: 'su', themeColor: '#c084fc', preferred_time_base: 'per_cycle' },
   { id: 'heat',   displayName: '热能', base_unit: 'HU', themeColor: '#fb7185', preferred_time_base: 'rate_per_tick' },
 ]
 
