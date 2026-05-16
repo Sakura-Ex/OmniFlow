@@ -45,11 +45,13 @@ export function IntermediateProductsPanel({
   systemOutputs,
 }: IntermediateProductsPanelProps) {
   const [collapsed, setCollapsed] = useState(false)
+  const recipes = useRecipeStore((state) => state.recipes)
+  const nodes = useCanvasStore((state) => state.nodes)
 
   const intermediateItems = useMemo(() => {
     const allCanvasItems = new Set<string>()
 
-    for (const recipe of Object.values(useRecipeStore.getState().recipes)) {
+    for (const recipe of Object.values(recipes)) {
       for (const r of recipe.base_inputs ?? []) {
         if (r.id) allCanvasItems.add(buildResourceId(r.category, r.id))
       }
@@ -64,7 +66,7 @@ export function IntermediateProductsPanel({
       }
     }
 
-    for (const node of useCanvasStore.getState().nodes) {
+    for (const node of nodes) {
       if (node.type !== 'sourceNode' && node.type !== 'targetNode') continue
       const ports = normalizeEndpointPorts(node.data as SourceNodeData | TargetNodeData)
       for (const port of ports) {
@@ -87,7 +89,7 @@ export function IntermediateProductsPanel({
       }
     }
     return entries.sort()
-  }, [systemInputs, systemOutputs])
+  }, [recipes, nodes, systemInputs, systemOutputs])
 
   if (intermediateItems.length === 0) return null
 

@@ -209,9 +209,12 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
         </div>
         <div className="recipe-node__header-actions">
           <button
+            type="button"
             className={`recipe-node__implement-btn nodrag${isImplemented ? ' is-active' : ''}`}
             onClick={handleToggleImplemented}
             title={isImplemented ? '已实装' : '未实装'}
+            aria-label="切换实装状态"
+            aria-pressed={isImplemented}
           >
             ✅
           </button>
