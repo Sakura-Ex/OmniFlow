@@ -28,6 +28,13 @@
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18), 0 14px 30px rgba(2, 6, 23, 0.3);
 }
 
+/* 实装标记 → 草绿色边框 + 70% 透明度（仅未选中时） */
+.react-flow__node:not(.selected) .recipe-node--implemented {
+  border-color: rgba(74, 222, 128, 0.55);
+  /* box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.14), 0 14px 30px rgba(2, 6, 23, 0.3); */
+  opacity: 0.4;
+}
+
 .react-flow__node.selected .recipe-node {
   border-color: #68e1fd;
   box-shadow: 0 16px 34px rgba(2, 6, 23, 0.34);
@@ -145,6 +152,33 @@
   align-items: center;
   justify-content: center;
   font-size: 12px;
+}
+
+.recipe-node__implement-btn {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(148, 163, 184, 0.06);
+  color: rgba(226, 232, 240, 0.4);
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.recipe-node__implement-btn:hover {
+  border-color: rgba(74, 222, 128, 0.35);
+  color: rgba(134, 239, 172, 0.8);
+}
+
+.recipe-node__implement-btn.is-active {
+  background: rgba(74, 222, 128, 0.16);
+  border-color: rgba(74, 222, 128, 0.5);
+  color: #4ade80;
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.12);
 }
 
 .recipe-node__edit-btn:hover {

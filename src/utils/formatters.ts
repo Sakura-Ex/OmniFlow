@@ -10,7 +10,7 @@ function formatWithSpaceSeparator(num: number, maxDecimals: number): string {
 }
 
 export function formatMachineExact(num: number): string {
-  return formatWithSpaceSeparator(num, 1)
+  return formatWithSpaceSeparator(num, 2)
 }
 
 export function formatCapEx(num: number): string {

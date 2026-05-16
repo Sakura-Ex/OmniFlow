@@ -26,7 +26,6 @@ export interface CalculationPayload {
     sourceHandle: string | null | undefined
     targetHandle: string | null | undefined
   }>
-  equalityItems: Set<string>
   globalInputSet: Set<string>
   globalOutputSet: Set<string>
   zeroOutputNodeNames: string[]
@@ -166,7 +165,6 @@ export function buildCalculationPayload(
   const portHandleToSubNodeId = new Map<string, string>()
 
   const payloadNodes: Array<{ id: string; type: string; data: Record<string, unknown> }> = []
-  const equalityTargetItems = new Set<string>()
 
   for (const n of nodes) {
     if (n.type === 'sourceNode' || n.type === 'targetNode') {
@@ -190,10 +188,6 @@ export function buildCalculationPayload(
 
         const rawNetId = netLookup.get(key)
         const netId = rawNetId && (isNetName(rawNetId) || isVoidName(rawNetId)) ? rawNetId : qualifiedId
-
-        if (n.type === 'targetNode' && (mode === 'demand' || mode === 'maximize')) {
-          equalityTargetItems.add(netId)
-        }
 
         portHandleToSubNodeId.set(key, subId)
 
@@ -353,7 +347,6 @@ export function buildCalculationPayload(
   return {
     payloadNodes: payloadNodes.concat(virtualGlobalNodes),
     payloadEdges: wiredEdges.concat(implicitEdges),
-    equalityItems: equalityTargetItems,
     globalInputSet,
     globalOutputSet,
     zeroOutputNodeNames,

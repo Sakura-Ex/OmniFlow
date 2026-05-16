@@ -1,0 +1,8 @@
+.system-hud__panel--intermediate {
+  border-right: 2px solid rgba(244, 114, 182, 0.75);
+}
+
+.system-hud__title--intermediate {
+  color: #f472b6;
+  text-align: right;
+}

@@ -112,6 +112,18 @@ export default function App() {
     handleCalculate,
   } = useCalculation()
 
+  const getViewportCenter = useCallback((): { x: number; y: number } => {
+    const instance = reactFlowRef.current
+    if (!instance) return { x: 300, y: 200 }
+    const container = document.querySelector('.react-flow') as HTMLElement | null
+    if (!container) return { x: 300, y: 200 }
+    const rect = container.getBoundingClientRect()
+    return instance.screenToFlowPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    })
+  }, [])
+
   const {
     isValidConnection,
     onConnect,
@@ -130,6 +142,7 @@ export default function App() {
     setNodes,
     setEdges,
     takeSnapshot,
+    getViewportCenter,
   })
 
   const backgroundDotColor = theme === 'light' ? 'rgba(71, 85, 105, 0.22)' : 'rgba(148, 163, 184, 0.24)'

@@ -34,7 +34,6 @@ export function useCalculation() {
     const payload = {
       nodes: result.payloadNodes,
       edges: result.payloadEdges,
-      equality_items: Array.from(result.equalityItems),
     }
 
     const canvasStore = useCanvasStore.getState()

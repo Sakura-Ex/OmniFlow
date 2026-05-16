@@ -3,6 +3,7 @@ import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { resolveCategoryDef } from '../utils/endpointNorm'
 import { formatSimpleRate } from '../utils/resourceFormat'
 import { parseResourceId, stripNetPrefix, isVirtualGlobal } from '../utils/resourceIdentifier'
+import { IntermediateProductsPanel } from './IntermediateProductsPanel'
 import './SystemHUD.css'
 
 type SystemHUDProps = {
@@ -162,6 +163,7 @@ export function SystemHUD({
       </section>
       </div>
 
+      <div className="system-hud__right-col">
       <section className="system-hud__panel system-hud__panel--outputs">
         <header className="system-hud__header system-hud__header--right">
           <span className="system-hud__title system-hud__title--outputs">
@@ -199,6 +201,12 @@ export function SystemHUD({
           </div>
         )}
       </section>
+
+      <IntermediateProductsPanel
+        systemInputs={systemInputs}
+        systemOutputs={systemOutputs}
+      />
+      </div>
     </div>
   )
 }

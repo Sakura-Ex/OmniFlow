@@ -92,6 +92,7 @@ export interface RecipeNodeData {
   machines_exact?: number
   machines_actual?: number
   utilization?: number
+  is_implemented?: boolean
   metadata: {
     eu_per_tick?: number
     rf_per_tick?: number
