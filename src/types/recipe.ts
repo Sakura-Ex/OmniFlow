@@ -1,11 +1,6 @@
 import type { Resource, ComputedNodePayload } from './types'
 
-export type RecipePortKind = string
-
-export interface RecipePort extends Resource {
-  /** @deprecated legacy field, mapped from category for old payloads */
-  type?: 'item' | 'fluid'
-}
+export type RecipePort = Resource
 
 export interface EndpointPort {
   id: string
@@ -25,33 +20,15 @@ export type RecipeNodeMode = 'limit' | 'auto'
 export type TargetNodeMode = 'demand' | 'maximize' | 'overflow'
 
 export interface SourceNodeData {
-  /** Multi-port definition — primary data shape */
   ports?: EndpointPort[]
-  /** @deprecated legacy single-port fields, normalized to ports[0] by normalizeEndpoint */
-  id?: string
-  label?: string
-  amount?: number
-  category?: string
   mode?: SourceNodeMode
-  /** @deprecated 由 mode 替代，保留以兼容旧存档 */
-  is_auto?: boolean
-  actual_amount?: number
   actual_amounts?: Record<string, number>
   is_virtual?: boolean
 }
 
 export interface TargetNodeData {
-  /** Multi-port definition — primary data shape */
   ports?: EndpointPort[]
-  /** @deprecated legacy single-port fields, normalized to ports[0] by normalizeEndpoint */
-  id?: string
-  label?: string
-  amount?: number
-  category?: string
   mode?: TargetNodeMode
-  /** @deprecated 由 mode 替代，保留以兼容旧存档 */
-  is_auto?: boolean
-  actual_amount?: number
   actual_amounts?: Record<string, number>
   is_virtual?: boolean
 }
@@ -71,8 +48,6 @@ export interface RecipeNodeData {
   archetype_id?: string
   duration_seconds: number
   _computed?: ComputedNodePayload
-  /** @deprecated legacy tick field retained only for backward compatibility */
-  duration_ticks?: number
   inputs: RecipePort[]
   outputs: RecipePort[]
   base_inputs?: Resource[]
@@ -80,14 +55,10 @@ export interface RecipeNodeData {
   base_utility_inputs?: Resource[]
   base_utility_outputs?: Resource[]
   base_duration_seconds?: number
-  /** @deprecated legacy tick field retained only for backward compatibility */
-  base_duration?: number
   active_modifiers?: ActiveModifier[]
   modifier_states?: Record<string, Record<string, unknown>>
   hardware_specs?: Record<string, unknown>
   mode?: RecipeNodeMode
-  /** @deprecated 由 mode 替代，保留以兼容旧存档 */
-  is_auto?: boolean
   manual_machines?: number
   machines_exact?: number
   machines_actual?: number

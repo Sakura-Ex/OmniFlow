@@ -34,7 +34,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
     payload.recipe_outputs.length === 0 ||
     payload.recipe_outputs.every((r) => r.amount === 0)
   const mode: RecipeNodeMode =
-    data.mode ?? ((data.is_auto ?? true) ? 'auto' : 'limit')
+    data.mode ?? 'auto'
   const isLimit = mode === 'limit'
   const manualCap =
     typeof data.manual_machines === 'number' ? data.manual_machines : null
@@ -58,7 +58,6 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
 
     updateNodeData(id, {
       mode: nextMode,
-      is_auto: nextMode === 'auto',
       manual_machines: nextMode === 'auto' ? data.manual_machines : nextManual,
     })
 
@@ -210,9 +209,12 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
         </div>
         <div className="recipe-node__header-actions">
           <button
+            type="button"
             className={`recipe-node__implement-btn nodrag${isImplemented ? ' is-active' : ''}`}
             onClick={handleToggleImplemented}
             title={isImplemented ? '已实装' : '未实装'}
+            aria-label="切换实装状态"
+            aria-pressed={isImplemented}
           >
             ✅
           </button>
@@ -312,7 +314,6 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
                 const parsed = Number.parseFloat(nextValue)
                 updateNodeData(id, {
                   mode: 'limit',
-                  is_auto: false,
                   manual_machines: Number.isFinite(parsed) ? parsed : undefined,
                 })
               }}

@@ -15,16 +15,16 @@ export function TargetNode({ id, data }: NodeProps<TargetNodeData>) {
   const userCategories = useGlobalResourceTable((state) => state.categories)
   const userOverrides = useGlobalResourceTable((state) => state.overrides)
   const ports = normalizeEndpointPorts(data)
-  const mode: TargetNodeMode = data.mode ?? ((data.is_auto ?? data.is_virtual ?? true) ? 'maximize' : 'demand')
+  const mode: TargetNodeMode = data.mode ?? (data.is_virtual ?? true ? 'maximize' : 'demand')
   const isEditable = mode === 'demand'
   const [draftAmounts, setDraftAmounts] = useState<Record<number, string>>({})
 
   const handleSetMode = useCallback((nextMode: TargetNodeMode) => {
     if (nextMode === mode) return
     if (nextMode === 'demand') {
-      updateNodeData(id, { mode: 'demand', is_auto: false })
+      updateNodeData(id, { mode: 'demand' })
     } else {
-      updateNodeData(id, { mode: nextMode, is_auto: true })
+      updateNodeData(id, { mode: nextMode })
     }
   }, [mode, id, updateNodeData])
 

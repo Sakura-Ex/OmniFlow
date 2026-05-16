@@ -13,7 +13,6 @@ function resolveIsAuto(data: Record<string, unknown> | undefined): boolean {
   if (typeof data?.mode === 'string') {
     return data.mode !== 'limit' && data.mode !== 'demand'
   }
-  if (typeof data?.is_auto === 'boolean') return data.is_auto
   if (typeof data?.is_virtual === 'boolean') return data.is_virtual
   return true
 }
@@ -197,7 +196,6 @@ export function buildCalculationPayload(
           data: {
             id: netId,
             amount: port.amount,
-            is_auto: isAuto,
             mode,
           },
         })
@@ -234,11 +232,9 @@ export function buildCalculationPayload(
         recipe_id: shaped.recipe_id || n.id,
         machine_name: shaped.machine_name || 'Recipe Machine',
         system: shaped.system ?? 'custom',
-        duration_ticks: 20,
         inputs: translatedInputs,
         outputs: translatedOutputs,
         mode: payload.duration_seconds <= 0 ? 'auto' : shaped.mode,
-        is_auto: shaped.is_auto ?? true,
         manual_machines: payload.duration_seconds <= 0 ? undefined : shaped.manual_machines,
         metadata: shaped.metadata ?? {},
       },

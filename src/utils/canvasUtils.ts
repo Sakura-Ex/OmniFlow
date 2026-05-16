@@ -17,8 +17,9 @@ export function toggleRouting<T extends { routing_mode?: 'wired' | 'global' }>(i
   return clone
 }
 
-export function resolveAutoMode(data: { is_auto?: boolean; is_virtual?: boolean }): boolean {
-  if (typeof data.is_auto === 'boolean') return data.is_auto
+export function resolveAutoMode(data: { mode?: string; is_virtual?: boolean }): boolean {
+  if (data.mode === 'auto' || data.mode === 'infinite' || data.mode === 'maximize' || data.mode === 'overflow') return true
+  if (data.mode === 'limit' || data.mode === 'demand') return false
   if (typeof data.is_virtual === 'boolean') return data.is_virtual
   return true
 }

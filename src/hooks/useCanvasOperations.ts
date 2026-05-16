@@ -69,7 +69,7 @@ export function useCanvasOperations({
       inputs: [],
       outputs: [],
       duration_seconds: 5,
-      is_auto: true,
+      mode: 'auto',
       metadata: { eu_per_tick: 32, can_overclock: true },
     }
     const newNode: Node<RecipeNodeData> = {
@@ -92,7 +92,7 @@ export function useCanvasOperations({
       inputs: [],
       outputs: [],
       duration_seconds: 0,
-      is_auto: true,
+      mode: 'auto',
       metadata: {},
     }
     const newNode: Node<RecipeNodeData> = {
@@ -112,7 +112,7 @@ export function useCanvasOperations({
       id,
       type: 'targetNode',
       position: { x: center.x + (Math.random() - 0.5) * 100, y: center.y + (Math.random() - 0.5) * 100 },
-      data: { id: `demand_${id.slice(-4)}`, label: `demand_${id.slice(-4)}`, amount: 100, is_auto: true, category: 'item' },
+      data: { mode: 'maximize', ports: [{ id: `demand_${id.slice(-4)}`, amount: 100, category: 'item' }] },
     }
     useCanvasStore.getState().addNode(newNode)
   }, [takeSnapshot, getViewportCenter])

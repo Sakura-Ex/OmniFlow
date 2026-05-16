@@ -217,7 +217,6 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
 
     onSave(node.id, {
       ...assembled,
-      duration_ticks: assembled.duration_ticks,
       metadata: {
         ...assembled.metadata,
         _calculated_preview: payload
