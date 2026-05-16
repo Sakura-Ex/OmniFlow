@@ -9,7 +9,6 @@ import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { resolveCategoryDef } from '../utils/endpointNorm'
 import { formatPortAmount, formatRateValue } from '../utils/resourceFormat'
 import { formatProbability, formatMachineExact, formatCapEx } from '../utils/formatters'
-import type { ResourceCategoryDef } from '../registry/types'
 import type { TimeBase, NormalizedResource, ComputedNodePayload } from '../types/types'
 import './RecipeNode.css'
 
