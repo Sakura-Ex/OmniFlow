@@ -6,19 +6,21 @@ export function normalizeCanvasNode(node: Node): Node {
   if (!node.data) return node
   const raw = node.data as Record<string, unknown>
 
-  if (node.type === 'sourceNode') {
-    const mode = raw.mode ?? 'infinite'
+  const isMode = (value: unknown): value is string => typeof value === 'string'&& value.length > 0
+
+   if (node.type === 'sourceNode') {
+    const mode = isMode(raw.mode) ? raw.mode : 'infinite'
     return { ...node, data: { ...raw, mode } }
   }
 
   if (node.type === 'recipeNode') {
     const shaped = ensureRecipeDataShape(raw as unknown as RecipeNodeData)
-    const mode = shaped.mode ?? 'auto'
+    const mode = isMode(shaped.mode) ? shaped.mode : 'auto' 
     return { ...node, data: { ...raw, ...shaped, mode } }
   }
 
   if (node.type === 'targetNode') {
-    const mode = raw.mode ?? 'maximize'
+    const mode = isMode(raw.mode) ? raw.mode : 'maximize'
     return { ...node, data: { ...raw, mode } }
   }
 
