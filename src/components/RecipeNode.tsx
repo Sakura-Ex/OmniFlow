@@ -34,7 +34,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
     payload.recipe_outputs.length === 0 ||
     payload.recipe_outputs.every((r) => r.amount === 0)
   const mode: RecipeNodeMode =
-    data.mode ?? ((data.is_auto ?? true) ? 'auto' : 'limit')
+    data.mode ?? 'auto'
   const isLimit = mode === 'limit'
   const manualCap =
     typeof data.manual_machines === 'number' ? data.manual_machines : null
@@ -58,7 +58,6 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
 
     updateNodeData(id, {
       mode: nextMode,
-      is_auto: nextMode === 'auto',
       manual_machines: nextMode === 'auto' ? data.manual_machines : nextManual,
     })
 
@@ -312,7 +311,6 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
                 const parsed = Number.parseFloat(nextValue)
                 updateNodeData(id, {
                   mode: 'limit',
-                  is_auto: false,
                   manual_machines: Number.isFinite(parsed) ? parsed : undefined,
                 })
               }}

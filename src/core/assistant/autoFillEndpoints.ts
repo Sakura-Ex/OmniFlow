@@ -85,12 +85,7 @@ export function computeAutoFillEndpoints(params: ComputeAutoFillParams): AutoFil
       type: 'sourceNode',
       position: { x: leftX, y },
       data: {
-        id: input.id,
-        label: input.id,
-        amount: cachedAmount ?? 9999,
-        is_auto: true,
-        actual_amount: cachedAmount,
-        category: cat,
+        mode: 'infinite',
         ports: [{ id: input.id, amount: cachedAmount ?? 9999, category: cat, _uid: generateId() }],
       },
     })
@@ -118,13 +113,7 @@ export function computeAutoFillEndpoints(params: ComputeAutoFillParams): AutoFil
       type: 'targetNode',
       position: { x: rightX, y },
       data: {
-        id: output.id,
-        label: output.id,
-        amount: cachedAmount ?? 0,
         mode: 'overflow',
-        is_auto: true,
-        actual_amount: cachedAmount,
-        category: cat,
         ports: [{ id: output.id, amount: cachedAmount ?? 0, category: cat, _uid: generateId() }],
       },
     })

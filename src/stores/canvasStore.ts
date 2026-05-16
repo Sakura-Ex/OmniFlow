@@ -48,16 +48,7 @@ export type CanvasStore = {
   setCalculationResult: (result: CalculateResponse) => void
 }
 
-function resolveIsAuto(data: Record<string, unknown> | undefined): boolean {
-  if (typeof data?.mode === 'string') {
-    return data.mode !== 'limit' && data.mode !== 'demand'
-  }
-  if (typeof data?.is_auto === 'boolean') return data.is_auto
-  if (typeof data?.is_virtual === 'boolean') return data.is_virtual
-  return true
-}
-
-export const useCanvasStore = create<CanvasStore>((set, get) => ({
+export const useCanvasStore = create<CanvasStore>((set, _get) => ({
   nodes: [],
   edges: [],
   systemInputs: {},
@@ -143,41 +134,10 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       if (!currentNode) return state
 
       const currentData = (currentNode.data ?? {}) as Record<string, unknown>
-      let mergedData = { ...currentData, ...nextData }
+      const mergedData = { ...currentData, ...nextData }
 
-      const nextIsAuto = typeof mergedData.is_auto === 'boolean'
-        ? mergedData.is_auto
-        : typeof mergedData.is_virtual === 'boolean'
-          ? mergedData.is_virtual
-          : undefined
-
-      if (typeof nextIsAuto === 'boolean') {
-        if (currentNode.type === 'sourceNode') {
-          const ports: EndpointPort[] = (currentNode.data as Record<string, unknown>)?.ports as EndpointPort[] ?? []
-          const existingAmounts: Record<string, number> = { ...(currentNode.data as Record<string, unknown>)?.actual_amounts as Record<string, number> ?? {} }
-          for (const port of ports) {
-            if (port.id) {
-              existingAmounts[port.id] = nextIsAuto
-                ? (existingAmounts[port.id] ?? state.lastSystemInputs[port.id])
-                : existingAmounts[port.id]
-            }
-          }
-          mergedData = { ...mergedData, is_auto: nextIsAuto, actual_amounts: existingAmounts }
-        } else if (currentNode.type === 'targetNode') {
-          const ports: EndpointPort[] = (currentNode.data as Record<string, unknown>)?.ports as EndpointPort[] ?? []
-          const existingAmounts: Record<string, number> = { ...(currentNode.data as Record<string, unknown>)?.actual_amounts as Record<string, number> ?? {} }
-          for (const port of ports) {
-            if (port.id) {
-              existingAmounts[port.id] = nextIsAuto
-                ? (existingAmounts[port.id] ?? state.lastSystemOutputs[port.id])
-                : existingAmounts[port.id]
-            }
-          }
-          mergedData = { ...mergedData, is_auto: nextIsAuto, actual_amounts: existingAmounts }
-        } else if (currentNode.type === 'recipeNode') {
-          mergedData = { ...mergedData, is_auto: nextIsAuto }
-          useRecipeStore.getState().updateRecipe(nodeId, nextData)
-        }
+      if (currentNode.type === 'recipeNode') {
+        useRecipeStore.getState().updateRecipe(nodeId, nextData)
       }
 
       const dataChanged = Object.keys(mergedData).some(
@@ -263,55 +223,35 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         }
 
         if (node.type === 'sourceNode') {
-          const isAuto = resolveIsAuto(nextData)
           const ports = normalizeEndpointPorts(node.data)
           const actualAmounts: Record<string, number> = {}
-          let totalActual = 0
           for (let pi = 0; pi < ports.length; pi++) {
             const port = ports[pi]
             const subNodeId = `${node.id}__p${pi}`
             const subResult = nodeResults[subNodeId]
-            const amt =
-              typeof subResult?.actual_amount === 'number'
-                ? subResult.actual_amount
-                : 0
+            const amt = subResult?.actual_amounts?.[port.id] ?? 0
             actualAmounts[port.id] = amt
-            totalActual += amt
           }
           nextData = {
             ...nextData,
-            is_auto: isAuto,
-            actual_amount: totalActual,
             actual_amounts: actualAmounts,
           }
         }
 
         if (node.type === 'targetNode') {
-          const isAuto = resolveIsAuto(nextData)
           const ports = normalizeEndpointPorts(node.data)
           const actualAmounts: Record<string, number> = {}
-          let totalActual = 0
           for (let pi = 0; pi < ports.length; pi++) {
             const port = ports[pi]
             const subNodeId = `${node.id}__p${pi}`
             const subResult = nodeResults[subNodeId]
-            const amt =
-              typeof subResult?.actual_amount === 'number'
-                ? subResult.actual_amount
-                : 0
+            const amt = subResult?.actual_amounts?.[port.id] ?? 0
             actualAmounts[port.id] = amt
-            totalActual += amt
           }
           nextData = {
             ...nextData,
-            is_auto: isAuto,
-            actual_amount: totalActual,
             actual_amounts: actualAmounts,
           }
-        }
-
-        if (node.type === 'recipeNode') {
-          nextData = { ...nextData, is_auto: resolveIsAuto(nextData) }
         }
 
         if (nextData === node.data) return node

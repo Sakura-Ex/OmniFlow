@@ -1,10 +1,14 @@
 import { useCallback } from 'react'
 import type { ChangeEvent, Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type { Edge, Node } from 'reactflow'
-import type { RecipeNodeData } from '../types/recipe'
 import { useRecipeStore } from '../stores/recipeStore'
 import { stripState } from '../utils/canvasUtils'
-import { migrateV1ToV2, type CanvasPayload, type CanvasPayloadV1, type CanvasPayloadV2 } from '../core/migration/v1ToV2'
+
+type CanvasPayloadV2 = {
+  version: 2
+  ui: { nodes: Node[]; edges: Edge[] }
+  domain: { recipes: Record<string, unknown> }
+}
 
 type UseFileIOParams = {
   storageKey: string
@@ -29,7 +33,7 @@ export function useFileIO({
   normalizeCanvasNode,
   resetSystemStats,
 }: UseFileIOParams) {
-  const serializeGraph = useCallback((): CanvasPayload => {
+  const serializeGraph = useCallback((): CanvasPayloadV2 => {
     return {
       version: 2,
       ui: {
@@ -42,25 +46,10 @@ export function useFileIO({
     }
   }, [edgesRef, nodesRef])
 
-  const loadGraph = useCallback((payload: CanvasPayload) => {
+  const loadGraph = useCallback((payload: unknown) => {
     const raw = payload as Record<string, unknown>
 
-    if (payload.version === 1 && Array.isArray(raw.nodes) && Array.isArray(raw.edges)) {
-      const v2 = migrateV1ToV2(payload as CanvasPayloadV1)
-
-      useRecipeStore.getState().loadAll(v2.domain.recipes)
-
-      const normalizedNodes = v2.ui.nodes.map((node) => normalizeCanvasNode(node))
-      takeSnapshot()
-      setNodes(normalizedNodes)
-      setEdges(v2.ui.edges)
-      resetSystemStats()
-      nodesRef.current = normalizedNodes
-      edgesRef.current = v2.ui.edges
-      return
-    }
-
-    if (payload.version === 2 && raw.ui && raw.domain) {
+    if (raw.version === 2 && raw.ui && raw.domain) {
       const v2 = payload as CanvasPayloadV2
 
       if (!Array.isArray(v2.ui.nodes) || !Array.isArray(v2.ui.edges)) {

@@ -1,7 +1,5 @@
 import type { RecipeNodeData, RecipePort, ActiveModifier } from '../types/recipe'
 import type { Resource, ResourceCategory, RoutingMode } from '../types/types'
-import { ticksToSeconds } from '../utils/time'
-import { secondsToTicks } from '../utils/time'
 import { createDefaultModifierState } from './state'
 import { getModifierById } from './registry'
 import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArchetype } from '../data/archetypes/index'
@@ -10,8 +8,7 @@ import { generateId } from '../utils/generateId'
 function normalizeDurationSeconds(data: RecipeNodeData): number {
   if (typeof data.base_duration_seconds === 'number') return Math.max(0, data.base_duration_seconds)
   if (typeof data.duration_seconds === 'number') return Math.max(0, data.duration_seconds)
-  if (typeof data.base_duration === 'number') return Math.max(0, ticksToSeconds(data.base_duration))
-  return Math.max(0, ticksToSeconds(data.duration_ticks))
+  return 0
 }
 
 function normalizeCategory(raw: unknown): ResourceCategory {
@@ -29,7 +26,7 @@ export function toResource(port: Partial<RecipePort> | Partial<Resource>): Resou
   const routing_mode: RoutingMode = routingRaw === 'global' ? 'global' : 'wired'
 
   return {
-    category: normalizeCategory((port as Partial<Resource>).category ?? (port as Partial<RecipePort>).type),
+    category: normalizeCategory((port as Partial<Resource>).category),
     id: String((port as Partial<Resource>).id ?? ''),
     amount: normalizeAmount((port as Partial<Resource>).amount),
     time_base: (port as Partial<Resource>).time_base,
@@ -91,7 +88,7 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
   const base_duration_seconds = normalizeDurationSeconds(data)
   const archetype = getMachineArchetype(archetype_id)
 
-  let userModifiers: ActiveModifier[] = (() => {
+  const userModifiers: ActiveModifier[] = (() => {
     const raw = data.active_modifiers ?? []
     if (raw.length === 0) return []
     if (typeof raw[0] === 'object' && 'instance_id' in raw[0]) return raw as ActiveModifier[]
@@ -145,7 +142,6 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
     base_utility_outputs,
     base_duration_seconds,
     duration_seconds: base_duration_seconds,
-    base_duration: secondsToTicks(base_duration_seconds),
     active_modifiers,
     hardware_specs,
   }

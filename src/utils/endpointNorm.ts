@@ -34,13 +34,6 @@ export function normalizeEndpointPorts(
   if (Array.isArray(data.ports) && data.ports.length > 0) {
     return data.ports.filter((p) => p.id && typeof p.amount === 'number')
   }
-  if (typeof data.id === 'string' && data.id.length > 0) {
-    return [{
-      id: data.id,
-      amount: data.amount ?? 0,
-      category: data.category ?? 'item',
-    }]
-  }
   return []
 }
 

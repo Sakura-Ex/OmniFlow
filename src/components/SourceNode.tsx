@@ -15,16 +15,16 @@ export function SourceNode({ id, data }: NodeProps<SourceNodeData>) {
   const userCategories = useGlobalResourceTable((state) => state.categories)
   const userOverrides = useGlobalResourceTable((state) => state.overrides)
   const ports = normalizeEndpointPorts(data)
-  const mode: SourceNodeMode = data.mode ?? ((data.is_auto ?? data.is_virtual ?? true) ? 'infinite' : 'limit')
+  const mode: SourceNodeMode = data.mode ?? (data.is_virtual ?? true ? 'infinite' : 'limit')
   const isEditable = mode === 'limit'
   const [draftAmounts, setDraftAmounts] = useState<Record<number, string>>({})
 
   const handleSetMode = useCallback((nextMode: SourceNodeMode) => {
     if (nextMode === mode) return
     if (nextMode === 'limit') {
-      updateNodeData(id, { mode: 'limit', is_auto: false })
+      updateNodeData(id, { mode: 'limit' })
     } else {
-      updateNodeData(id, { mode: 'infinite', is_auto: true })
+      updateNodeData(id, { mode: 'infinite' })
     }
   }, [mode, id, updateNodeData])
 

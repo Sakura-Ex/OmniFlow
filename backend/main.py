@@ -59,41 +59,31 @@ class RecipeNodeData(BaseModel):
     recipe_id: str = Field("", description="配方 ID")
     machine_name: str = Field("Recipe", description="机器名称")
     system: Optional[str] = Field(None, description="所属模组")
-    duration_ticks: float = Field(20.0, description="归一化后固定为 20 (所有速率为 /s)")
     inputs: Dict[str, float] = Field(default_factory=dict, description="输入速率: {category:id → rate/s}")
     outputs: Dict[str, float] = Field(default_factory=dict, description="输出速率: {category:id → rate/s}")
-    mode: Optional[str] = Field(None, description="运行模式: auto|limit；None 时回退到 is_auto")
-    is_auto: bool = Field(True, description="已弃用，由mode替代")
+    mode: Optional[str] = Field(None, description="运行模式: auto|limit")
     manual_machines: Optional[float] = Field(None, description="手动设定产能上限机器数量")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="机器元数据")
 
 
 class SourceNodeData(BaseModel):
     id: str = Field(..., description="物品 ID")
-    label: Optional[str] = Field(None, description="显示名称")
-    amount: float = Field(..., description="最大供应速率")
-    system: Optional[str] = Field(None, description="所属模组")
-    mode: Optional[str] = Field(None, description="供应模式: infinite|limit；None 时回退到 is_auto")
-    is_auto: bool = Field(True, description="已弃用，由mode替代")
-    actual_amount: Optional[float] = Field(None, description="后端计算后的实际吞吐量")
+    amount: float = Field(0, description="数量/速率")
+    mode: Optional[str] = Field(None, description="供应模式: infinite|limit")
+    actual_amounts: Optional[Dict[str, float]] = Field(None, description="后端计算后的各端口实际吞吐量")
 
 
 class TargetNodeData(BaseModel):
     id: str = Field(..., description="物品 ID")
-    label: Optional[str] = Field(None, description="显示名称")
-    amount: float = Field(..., description="目标需求速率")
-    system: Optional[str] = Field(None, description="所属模组")
-    mode: Optional[str] = Field(None, description="目标模式: demand|maximize|overflow；None 时回退到 is_auto")
-    is_auto: bool = Field(True, description="已弃用，由mode替代")
-    actual_amount: Optional[float] = Field(None, description="后端计算后的实际吞吐量")
+    amount: float = Field(0, description="数量/速率")
+    mode: Optional[str] = Field(None, description="目标模式: demand|maximize|overflow")
+    actual_amounts: Optional[Dict[str, float]] = Field(None, description="后端计算后的各端口实际吞吐量")
 
 
 class GraphNode(BaseModel):
     id: str = Field(..., description="节点的唯一标识符")
     type: str = Field(..., description="节点类型，如 'recipeNode', 'sourceNode', 'targetNode'")
     data: Dict[str, Any] = Field(default_factory=dict, description="节点数据负载")
-    recipe_id: Optional[str] = Field(None, description="兼容旧字段：配方节点对应的配方 ID")
-    target_rate: Optional[float] = Field(None, description="兼容旧字段：目标节点的期望产出率")
 
 class GraphEdge(BaseModel):
     source: str = Field(..., description="起点的节点 ID")
@@ -104,7 +94,6 @@ class GraphEdge(BaseModel):
 class CalculateRequest(BaseModel):
     nodes: List[GraphNode] = Field(..., description="前端传递的所有工艺图节点")
     edges: List[GraphEdge] = Field(..., description="前端传递的所有工艺图连线")
-    equality_items: List[str] = Field(default_factory=list, description="[已弃用] 统一使用 spill 软约束，此字段保留以兼容旧请求")
 
 
 # =====================================================================
@@ -186,7 +175,7 @@ async def calculate_flow(request: CalculateRequest):
     for offset, source in enumerate(source_nodes):
         source_data: SourceNodeData = source["data"]
         source_col = source_start + offset
-        src_mode = getattr(source_data, 'mode', None) or ('infinite' if source_data.is_auto else 'limit')
+        src_mode = source_data.mode or 'infinite'
         item_rows[source_data.id][source_col] += 1.0
         source_specs.append({
             "node_id": source["node_id"],
@@ -200,7 +189,7 @@ async def calculate_flow(request: CalculateRequest):
     for offset, target in enumerate(target_nodes):
         target_data: TargetNodeData = target["data"]
         sink_col = sink_start + offset
-        tgt_mode = getattr(target_data, 'mode', None) or ('maximize' if target_data.is_auto else 'demand')
+        tgt_mode = target_data.mode or 'maximize'
         item_rows[target_data.id][sink_col] -= 1.0
         sink_specs.append({
             "node_id": target["node_id"],
@@ -240,7 +229,7 @@ async def calculate_flow(request: CalculateRequest):
     bounds: List[tuple[float, Optional[float]]] = []
     for col, recipe in enumerate(recipe_nodes):
         recipe_data: RecipeNodeData = recipe["data"]
-        recipe_mode = getattr(recipe_data, 'mode', None) or ('auto' if recipe_data.is_auto else 'limit')
+        recipe_mode = recipe_data.mode or 'auto'
         c[col] = 1.0
         if recipe_mode == 'auto' or recipe_data.manual_machines is None:
             bounds.append((0, None))
@@ -317,21 +306,21 @@ async def calculate_flow(request: CalculateRequest):
         rd: RecipeNodeData = recipe["data"]
         _debug["vars"].append({
             "type": "recipe", "node_id": recipe["node_id"],
-            "mode": getattr(rd, 'mode', None) or ('auto' if rd.is_auto else 'limit'),
+            "mode": rd.mode or 'auto',
             "manual_machines": rd.manual_machines,
         })
     for source in source_nodes:
         sd: SourceNodeData = source["data"]
         _debug["vars"].append({
             "type": "source", "node_id": source["node_id"], "id": sd.id,
-            "mode": getattr(sd, 'mode', None) or ('infinite' if sd.is_auto else 'limit'),
+            "mode": sd.mode or 'infinite',
             "amount": sd.amount,
         })
     for target in target_nodes:
         td: TargetNodeData = target["data"]
         _debug["vars"].append({
             "type": "target", "node_id": target["node_id"], "id": td.id,
-            "mode": getattr(td, 'mode', None) or ('maximize' if td.is_auto else 'demand'),
+            "mode": td.mode or 'maximize',
             "amount": td.amount,
         })
     for item_id in items:
@@ -402,14 +391,14 @@ async def calculate_flow(request: CalculateRequest):
         raw_value = float(res.x[source_spec["col"]])
         actual_value = 0.0 if abs(raw_value) <= 1e-6 else raw_value
         node_results[source_spec["node_id"]] = {
-            "actual_amount": actual_value,
+            "actual_amounts": {source_spec["item_id"]: actual_value},
         }
 
     for sink_spec in sink_specs:
         raw_value = float(res.x[sink_spec["col"]])
         actual_value = 0.0 if abs(raw_value) <= 1e-6 else raw_value
         node_results[sink_spec["node_id"]] = {
-            "actual_amount": actual_value,
+            "actual_amounts": {sink_spec["item_id"]: actual_value},
         }
 
     # ── 全量矩阵回代清算 ──
@@ -505,7 +494,7 @@ async def debug_matrix(request: CalculateRequest):
     for offset, source in enumerate(source_nodes):
         source_data: SourceNodeData = source["data"]
         source_col = source_start + offset
-        src_mode = getattr(source_data, 'mode', None) or ('infinite' if source_data.is_auto else 'limit')
+        src_mode = source_data.mode or 'infinite'
         item_rows[source_data.id][source_col] += 1.0
         source_specs.append({
             "node_id": source["node_id"],
@@ -519,7 +508,7 @@ async def debug_matrix(request: CalculateRequest):
     for offset, target in enumerate(target_nodes):
         target_data: TargetNodeData = target["data"]
         sink_col = sink_start + offset
-        tgt_mode = getattr(target_data, 'mode', None) or ('maximize' if target_data.is_auto else 'demand')
+        tgt_mode = target_data.mode or 'maximize'
         item_rows[target_data.id][sink_col] -= 1.0
         sink_specs.append({
             "node_id": target["node_id"],
@@ -557,7 +546,7 @@ async def debug_matrix(request: CalculateRequest):
     bounds: List[tuple[float, Optional[float]]] = []
     for col, recipe in enumerate(recipe_nodes):
         recipe_data: RecipeNodeData = recipe["data"]
-        recipe_mode = getattr(recipe_data, 'mode', None) or ('auto' if recipe_data.is_auto else 'limit')
+        recipe_mode = recipe_data.mode or 'auto'
         c[col] = 1.0
         if recipe_mode == 'auto' or recipe_data.manual_machines is None:
             bounds.append((0, None))
