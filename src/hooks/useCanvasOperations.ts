@@ -53,7 +53,7 @@ export function useCanvasOperations({
       id,
       type: 'sourceNode',
       position: { x: center.x + (Math.random() - 0.5) * 100, y: center.y + (Math.random() - 0.5) * 100 },
-      data: { mode: 'infinite', ports: [{ id: `item_${id.slice(-4)}`, amount: 100, category: 'item' }] },
+      data: { id: `item_${id.slice(-4)}`, label: `item_${id.slice(-4)}`, amount: 100, is_auto: true, category: 'item' },
     }
     useCanvasStore.getState().addNode(newNode)
   }, [takeSnapshot, getViewportCenter])
