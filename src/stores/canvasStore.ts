@@ -4,8 +4,21 @@ import type { RecipeNodeData, EndpointPort } from '../types/recipe'
 import type { CalculateResponse } from '../types/api'
 import { useRecipeStore } from './recipeStore'
 import { normalizeEndpointPorts } from '../utils/endpointNorm'
-import { buildResourceId } from '../utils/resourceIdentifier'
+import { buildResourceId, stripNetPrefix, parseResourceId } from '../utils/resourceIdentifier'
 import { computeCapexList } from '../core/calculation/capEx'
+
+/** 从后端子节点结果中提取 actual_amounts，key 还原为 raw ID（前端格式） */
+function extractActualAmounts(
+  subResult: { actual_amounts?: Record<string, number> } | undefined,
+): Record<string, number> {
+  if (!subResult?.actual_amounts) return {}
+  const result: Record<string, number> = {}
+  for (const [key, value] of Object.entries(subResult.actual_amounts)) {
+    const rawId = parseResourceId(stripNetPrefix(key)).id
+    result[rawId] = value
+  }
+  return result
+}
 
 export type HandleUpdate = {
   role: 'source' | 'target'
@@ -222,31 +235,13 @@ export const useCanvasStore = create<CanvasStore>((set, _get) => ({
           nextData = { ...nextData, ...nodeResult }
         }
 
-        if (node.type === 'sourceNode') {
+        if (node.type === 'sourceNode' || node.type === 'targetNode') {
           const ports = normalizeEndpointPorts(node.data)
           const actualAmounts: Record<string, number> = {}
           for (let pi = 0; pi < ports.length; pi++) {
-            const port = ports[pi]
             const subNodeId = `${node.id}__p${pi}`
             const subResult = nodeResults[subNodeId]
-            const amt = subResult?.actual_amounts?.[port.id] ?? 0
-            actualAmounts[port.id] = amt
-          }
-          nextData = {
-            ...nextData,
-            actual_amounts: actualAmounts,
-          }
-        }
-
-        if (node.type === 'targetNode') {
-          const ports = normalizeEndpointPorts(node.data)
-          const actualAmounts: Record<string, number> = {}
-          for (let pi = 0; pi < ports.length; pi++) {
-            const port = ports[pi]
-            const subNodeId = `${node.id}__p${pi}`
-            const subResult = nodeResults[subNodeId]
-            const amt = subResult?.actual_amounts?.[port.id] ?? 0
-            actualAmounts[port.id] = amt
+            Object.assign(actualAmounts, extractActualAmounts(subResult))
           }
           nextData = {
             ...nextData,
