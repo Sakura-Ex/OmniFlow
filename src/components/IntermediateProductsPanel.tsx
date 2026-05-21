@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { resolveCategoryDef, normalizeEndpointPorts } from '../utils/endpointNorm'
 import { formatSimpleRate } from '../utils/resourceFormat'
-import { parseResourceId, stripNetPrefix, buildResourceId } from '../utils/resourceIdentifier'
+import { parseNormalizedKey, stripNetPrefix, buildResourceId } from '../utils/resourceIdentifier'
 import { useRecipeStore } from '../stores/recipeStore'
 import { useCanvasStore } from '../stores/canvasStore'
 import type { SourceNodeData, TargetNodeData } from '../types/recipe'
@@ -15,9 +15,8 @@ type IntermediateProductsPanelProps = {
 }
 
 function parseItemKey(item: string): { category: string; name: string } {
-  const raw = stripNetPrefix(item)
-  const parsed = parseResourceId(raw)
-  return { category: parsed.category, name: parsed.id }
+  const { category, id } = parseNormalizedKey(item)
+  return { category, name: id }
 }
 
 function HUDResourceRow({ item, value, isGlobal }: { item: string; value: number; isGlobal: boolean }) {
