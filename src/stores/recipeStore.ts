@@ -4,6 +4,7 @@ import type { ComputedNodePayload } from '../types/types'
 import { ensureRecipeDataShape, runModifierPipeline } from '../modifiers/pipeline'
 import { applyArchetypeToInputs } from '../data/archetypes/index'
 import { useGlobalResourceTable } from '../registry/globalResourceTable'
+import { flattenRecipeResources } from '../utils/canvasUtils'
 
 export type RecipeStore = {
   recipes: Record<string, RecipeNodeData>
@@ -19,17 +20,12 @@ export type RecipeStore = {
 function shapeAndCompute(data: RecipeNodeData): RecipeNodeData {
   const shaped = ensureRecipeDataShape(data)
   const computed = runModifierPipeline(shaped)
-  return { ...shaped, _computed: computed as unknown as Record<string, unknown> }
+  return { ...shaped, _computed: computed }
 }
 
 function ensureAllResourceEntries(data: RecipeNodeData) {
   const table = useGlobalResourceTable.getState()
-  const resources = [
-    ...(data.base_inputs ?? []),
-    ...(data.base_outputs ?? []),
-    ...(data.base_utility_inputs ?? []),
-    ...(data.base_utility_outputs ?? []),
-  ]
+  const resources = flattenRecipeResources(data)
   for (const res of resources) {
     if (res.id) {
       table.ensureEntry(`${res.category}:${res.id}`)

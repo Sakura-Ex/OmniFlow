@@ -17,7 +17,7 @@
 import type { Edge, Node } from 'reactflow'
 import type { Resource } from '../../types/types'
 import { normalizeEndpointPorts } from '../../utils/endpointNorm'
-import { buildResourceId, buildNetName, buildGlobalName, buildVoidName } from '../../utils/resourceIdentifier'
+import { buildResourceId, buildNetName, buildGlobalName, buildVoidName, DEFAULT_RESOURCE_CATEGORY } from '../../utils/resourceIdentifier'
 
 /** Key used to look up a port in the net table: "<nodeId>|<portId>" */
 type PortKey = string
@@ -183,7 +183,7 @@ export function buildTopologicalNets(
       const ports = normalizeEndpointPorts(node.data)
       for (const port of ports) {
         processPort(
-          { ...port, category: port.category ?? 'item' },
+          { ...port, category: port.category ?? DEFAULT_RESOURCE_CATEGORY },
           nid, uf, edges, addToNet, hasEdgeForKey, getNetName, buildGlobalName, buildVoidName, buildResourceId, portKey
         )
       }
