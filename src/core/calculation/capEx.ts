@@ -13,7 +13,7 @@ export function computeCapexList(
     const nodeResult =
       nodeResults?.[nodeId] ?? nodeResults?.[shaped.recipe_id]
     const machines =
-      nodeResult?.machines_actual ?? nodeResult?.machines_exact ?? 0
+      nodeResult?.machine_actual ?? nodeResult?.machines_exact ?? 0
     if (machines <= 0) continue
 
     const allRes = flattenRecipeResources(shaped)
