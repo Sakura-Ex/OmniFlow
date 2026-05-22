@@ -3,6 +3,7 @@ import { useFormContext } from 'react-hook-form'
 import { useClickOutside } from '../hooks/useClickOutside'
 import { toggleRouting } from '../utils/canvasUtils'
 import { generateId } from '../utils/generateId'
+import { DEFAULT_RESOURCE_CATEGORY } from '../utils/resourceIdentifier'
 import type { UseFieldArrayReturn } from 'react-hook-form'
 import type { RecipeFormData } from './RecipeEditorModal'
 import type { ActiveModifier } from '../types/recipe'
@@ -133,7 +134,7 @@ export function SettingsUI(props: SettingsUIProps) {
   const hardwareSpecs = watch('hardware_specs') as Record<string, unknown> | undefined
 
   const emptyResource = useCallback((): Resource => ({
-    category: 'item',
+    category: DEFAULT_RESOURCE_CATEGORY,
     id: '',
     amount: 1,
     time_base: 'per_cycle',

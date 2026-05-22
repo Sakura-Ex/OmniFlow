@@ -5,7 +5,7 @@ import type { EndpointEditorTarget } from '../EndpointEditorContext'
 import { useRecipeStore } from '../stores/recipeStore'
 import { useCanvasStore } from '../stores/canvasStore'
 import { useGlobalResourceTable } from '../registry/globalResourceTable'
-import { buildResourceId } from '../utils/resourceIdentifier'
+import { buildResourceId, DEFAULT_RESOURCE_CATEGORY } from '../utils/resourceIdentifier'
 
 type UseNodeEditorParams = {
   setNodes: (nodes: Node[]) => void
@@ -51,11 +51,9 @@ export function useNodeEditor({ setNodes, takeSnapshot, updateNodeInternals }: U
     if (Array.isArray(ports)) {
       for (const port of ports) {
         if (port.id && String(port.id).trim().length > 0) {
-          grt.ensureEntry(buildResourceId(port.category ?? 'item', String(port.id)))
+          grt.ensureEntry(buildResourceId(port.category ?? DEFAULT_RESOURCE_CATEGORY, String(port.id)))
         }
       }
-    } else if (typeof patch.id === 'string' && patch.id.trim().length > 0) {
-      grt.ensureEntry(buildResourceId(patch.category ?? 'item', patch.id))
     }
     const prev = useCanvasStore.getState().nodes
     setNodes(prev.map((node) =>

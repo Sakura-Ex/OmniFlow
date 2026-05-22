@@ -5,6 +5,7 @@ import { useEndpointEditor } from '../EndpointEditorContext'
 import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { buildUnitSuffix } from '../registry/units'
 import { normalizeEndpointPorts, resolveCategoryDef } from '../utils/endpointNorm'
+import { buildResourceId, DEFAULT_RESOURCE_CATEGORY } from '../utils/resourceIdentifier'
 import { formatOpExRate } from '../utils/formatters'
 import type { TargetNodeData, TargetNodeMode } from '../types/recipe'
 import './TargetNode.css'
@@ -91,15 +92,15 @@ export function TargetNode({ id, data }: NodeProps<TargetNodeData>) {
       <section className="recipe-node__ports">
         <ul className="recipe-node__port-list">
           {ports.map((port, index) => {
-            const portCategory = port.category ?? 'item'
+            const portCategory = port.category ?? DEFAULT_RESOURCE_CATEGORY
             const catDef = resolveCategoryDef(portCategory, userCategories, userOverrides)
             const unit = buildUnitSuffix(catDef.base_unit, 'rate_per_sec')
             const hexColor = catDef.themeColor
             const glowColor = hexColor.startsWith('#')
               ? `${hexColor}${Math.round(0.38 * 255).toString(16).padStart(2, '0')}`
               : hexColor.replace(')', ', 0.38)').replace('rgb', 'rgba')
-            const handleId = `${portCategory}:${port.id}`
-            const actualAmt = data.actual_amounts?.[port.id]
+            const handleId = buildResourceId(portCategory, port.id)
+            const actualAmt = data.actual_amounts?.[handleId]
             const draftAmount = draftAmounts[index]
             const inputValue = isEditable
               ? (draftAmount !== undefined ? draftAmount : String(port.amount ?? ''))

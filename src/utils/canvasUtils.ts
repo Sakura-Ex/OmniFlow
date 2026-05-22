@@ -1,3 +1,5 @@
+import type { Resource } from '../types/types'
+
 export function stripState<T extends { selected?: boolean; dragging?: boolean }>(items: T[]): T[] {
   return items.map((item) => {
     const { selected, dragging, ...rest } = item
@@ -24,7 +26,12 @@ export function resolveAutoMode(data: { mode?: string; is_virtual?: boolean }): 
   return true
 }
 
-export function flattenRecipeResources<T extends { base_inputs?: T[]; base_outputs?: T[]; base_utility_inputs?: T[]; base_utility_outputs?: T[] }>(recipe: T): T[] {
+export function flattenRecipeResources(recipe: {
+  base_inputs?: Resource[]
+  base_outputs?: Resource[]
+  base_utility_inputs?: Resource[]
+  base_utility_outputs?: Resource[]
+}): Resource[] {
   return [
     ...(recipe.base_inputs ?? []),
     ...(recipe.base_outputs ?? []),

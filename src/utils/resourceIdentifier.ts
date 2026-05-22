@@ -9,6 +9,9 @@
 //  Part 1 — 类别:标识符 解析
 // ══════════════════════════════════════════════════════
 
+/** 资源标识体系的默认类别。当端口未指定 category 时兜底为此值。 */
+export const DEFAULT_RESOURCE_CATEGORY = 'item'
+
 export interface ParsedResourceId {
   category: string
   id: string
@@ -16,11 +19,11 @@ export interface ParsedResourceId {
 
 /**
  * 解析 category:id — 第一个冒号前为类别，余下全量为标识符。
- * 无冒号时兜底为 category='item'。
+ * 无冒号时兜底为 DEFAULT_RESOURCE_CATEGORY。
  */
 export const parseResourceId = (raw: string): ParsedResourceId => {
   const idx = raw.indexOf(':')
-  if (idx === -1) return { category: 'item', id: raw }
+  if (idx === -1) return { category: DEFAULT_RESOURCE_CATEGORY, id: raw }
   return {
     category: raw.slice(0, idx),
     id: raw.slice(idx + 1),

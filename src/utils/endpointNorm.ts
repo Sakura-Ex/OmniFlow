@@ -2,7 +2,7 @@ import type { EndpointPort, SourceNodeData, TargetNodeData } from '../types/reci
 import type { ResourceCategoryDef, UnitOverride } from '../registry/types'
 import { FALLBACK_CATEGORY } from '../registry/defaults'
 import { resolveResourceProps } from '../registry/globalResourceTable'
-import { getCategory } from './resourceIdentifier'
+import { getCategory, DEFAULT_RESOURCE_CATEGORY } from './resourceIdentifier'
 import { generateId } from './generateId'
 
 export { resolveResourceProps }
@@ -44,7 +44,7 @@ export function normalizeEndpointData<T extends SourceNodeData | TargetNodeData>
     const ports = normalizeEndpointPorts(data)
     return {
       ...data,
-      ports: ports.length > 0 ? ports : [{ id: '', amount: 0, category: 'item', _uid: generateId() }],
+      ports: ports.length > 0 ? ports : [{ id: '', amount: 0, category: DEFAULT_RESOURCE_CATEGORY, _uid: generateId() }],
     }
   }
   return data
@@ -54,7 +54,7 @@ export function emptyEndpointPort(category?: string): EndpointPort {
   return {
     id: '',
     amount: 0,
-    category: category ?? 'item',
+    category: category ?? DEFAULT_RESOURCE_CATEGORY,
     routing_mode: 'wired',
     routing_locked: false,
     _uid: generateId(),
