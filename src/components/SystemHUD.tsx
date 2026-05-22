@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { resolveCategoryDef } from '../utils/endpointNorm'
 import { formatSimpleRate } from '../utils/resourceFormat'
-import { parseResourceId, stripNetPrefix, isVirtualGlobal } from '../utils/resourceIdentifier'
+import { normalizeResourceKey, parseNormalizedKey, parseResourceId, stripNetPrefix, isVirtualGlobal } from '../utils/resourceIdentifier'
 import { IntermediateProductsPanel } from './IntermediateProductsPanel'
 import './SystemHUD.css'
 
@@ -15,18 +15,18 @@ type SystemHUDProps = {
 }
 
 function stripNetKey(item: string): { baseId: string; category: string; name: string } {
-  const raw = stripNetPrefix(item)
-  const parsed = parseResourceId(raw)
-  return { baseId: raw, category: parsed.category, name: parsed.id }
+  const baseId = normalizeResourceKey(item)
+  const { category, id } = parseResourceId(baseId)
+  return { baseId, category, name: id }
 }
 
 function parseItemKey(item: string): { category: string; name: string } {
-  const { category, name } = stripNetKey(item)
-  return { category, name }
+  const { category, id } = parseNormalizedKey(item)
+  return { category, name: id }
 }
 
 function getGlobalKey(item: string): string {
-  return stripNetKey(item).baseId
+  return normalizeResourceKey(item)
 }
 
 function HUDResourceRow({ item, value, isGlobal }: { item: string; value: number; isGlobal: boolean }) {

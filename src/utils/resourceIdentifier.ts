@@ -108,6 +108,23 @@ export const parseVoidName = (name: string): { nodeId: string; fullId: string } 
 }
 
 /**
+ * 剥除 Net/Void/Global 前缀后归一化为 category:id 格式。
+ * 相当于 stripNetPrefix + parseResourceId + buildResourceId 的快捷组合。
+ */
+export const normalizeResourceKey = (raw: string): string => {
+  const stripped = stripNetPrefix(raw)
+  const parsed = parseResourceId(stripped)
+  return buildResourceId(parsed.category, parsed.id)
+}
+
+/**
+ * 剥除 Net/Void/Global 前缀，解析为 { category, id }。
+ * 相当于 stripNetPrefix + parseResourceId 的快捷组合。
+ */
+export const parseNormalizedKey = (raw: string): ParsedResourceId =>
+  parseResourceId(stripNetPrefix(raw))
+
+/**
  * 从 Net/Void/Global 名称中还原原始资源标识符。
  *  - Net_xxx_<suffix> → xxx
  *  - Void_<nodeId>_xxx → xxx
