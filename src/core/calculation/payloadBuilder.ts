@@ -4,7 +4,7 @@ import type { ComputedNodePayload } from '../../types/types'
 import { runModifierPipeline, flattenForBackend } from '../../modifiers/pipeline'
 import { normalizeEndpointPorts } from '../../utils/endpointNorm'
 import { buildTopologicalNets } from './topology'
-import { isNetName, isVoidName, buildResourceId } from '../../utils/resourceIdentifier'
+import { isNetName, isVoidName, buildResourceId, DEFAULT_RESOURCE_CATEGORY } from '../../utils/resourceIdentifier'
 
 const VIRTUAL_GLOBAL_SOURCE = 'Virtual_Global_Source'
 const VIRTUAL_GLOBAL_TARGET = 'Virtual_Global_Target'
@@ -180,7 +180,7 @@ export function buildCalculationPayload(
             : 'demand')
 
       ports.forEach((port, pi) => {
-        const portCategory = port.category ?? 'item'
+        const portCategory = port.category ?? DEFAULT_RESOURCE_CATEGORY
         const qualifiedId = buildResourceId(portCategory, port.id)
         const key = `${n.id}|${qualifiedId}`
         const subId = `${n.id}__p${pi}`

@@ -55,12 +55,7 @@ export function EndpointEditorModal({ node, onClose, onSave }: Props) {
 
   const handleSave = () => {
     const validPorts = ports.filter((p) => p.id.trim().length > 0)
-    const firstPort = validPorts[0]
     onSave(node.id, {
-      id: firstPort?.id ?? '',
-      label: firstPort?.id ?? '',
-      amount: firstPort?.amount ?? 0,
-      category: firstPort?.category ?? DEFAULT_RESOURCE_CATEGORY,
       ports: validPorts.length > 0 ? validPorts : ports,
     })
   }

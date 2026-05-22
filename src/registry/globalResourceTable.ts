@@ -1,5 +1,6 @@
 import type { ResourceCategoryDef, ResourceEntry, ResolvedResourceProps, UnitOverride, GlobalResourceTableState } from './types'
 import { DEFAULT_RESOURCE_CATEGORIES, DEFAULT_OVERRIDES } from './defaults'
+import { DEFAULT_RESOURCE_CATEGORY } from '../utils/resourceIdentifier'
 import { create } from 'zustand'
 
 const cache = new Map<string, ResolvedResourceProps>()
@@ -75,7 +76,7 @@ export const useGlobalResourceTable = create<GlobalResourceTableState>((set, get
     if (cached) return cached
 
     const colonIndex = fullId.indexOf(':')
-    const categoryId = colonIndex === -1 ? 'item' : fullId.slice(0, colonIndex)
+    const categoryId = colonIndex === -1 ? DEFAULT_RESOURCE_CATEGORY : fullId.slice(0, colonIndex)
 
     const state = get()
     const category = state.categories[categoryId]

@@ -5,7 +5,7 @@ import { useEndpointEditor } from '../EndpointEditorContext'
 import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { buildUnitSuffix } from '../registry/units'
 import { normalizeEndpointPorts, resolveCategoryDef } from '../utils/endpointNorm'
-import { buildResourceId } from '../utils/resourceIdentifier'
+import { buildResourceId, DEFAULT_RESOURCE_CATEGORY } from '../utils/resourceIdentifier'
 import { formatOpExRate } from '../utils/formatters'
 import type { SourceNodeData, SourceNodeMode } from '../types/recipe'
 import './SourceNode.css'
@@ -84,7 +84,7 @@ export function SourceNode({ id, data }: NodeProps<SourceNodeData>) {
       <section className="recipe-node__ports">
         <ul className="recipe-node__port-list recipe-node__port-list--right">
           {ports.map((port, index) => {
-            const portCategory = port.category ?? 'item'
+            const portCategory = port.category ?? DEFAULT_RESOURCE_CATEGORY
             const catDef = resolveCategoryDef(portCategory, userCategories, userOverrides)
             const unit = buildUnitSuffix(catDef.base_unit, 'rate_per_sec')
             const hexColor = catDef.themeColor

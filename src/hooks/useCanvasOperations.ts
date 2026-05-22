@@ -3,6 +3,7 @@ import type { MouseEvent } from 'react'
 import { addEdge, type Connection, type Edge, type Node } from 'reactflow'
 import type { RecipeNodeData } from '../types/recipe'
 import { useCanvasStore } from '../stores/canvasStore'
+import { DEFAULT_RESOURCE_CATEGORY } from '../utils/resourceIdentifier'
 
 type UseCanvasOperationsParams = {
   setNodes: (nodes: Node[]) => void
@@ -53,7 +54,7 @@ export function useCanvasOperations({
       id,
       type: 'sourceNode',
       position: { x: center.x + (Math.random() - 0.5) * 100, y: center.y + (Math.random() - 0.5) * 100 },
-      data: { id: `item_${id.slice(-4)}`, label: `item_${id.slice(-4)}`, amount: 100, is_auto: true, category: 'item' },
+      data: { id: `item_${id.slice(-4)}`, label: `item_${id.slice(-4)}`, amount: 100, is_auto: true, category: DEFAULT_RESOURCE_CATEGORY },
     }
     useCanvasStore.getState().addNode(newNode)
   }, [takeSnapshot, getViewportCenter])
@@ -112,7 +113,7 @@ export function useCanvasOperations({
       id,
       type: 'targetNode',
       position: { x: center.x + (Math.random() - 0.5) * 100, y: center.y + (Math.random() - 0.5) * 100 },
-      data: { mode: 'maximize', ports: [{ id: `demand_${id.slice(-4)}`, amount: 100, category: 'item' }] },
+      data: { mode: 'maximize', ports: [{ id: `demand_${id.slice(-4)}`, amount: 100, category: DEFAULT_RESOURCE_CATEGORY }] },
     }
     useCanvasStore.getState().addNode(newNode)
   }, [takeSnapshot, getViewportCenter])

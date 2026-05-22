@@ -4,7 +4,7 @@ import type { RecipeNodeData, EndpointPort } from '../types/recipe'
 import type { CalculateResponse } from '../types/api'
 import { useRecipeStore } from './recipeStore'
 import { normalizeEndpointPorts } from '../utils/endpointNorm'
-import { buildResourceId, stripNetPrefix, parseResourceId } from '../utils/resourceIdentifier'
+import { buildResourceId, stripNetPrefix, parseResourceId, DEFAULT_RESOURCE_CATEGORY } from '../utils/resourceIdentifier'
 import { computeCapexList } from '../core/calculation/capEx'
 
 /** 从后端子节点结果中提取 actual_amounts，key 还原为 raw ID（前端格式） */
@@ -169,7 +169,7 @@ export const useCanvasStore = create<CanvasStore>((set, _get) => ({
       let nextEdges = state.edges
       if (handleChanged && handleUpdate) {
         const currentNodeData = currentNode.data as Record<string, unknown>
-        const nodeCategory: string = (currentNodeData.category as string) ?? 'item'
+        const nodeCategory: string = (currentNodeData.category as string) ?? DEFAULT_RESOURCE_CATEGORY
         const ports: EndpointPort[] = (currentNodeData.ports as EndpointPort[]) ?? []
         const oldPort = ports.find((p) => p.id === handleUpdate.previousId)
         const portCategory = oldPort?.category ?? nodeCategory
