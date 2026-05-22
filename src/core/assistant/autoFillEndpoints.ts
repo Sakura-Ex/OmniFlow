@@ -1,6 +1,6 @@
 import type { Node, Edge } from 'reactflow'
 import type { RecipeNodeData } from '../../types/recipe'
-import { buildResourceId, DEFAULT_RESOURCE_CATEGORY } from '../../utils/resourceIdentifier'
+import { buildResourceId } from '../../utils/resourceIdentifier'
 import { generateId } from '../../utils/generateId'
 
 export type ComputeAutoFillParams = {
@@ -31,34 +31,17 @@ export function computeAutoFillEndpoints(params: ComputeAutoFillParams): AutoFil
 
   const inputs = recipeNodeData.inputs ?? []
   const outputs = recipeNodeData.outputs ?? []
-  const baseInputs = recipeNodeData.base_inputs ?? recipeNodeData.inputs ?? []
-  const baseOutputs = recipeNodeData.base_outputs ?? recipeNodeData.outputs ?? []
   const recipeNode = allNodes.find((node) => node.id === nodeId)
   const position = recipeNode?.position ?? { x: 0, y: 0 }
 
-  const inputCategoryMap = new Map<string, string>()
-  for (const inp of baseInputs) {
-    if (inp.id) inputCategoryMap.set(inp.id, inp.category ?? DEFAULT_RESOURCE_CATEGORY)
-  }
-  for (const inp of recipeNodeData.base_utility_inputs ?? []) {
-    if (inp.id) inputCategoryMap.set(inp.id, inp.category ?? DEFAULT_RESOURCE_CATEGORY)
-  }
-  const outputCategoryMap = new Map<string, string>()
-  for (const out of baseOutputs) {
-    if (out.id) outputCategoryMap.set(out.id, out.category ?? DEFAULT_RESOURCE_CATEGORY)
-  }
-  for (const out of recipeNodeData.base_utility_outputs ?? []) {
-    if (out.id) outputCategoryMap.set(out.id, out.category ?? DEFAULT_RESOURCE_CATEGORY)
-  }
-
   const missingInputs = inputs.filter((input) =>
     !allEdges.some(
-      (edge) => edge.target === nodeId && edge.targetHandle === buildResourceId(inputCategoryMap.get(input.id) ?? DEFAULT_RESOURCE_CATEGORY, input.id)
+      (edge) => edge.target === nodeId && edge.targetHandle === buildResourceId(input.category, input.id)
     )
   )
   const missingOutputs = outputs.filter((output) =>
     !allEdges.some(
-      (edge) => edge.source === nodeId && edge.sourceHandle === buildResourceId(outputCategoryMap.get(output.id) ?? DEFAULT_RESOURCE_CATEGORY, output.id)
+      (edge) => edge.source === nodeId && edge.sourceHandle === buildResourceId(output.category, output.id)
     )
   )
 
@@ -77,8 +60,7 @@ export function computeAutoFillEndpoints(params: ComputeAutoFillParams): AutoFil
     const sourceId = makeId()
     const y = position.y + index * spacing - inputOffset
     const cachedAmount = lastSystemInputs[input.id]
-    const cat = inputCategoryMap.get(input.id) ?? DEFAULT_RESOURCE_CATEGORY
-    const handleId = buildResourceId(cat, input.id)
+    const handleId = buildResourceId(input.category, input.id)
 
     nodesToAdd.push({
       id: sourceId,
@@ -86,7 +68,7 @@ export function computeAutoFillEndpoints(params: ComputeAutoFillParams): AutoFil
       position: { x: leftX, y },
       data: {
         mode: 'infinite',
-        ports: [{ id: input.id, amount: cachedAmount ?? 9999, category: cat, _uid: generateId() }],
+        ports: [{ id: input.id, amount: cachedAmount ?? 9999, category: input.category, _uid: generateId() }],
       },
     })
 
@@ -105,8 +87,7 @@ export function computeAutoFillEndpoints(params: ComputeAutoFillParams): AutoFil
     const targetId = makeId()
     const y = position.y + index * spacing - outputOffset
     const cachedAmount = lastSystemOutputs[output.id]
-    const cat = outputCategoryMap.get(output.id) ?? DEFAULT_RESOURCE_CATEGORY
-    const handleId = buildResourceId(cat, output.id)
+    const handleId = buildResourceId(output.category, output.id)
 
     nodesToAdd.push({
       id: targetId,
@@ -114,7 +95,7 @@ export function computeAutoFillEndpoints(params: ComputeAutoFillParams): AutoFil
       position: { x: rightX, y },
       data: {
         mode: 'overflow',
-        ports: [{ id: output.id, amount: cachedAmount ?? 0, category: cat, _uid: generateId() }],
+        ports: [{ id: output.id, amount: cachedAmount ?? 0, category: output.category, _uid: generateId() }],
       },
     })
 
