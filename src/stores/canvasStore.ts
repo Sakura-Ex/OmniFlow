@@ -14,8 +14,8 @@ function extractActualAmounts(
   if (!subResult?.actual_amounts) return {}
   const result: Record<string, number> = {}
   for (const [key, value] of Object.entries(subResult.actual_amounts)) {
-    const rawId = parseResourceId(stripNetPrefix(key)).id
-    result[rawId] = value
+    const parsed = parseResourceId(stripNetPrefix(key))
+    result[`${parsed.category}:${parsed.id}`] = value
   }
   return result
 }

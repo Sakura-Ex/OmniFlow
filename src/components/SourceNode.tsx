@@ -5,6 +5,7 @@ import { useEndpointEditor } from '../EndpointEditorContext'
 import { useGlobalResourceTable } from '../registry/globalResourceTable'
 import { buildUnitSuffix } from '../registry/units'
 import { normalizeEndpointPorts, resolveCategoryDef } from '../utils/endpointNorm'
+import { buildResourceId } from '../utils/resourceIdentifier'
 import { formatOpExRate } from '../utils/formatters'
 import type { SourceNodeData, SourceNodeMode } from '../types/recipe'
 import './SourceNode.css'
@@ -90,8 +91,8 @@ export function SourceNode({ id, data }: NodeProps<SourceNodeData>) {
             const glowColor = hexColor.startsWith('#')
               ? `${hexColor}${Math.round(0.38 * 255).toString(16).padStart(2, '0')}`
               : hexColor.replace(')', ', 0.38)').replace('rgb', 'rgba')
-            const handleId = `${portCategory}:${port.id}`
-            const actualAmt = data.actual_amounts?.[port.id]
+            const handleId = buildResourceId(portCategory, port.id)
+            const actualAmt = data.actual_amounts?.[handleId]
             const draftAmount = draftAmounts[index]
             const inputValue = isEditable
               ? (draftAmount !== undefined ? draftAmount : String(port.amount ?? ''))
