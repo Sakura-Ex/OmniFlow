@@ -2,8 +2,9 @@ import { useState, useMemo } from 'react'
 import type { SourceNodeData, TargetNodeData, EndpointPort } from '../types/recipe'
 import type { EndpointEditorTarget } from '../EndpointEditorContext'
 import { useGlobalResourceTable } from '../registry/globalResourceTable'
-import { normalizeEndpointPorts, emptyEndpointPort } from '../utils/endpointNorm'
+import { emptyEndpointPort, normalizeEndpointPorts } from '../utils/endpointNorm'
 import { generateId } from '../utils/generateId'
+import { DEFAULT_RESOURCE_CATEGORY } from '../utils/resourceIdentifier'
 import { ResourceDefinitionList, ENDPOINT_COLUMNS } from './ResourceDefinitionList'
 import './EndpointEditorModal.css'
 
@@ -38,7 +39,7 @@ export function EndpointEditorModal({ node, onClose, onSave }: Props) {
   }
 
   const handleAddPort = () => {
-    setPorts((prev) => [...prev, emptyEndpointPort(prev[0]?.category ?? 'item')])
+    setPorts((prev) => [...prev, emptyEndpointPort(prev[0]?.category ?? DEFAULT_RESOURCE_CATEGORY)])
   }
 
   const handleRemovePort = (index: number) => {
@@ -59,7 +60,7 @@ export function EndpointEditorModal({ node, onClose, onSave }: Props) {
       id: firstPort?.id ?? '',
       label: firstPort?.id ?? '',
       amount: firstPort?.amount ?? 0,
-      category: firstPort?.category ?? 'item',
+      category: firstPort?.category ?? DEFAULT_RESOURCE_CATEGORY,
       ports: validPorts.length > 0 ? validPorts : ports,
     })
   }
