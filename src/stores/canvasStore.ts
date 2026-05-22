@@ -4,7 +4,7 @@ import type { RecipeNodeData, EndpointPort } from '../types/recipe'
 import type { CalculateResponse } from '../types/api'
 import { useRecipeStore } from './recipeStore'
 import { normalizeEndpointPorts } from '../utils/endpointNorm'
-import { buildResourceId, stripNetPrefix, parseResourceId, DEFAULT_RESOURCE_CATEGORY } from '../utils/resourceIdentifier'
+import { buildResourceId, normalizeResourceKey, DEFAULT_RESOURCE_CATEGORY } from '../utils/resourceIdentifier'
 import { computeCapexList } from '../core/calculation/capEx'
 
 /** 从后端子节点结果中提取 actual_amounts，key 还原为 raw ID（前端格式） */
@@ -14,8 +14,7 @@ function extractActualAmounts(
   if (!subResult?.actual_amounts) return {}
   const result: Record<string, number> = {}
   for (const [key, value] of Object.entries(subResult.actual_amounts)) {
-    const parsed = parseResourceId(stripNetPrefix(key))
-    result[`${parsed.category}:${parsed.id}`] = value
+    result[normalizeResourceKey(key)] = value
   }
   return result
 }
