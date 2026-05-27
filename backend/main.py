@@ -283,60 +283,60 @@ async def calculate_flow(request: CalculateRequest):
     A_ub = np.array(A_ub_rows, dtype=float) if A_ub_rows else None
     b_ub_arr = np.array(b_ub, dtype=float) if b_ub else None
 
-    # ── DEBUG: 写矩阵诊断到文件 ──
-    import json as _json
-    from datetime import datetime as _datetime
-    from pathlib import Path as _Path
-    _debug = {
-        "time": _datetime.now().isoformat(timespec="seconds"),
-        "nodes": len(recipe_nodes) + len(source_nodes) + len(target_nodes),
-        "recipes": [r["node_id"] for r in recipe_nodes],
-        "sources": [s["node_id"] for s in source_nodes],
-        "targets": [t["node_id"] for t in target_nodes],
-        "total_vars": total_vars,
-        "spill_count": spill_count,
-        "spill_m": _spill_m,
-        "spill_items": spill_items,
-        "items": items,
-        "edges": [(e.source, e.target, e.sourceHandle, e.targetHandle) for e in edges],
-        "vars": [],
-        "constraints": [],
-    }
-    for recipe in recipe_nodes:
-        rd: RecipeNodeData = recipe["data"]
-        _debug["vars"].append({
-            "type": "recipe", "node_id": recipe["node_id"],
-            "mode": rd.mode or 'auto',
-            "manual_machines": rd.manual_machines,
-        })
-    for source in source_nodes:
-        sd: SourceNodeData = source["data"]
-        _debug["vars"].append({
-            "type": "source", "node_id": source["node_id"], "id": sd.id,
-            "mode": sd.mode or 'infinite',
-            "amount": sd.amount,
-        })
-    for target in target_nodes:
-        td: TargetNodeData = target["data"]
-        _debug["vars"].append({
-            "type": "target", "node_id": target["node_id"], "id": td.id,
-            "mode": td.mode or 'maximize',
-            "amount": td.amount,
-        })
-    for item_id in items:
-        row = item_rows[item_id]
-        _debug["constraints"].append({
-            "item": item_id,
-            "row": [round(float(v), 6) for v in row.tolist()],
-            "spill": item_id in spill_index,
-            "has_pos": bool(np.any(row > 1e-12)),
-        })
-    _log_dir = _Path(__file__).resolve().parent / "logs"
-    _log_dir.mkdir(exist_ok=True)
-    _ts = _datetime.now().strftime("%Y%m%d_%H%M%S")
-    _log_path = _log_dir / f"debug_{_ts}.json"
-    _log_path.write_text(_json.dumps(_debug, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"[DEBUG] written to {_log_path}")
+    # # ── DEBUG: 写矩阵诊断到文件 ──
+    # import json as _json
+    # from datetime import datetime as _datetime
+    # from pathlib import Path as _Path
+    # _debug = {
+    #     "time": _datetime.now().isoformat(timespec="seconds"),
+    #     "nodes": len(recipe_nodes) + len(source_nodes) + len(target_nodes),
+    #     "recipes": [r["node_id"] for r in recipe_nodes],
+    #     "sources": [s["node_id"] for s in source_nodes],
+    #     "targets": [t["node_id"] for t in target_nodes],
+    #     "total_vars": total_vars,
+    #     "spill_count": spill_count,
+    #     "spill_m": _spill_m,
+    #     "spill_items": spill_items,
+    #     "items": items,
+    #     "edges": [(e.source, e.target, e.sourceHandle, e.targetHandle) for e in edges],
+    #     "vars": [],
+    #     "constraints": [],
+    # }
+    # for recipe in recipe_nodes:
+    #     rd: RecipeNodeData = recipe["data"]
+    #     _debug["vars"].append({
+    #         "type": "recipe", "node_id": recipe["node_id"],
+    #         "mode": rd.mode or 'auto',
+    #         "manual_machines": rd.manual_machines,
+    #     })
+    # for source in source_nodes:
+    #     sd: SourceNodeData = source["data"]
+    #     _debug["vars"].append({
+    #         "type": "source", "node_id": source["node_id"], "id": sd.id,
+    #         "mode": sd.mode or 'infinite',
+    #         "amount": sd.amount,
+    #     })
+    # for target in target_nodes:
+    #     td: TargetNodeData = target["data"]
+    #     _debug["vars"].append({
+    #         "type": "target", "node_id": target["node_id"], "id": td.id,
+    #         "mode": td.mode or 'maximize',
+    #         "amount": td.amount,
+    #     })
+    # for item_id in items:
+    #     row = item_rows[item_id]
+    #     _debug["constraints"].append({
+    #         "item": item_id,
+    #         "row": [round(float(v), 6) for v in row.tolist()],
+    #         "spill": item_id in spill_index,
+    #         "has_pos": bool(np.any(row > 1e-12)),
+    #     })
+    # _log_dir = _Path(__file__).resolve().parent / "logs"
+    # _log_dir.mkdir(exist_ok=True)
+    # _ts = _datetime.now().strftime("%Y%m%d_%H%M%S")
+    # _log_path = _log_dir / f"debug_{_ts}.json"
+    # _log_path.write_text(_json.dumps(_debug, indent=2, ensure_ascii=False), encoding="utf-8")
+    # print(f"[DEBUG] written to {_log_path}")
 
     # 步骤 5：调用 SciPy 求解
     if total_vars == 0:

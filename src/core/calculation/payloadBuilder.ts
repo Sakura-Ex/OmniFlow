@@ -17,6 +17,70 @@ function resolveIsAuto(data: Record<string, unknown> | undefined): boolean {
   return true
 }
 
+function processGlobalPorts(
+  recipeData: RecipeNodeData,
+  inputSet: Set<string>,
+  outputSet: Set<string>,
+): void {
+  const collect = (
+    ports: RecipeNodeData['base_inputs'],
+    targetSet: Set<string>,
+  ) => {
+    for (const port of ports ?? []) {
+      if (port.routing_mode === 'global') {
+        targetSet.add(buildResourceId(port.category, port.id))
+      }
+    }
+  }
+
+  collect(recipeData.base_inputs, inputSet)
+  collect(recipeData.base_outputs, outputSet)
+  collect(recipeData.base_utility_inputs, inputSet)
+  collect(recipeData.base_utility_outputs, outputSet)
+}
+
+function buildImplicitEdgesForGlobalPorts(
+  nodeId: string,
+  recipeData: RecipeNodeData,
+  implicitEdges: Array<{
+    source: string
+    target: string
+    sourceHandle: string | null | undefined
+    targetHandle: string | null | undefined
+  }>,
+): void {
+  const pushInputEdges = (ports: RecipeNodeData['base_inputs']) => {
+    for (const port of ports ?? []) {
+      if (port.routing_mode !== 'global' || !port.id) continue
+      const key = buildResourceId(port.category, port.id)
+      implicitEdges.push({
+        source: VIRTUAL_GLOBAL_SOURCE,
+        target: nodeId,
+        sourceHandle: key,
+        targetHandle: key,
+      })
+    }
+  }
+
+  const pushOutputEdges = (ports: RecipeNodeData['base_outputs']) => {
+    for (const port of ports ?? []) {
+      if (port.routing_mode !== 'global' || !port.id) continue
+      const key = buildResourceId(port.category, port.id)
+      implicitEdges.push({
+        source: nodeId,
+        target: VIRTUAL_GLOBAL_TARGET,
+        sourceHandle: key,
+        targetHandle: key,
+      })
+    }
+  }
+
+  pushInputEdges(recipeData.base_inputs)
+  pushOutputEdges(recipeData.base_outputs)
+  pushInputEdges(recipeData.base_utility_inputs)
+  pushOutputEdges(recipeData.base_utility_outputs)
+}
+
 export interface CalculationPayload {
   payloadNodes: Array<{ id: string; type: string; data: Record<string, unknown> }>
   payloadEdges: Array<{
@@ -52,18 +116,7 @@ export function buildCalculationPayload(
       if (!stored) continue
       shapedRecipeByNodeId.set(n.id, stored)
 
-      for (const port of stored.base_inputs ?? []) {
-        if (port.routing_mode === 'global') globalInputSet.add(buildResourceId(port.category, port.id))
-      }
-      for (const port of stored.base_outputs ?? []) {
-        if (port.routing_mode === 'global') globalOutputSet.add(buildResourceId(port.category, port.id))
-      }
-      for (const port of stored.base_utility_inputs ?? []) {
-        if (port.routing_mode === 'global') globalInputSet.add(buildResourceId(port.category, port.id))
-      }
-      for (const port of stored.base_utility_outputs ?? []) {
-        if (port.routing_mode === 'global') globalOutputSet.add(buildResourceId(port.category, port.id))
-      }
+      processGlobalPorts(stored, globalInputSet, globalOutputSet)
 
       const rates = stored._computed ?? runModifierPipeline(stored)
       const materialOutputs = rates.recipe_outputs.filter((r) => !r.is_utility)
@@ -265,46 +318,7 @@ export function buildCalculationPayload(
   }> = []
 
   for (const [nodeId, shaped] of shapedRecipeByNodeId.entries()) {
-    for (const port of shaped.base_inputs ?? []) {
-      if (port.routing_mode !== 'global' || !port.id) continue
-      const key = buildResourceId(port.category, port.id)
-      implicitEdges.push({
-        source: VIRTUAL_GLOBAL_SOURCE,
-        target: nodeId,
-        sourceHandle: key,
-        targetHandle: key,
-      })
-    }
-    for (const port of shaped.base_outputs ?? []) {
-      if (port.routing_mode !== 'global' || !port.id) continue
-      const key = buildResourceId(port.category, port.id)
-      implicitEdges.push({
-        source: nodeId,
-        target: VIRTUAL_GLOBAL_TARGET,
-        sourceHandle: key,
-        targetHandle: key,
-      })
-    }
-    for (const port of shaped.base_utility_inputs ?? []) {
-      if (port.routing_mode !== 'global' || !port.id) continue
-      const key = buildResourceId(port.category, port.id)
-      implicitEdges.push({
-        source: VIRTUAL_GLOBAL_SOURCE,
-        target: nodeId,
-        sourceHandle: key,
-        targetHandle: key,
-      })
-    }
-    for (const port of shaped.base_utility_outputs ?? []) {
-      if (port.routing_mode !== 'global' || !port.id) continue
-      const key = buildResourceId(port.category, port.id)
-      implicitEdges.push({
-        source: nodeId,
-        target: VIRTUAL_GLOBAL_TARGET,
-        sourceHandle: key,
-        targetHandle: key,
-      })
-    }
+    buildImplicitEdgesForGlobalPorts(nodeId, shaped, implicitEdges)
   }
 
   for (const ep of endpointGlobalPorts) {
