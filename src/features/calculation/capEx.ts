@@ -3,6 +3,18 @@ import type { CalculateResponse } from '@/common/types/api'
 import { buildResourceId } from '@/common/utils/resourceId'
 import { flattenRecipeResources } from '@/features/canvas/canvas.utils'
 
+/**
+ * Compute the capital expenditure (CapEx) list from recipe data and backend
+ * calculation results.
+ *
+ * For each recipe node whose actual machine count exceeds zero, the function
+ * multiplies every non-consumable resource amount by the machine count.
+ * Resources with `consumable: true` or `probability: 0` are excluded.
+ *
+ * @param recipes    - Recipe store keyed by node ID.
+ * @param nodeResults - Per-node results from the backend calculation response.
+ * @returns A map of qualified resource ID → total capex amount.
+ */
 export function computeCapexList(
   recipes: Record<string, RecipeNodeData>,
   nodeResults: CalculateResponse['node_results'],

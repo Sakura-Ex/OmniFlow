@@ -2,6 +2,18 @@ import { useState, useCallback } from 'react'
 import type { RoutingMode } from '@/common/types/resource'
 import { toggleRouting } from '@/features/canvas/canvas.utils'
 
+/**
+ * Manages a mutable list of resource items with helpers for update, add, remove and routing toggle.
+ *
+ * @param initial – The initial array of resource items.
+ * @returns An object containing:
+ *  - `items` – the current list.
+ *  - `setItems` – replace the entire list.
+ *  - `updateAtIndex` – apply a partial patch at a given index.
+ *  - `add` – append a new item created by the supplied factory.
+ *  - `removeAtIndex` – remove an item at a given index.
+ *  - `toggleRoutingAtIndex` – cycle the routing mode of an item (unless `routing_locked`).
+ */
 export function useResourceList<T extends { _uid?: string; routing_mode?: RoutingMode }>(initial: T[]) {
   const [items, setItems] = useState<T[]>(initial)
 

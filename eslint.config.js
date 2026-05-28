@@ -4,6 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import boundaries from 'eslint-plugin-boundaries'
 import tseslint from 'typescript-eslint'
+import jsdoc from 'eslint-plugin-jsdoc'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
@@ -16,31 +17,58 @@ export default defineConfig([
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
+    plugins: { jsdoc },
+    settings: {
+      jsdoc: {
+        tagNamePreference: {
+          param: 'param',
+          returns: 'returns',
+          example: 'example',
+        },
+        preferredTypes: {
+          Object: 'Record<string, unknown>',
+          object: 'Record<string, unknown>',
+        },
+      },
+    },
     languageOptions: {
       globals: globals.browser,
     },
   },
   {
     files: ['src/**/*.{ts,tsx}'],
-    plugins: { boundaries },
+    plugins: { boundaries, jsdoc },
     settings: {
-      'boundaries/elements': [
-        { pattern: 'src/common/types/**', mode: 'full', type: 'common-types' },
-        { pattern: 'src/common/utils/**', mode: 'full', type: 'common-utils' },
-        { pattern: 'src/common/db/**', mode: 'full', type: 'common-db' },
-        { pattern: 'src/common/schemas/**', mode: 'full', type: 'common-schemas' },
-        { pattern: 'src/data/**', mode: 'full', type: 'data' },
-        { pattern: 'src/features/calculation/**', mode: 'full', type: 'feature-calculation' },
-        { pattern: 'src/features/modifier/**', mode: 'full', type: 'feature-modifier' },
-        { pattern: 'src/features/recipe/**', mode: 'full', type: 'feature-recipe' },
-        { pattern: 'src/features/canvas/**', mode: 'full', type: 'feature-canvas' },
-        { pattern: 'src/features/resource-registry/**', mode: 'full', type: 'feature-resource-registry' },
-        { pattern: 'src/features/settings/**', mode: 'full', type: 'feature-settings' },
-        { pattern: 'src/features/project/**', mode: 'full', type: 'feature-project' },
-        { pattern: 'src/features/file-io/**', mode: 'full', type: 'feature-file-io' },
-        { pattern: 'src/features/endpoint/**', mode: 'full', type: 'feature-endpoint' },
-        { pattern: 'src/hooks/**', mode: 'full', type: 'global-hooks' },
-      ],
+      boundaries: {
+        elements: [
+          { pattern: 'src/common/types/**', mode: 'full', type: 'common-types' },
+          { pattern: 'src/common/utils/**', mode: 'full', type: 'common-utils' },
+          { pattern: 'src/common/db/**', mode: 'full', type: 'common-db' },
+          { pattern: 'src/common/schemas/**', mode: 'full', type: 'common-schemas' },
+          { pattern: 'src/data/**', mode: 'full', type: 'data' },
+          { pattern: 'src/features/calculation/**', mode: 'full', type: 'feature-calculation' },
+          { pattern: 'src/features/modifier/**', mode: 'full', type: 'feature-modifier' },
+          { pattern: 'src/features/recipe/**', mode: 'full', type: 'feature-recipe' },
+          { pattern: 'src/features/canvas/**', mode: 'full', type: 'feature-canvas' },
+          { pattern: 'src/features/resource-registry/**', mode: 'full', type: 'feature-resource-registry' },
+          { pattern: 'src/features/settings/**', mode: 'full', type: 'feature-settings' },
+          { pattern: 'src/features/project/**', mode: 'full', type: 'feature-project' },
+          { pattern: 'src/features/file-io/**', mode: 'full', type: 'feature-file-io' },
+          { pattern: 'src/features/endpoint/**', mode: 'full', type: 'feature-endpoint' },
+          { pattern: 'src/hooks/**', mode: 'full', type: 'global-hooks' },
+        ],
+      },
+      jsdoc: {
+        tagNamePreference: {
+          param: 'param',
+          returns: 'returns',
+          example: 'example',
+        },
+        preferredTypes: {
+          Object: 'Record<string, unknown>',
+          object: 'Record<string, unknown>',
+        },
+      },
     },
     rules: {
       'boundaries/element-types': ['error', {
@@ -63,6 +91,22 @@ export default defineConfig([
           { from: 'feature-file-io', allow: ['common-types', 'common-utils', 'common-schemas', 'feature-recipe', 'feature-canvas', 'feature-modifier', 'feature-file-io'] },
         ],
       }],
+      'jsdoc/require-jsdoc': ['warn', {
+        require: {
+          FunctionDeclaration: true,
+          ClassDeclaration: true,
+          MethodDefinition: true,
+          ArrowFunctionExpression: false,
+        },
+        checkConstructors: true,
+        checkGetters: true,
+        checkSetters: true,
+        contexts: ['TSInterfaceDeclaration', 'TSTypeAliasDeclaration'],
+      }],
+      'jsdoc/check-param-names': 'warn',
+      'jsdoc/check-types': 'warn',
+      'jsdoc/require-returns': 'warn',
+      'jsdoc/require-param': 'warn',
     },
   },
 ])

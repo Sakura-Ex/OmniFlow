@@ -1,6 +1,12 @@
 import type { IMachineModifier, PipelineContext } from '../modifier.types'
 import type { Resource } from '@/common/types/resource'
 
+/**
+ * Base Chassis Efficiency modifier plugin.
+ *
+ * Scales all resource amounts (inputs and outputs) and recipe duration by a configurable
+ * efficiency multiplier. Can be placed up to 4 times for compounding effects.
+ */
 export const baseChassisEfficiencyModifier: IMachineModifier = {
   id: 'base_chassis_efficiency',
   name: 'Base Chassis Efficiency',

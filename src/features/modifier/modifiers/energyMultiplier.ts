@@ -1,5 +1,11 @@
 import type { IMachineModifier, PipelineContext } from '../modifier.types'
 
+/**
+ * Energy Multiplier modifier plugin.
+ *
+ * Scales GT EU utility input by a configurable multiplier. Only affects resources with
+ * `utility_type === 'energy:gt_eu'`. Can be placed up to 4 times.
+ */
 export const energyMultiplierModifier: IMachineModifier = {
   id: 'energy_multiplier',
   name: 'Energy Multiplier',

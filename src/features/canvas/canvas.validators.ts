@@ -2,6 +2,12 @@ import type { Node } from 'reactflow'
 import type { RecipeNodeData } from '@/common/types/recipe'
 import { ensureRecipeDataShape } from '@/features/modifier/modifier.normalize'
 
+/**
+ * Normalize a canvas node by ensuring required defaults (`mode`) are present and
+ * shaping recipe-node data through `ensureRecipeDataShape`.
+ * @param node - The raw React Flow node to normalize.
+ * @returns A new node object with guaranteed defaults applied.
+ */
 export function normalizeCanvasNode(node: Node): Node {
   if (!node.data) return node
   const raw = node.data as Record<string, unknown>

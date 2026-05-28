@@ -1,12 +1,14 @@
 import type { TimeBase } from '@/common/types/resource'
 import type { ResourceColumnId } from './ResourceDefinitionRow.types'
 
+/** Describes a single column in a resource definition table. */
 export interface ColumnDef {
   id: ResourceColumnId
   header: string
   width?: string
 }
 
+/** Column definitions for the recipe inputs table. */
 export const RECIPE_INPUT_COLUMNS: ColumnDef[] = [
   { id: 'category', header: '类别', width: '1fr' },
   { id: 'id', header: 'ID', width: '1fr' },
@@ -57,6 +59,7 @@ export const ENDPOINT_COLUMNS: ColumnDef[] = [
   { id: 'delete', header: '', width: 'minmax(0, 34px)' },
 ]
 
+/** Available time-base options for resource amounts. */
 export const TIME_BASE_OPTIONS: { value: TimeBase; label: string }[] = [
   { value: 'per_cycle', label: '/配方' },
   { value: 'rate_per_tick', label: '/tick' },

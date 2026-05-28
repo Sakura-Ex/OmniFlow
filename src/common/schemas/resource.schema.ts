@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+/** Zod schema for a resource definition (category, id, amount, time base, routing, probability, etc.). */
 export const ResourceSchema = z.object({
   category: z.string(),
   id: z.string(),
@@ -16,4 +17,5 @@ export const ResourceSchema = z.object({
   _uid: z.string().optional(),
 }).passthrough()
 
+/** Inferred TypeScript type for a resource definition. */
 export type ResourceSchemaType = z.infer<typeof ResourceSchema>

@@ -1,6 +1,9 @@
 import type { RefObject } from 'react'
 import type { ThemeMode } from '@/hooks/useTheme'
 
+/**
+ *
+ */
 type MenuBarProps = {
   menuRef: RefObject<HTMLDivElement | null>
   openMenu: string | null
@@ -35,6 +38,45 @@ type MenuBarProps = {
   onOpenTpsSettings: () => void
 }
 
+/**
+ * Top menu bar component providing access to file operations (save/load/import/export),
+ * edit actions (undo/redo/copy/paste/delete), node creation, view controls, solve triggers,
+ * resource registry, TPS settings, and theme toggling.
+ *
+ * @param props - Component props
+ * @param props.menuRef - Ref attached to the menu bar container for click-outside detection
+ * @param props.openMenu - Currently open dropdown menu identifier, or null
+ * @param props.setOpenMenu - Callback to open or close a dropdown menu
+ * @param props.handleMenuAction - Callback that executes an action and closes the menu
+ * @param props.theme - Current theme mode ('dark' | 'light')
+ * @param props.toggleTheme - Callback to toggle between dark and light themes
+ * @param props.handleSaveCanvas - Callback to persist canvas state
+ * @param props.handleLoadCanvas - Callback to restore canvas from storage
+ * @param props.handleExportJson - Callback to export canvas as JSON file
+ * @param props.handleImportClick - Callback to trigger the file import dialog
+ * @param props.undo - Callback to undo the last canvas operation
+ * @param props.redo - Callback to redo a previously undone operation
+ * @param props.handleCopy - Async callback to copy selected nodes/edges
+ * @param props.handleCut - Async callback to cut selected nodes/edges
+ * @param props.handlePaste - Async callback to paste clipboard content
+ * @param props.handleDuplicate - Callback to duplicate selected nodes
+ * @param props.handleSelectAll - Callback to select all nodes and edges
+ * @param props.handleClearSelection - Callback to clear current selection
+ * @param props.handleDeleteSelected - Callback to delete all selected items
+ * @param props.handleDeleteSelectedNodes - Callback to delete only selected nodes
+ * @param props.handleDeleteSelectedEdges - Callback to delete only selected edges
+ * @param props.handleClear - Callback to clear the entire canvas
+ * @param props.handleAddSource - Callback to add a new source node
+ * @param props.handleAddFurnace - Callback to add a new machine/recipe node
+ * @param props.handleAddTarget - Callback to add a new target node
+ * @param props.handleAddCustomRecipe - Callback to add a custom recipe node
+ * @param props.handleAutoFillSelected - Callback to auto-fill ports on selected recipe nodes
+ * @param props.handleFitView - Callback to fit all canvas items into the viewport
+ * @param props.handleCalculate - Async callback to trigger matrix solving
+ * @param props.onOpenRegistry - Callback to open the global resource registry panel
+ * @param props.onOpenTpsSettings - Callback to open the TPS settings panel
+ * @returns Rendered JSX element for the menu bar.
+ */
 export function MenuBar({
   menuRef,
   openMenu,

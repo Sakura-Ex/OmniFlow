@@ -1,5 +1,15 @@
 import type { ModifierCardRenderProps } from '../../modifier.types'
 
+/**
+ * Card body for the GT Parallel modifier.
+ * Renders a select dropdown for the parallel processing limit.
+ *
+ * @param root0 - Render props from the card shell.
+ * @param root0.state - Current modifier UI state.
+ * @param root0.onChange - Callback to update a state key.
+ * @param root0.Select - Select UI component from the card shell.
+ * @returns Rendered JSX for the parallel card body.
+ */
 export function ParallelCardBody({ state, onChange, Select }: ModifierCardRenderProps) {
   return (
     <>

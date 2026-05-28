@@ -4,6 +4,27 @@ import { buildCalculationPayload } from '../payloadBuilder'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { useCanvasStore } from '@/features/canvas/canvas.store'
 
+/**
+ * React hook that orchestrates a full calculation cycle:
+ *
+ * 1. Reads canvas nodes, edges and recipe store from Zustand.
+ * 2. Calls {@link buildCalculationPayload} to assemble the backend payload.
+ * 3. Validates that no recipe node has all-zero material outputs.
+ * 4. POSTs the payload to the backend `/api/calculate` endpoint.
+ * 5. Stores the {@link CalculateResponse} back into the canvas store.
+ *
+ * Also exposes cached system stats (inputs, outputs, capex) and provides
+ * a `resetSystemStats` callback to clear the previous calculation state.
+ *
+ * @returns An object containing:
+ *  - `systemInputs` / `systemOutputs` — current system-level resource aggregates.
+ *  - `lastSystemInputs` / `lastSystemOutputs` — cached values from the last run.
+ *  - `globalInputIds` / `globalOutputIds` — globally-routed port resource IDs.
+ *  - `capexList` — capital expenditure breakdown.
+ *  - `error` — last calculation error message, if any.
+ *  - `resetSystemStats` — callback to clear calculation state.
+ *  - `handleCalculate` — async callback that runs the full calculation flow.
+ */
 export function useCalculation() {
   const systemInputs = useCanvasStore((s) => s.systemInputs)
   const systemOutputs = useCanvasStore((s) => s.systemOutputs)

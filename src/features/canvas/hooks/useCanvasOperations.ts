@@ -5,6 +5,7 @@ import type { RecipeNodeData } from '@/common/types/recipe'
 import { useCanvasStore } from '@/features/canvas/canvas.store'
 import { DEFAULT_RESOURCE_CATEGORY } from '@/common/utils/resourceId'
 
+/** Parameters for the `useCanvasOperations` hook. */
 type UseCanvasOperationsParams = {
   setNodes: (nodes: Node[]) => void
   setEdges: (edges: Edge[]) => void
@@ -12,10 +13,31 @@ type UseCanvasOperationsParams = {
   getViewportCenter: () => { x: number; y: number }
 }
 
+/**
+ * Generate a unique node identifier.
+ * @returns A unique node ID string.
+ */
 function makeId() {
   return `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
 }
 
+/**
+ * Provides all canvas-level operations: adding nodes, connecting edges,
+ * selection management and clearing the canvas.
+ *
+ * @param root0 - Hook parameters.
+ * @param root0.setNodes - State setter for nodes.
+ * @param root0.setEdges - State setter for edges.
+ * @param root0.takeSnapshot - Pushes the current state onto the undo stack.
+ * @param root0.getViewportCenter - Returns the current viewport centre coordinates.
+ * @returns An object with connection validation (`isValidConnection`),
+ *          edge/node creation handlers (`onConnect`, `onEdgeDoubleClick`,
+ *          `handleAddSource`, `handleAddFurnace`, `handleAddCustomRecipe`,
+ *          `handleAddTarget`), deletion handlers (`handleClear`,
+ *          `handleDeleteSelected`, `handleDeleteSelectedEdges`,
+ *          `handleDeleteSelectedNodes`), and selection handlers
+ *          (`handleSelectAll`, `handleClearSelection`).
+ */
 export function useCanvasOperations({
   setNodes,
   setEdges,

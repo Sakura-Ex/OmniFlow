@@ -9,16 +9,30 @@ import { normalizeEndpointPorts } from '@/features/recipe/recipe.endpointNorm'
 import type { SourceNodeData, TargetNodeData } from '@/common/types/recipe'
 import styles from './SystemHUD.module.css'
 
+/** Props for the `IntermediateProductsPanel` component. */
 type IntermediateProductsPanelProps = {
   systemInputs: Record<string, number>
   systemOutputs: Record<string, number>
 }
 
+/**
+ * Split a normalized resource key into its category and name parts.
+ * @param item - The normalized resource key.
+ * @returns An object with `category` and `name`.
+ */
 function parseItemKey(item: string): { category: string; name: string } {
   const { category, id } = parseNormalizedKey(item)
   return { category, name: id }
 }
 
+/**
+ * Renders a single resource row within the intermediate products panel.
+ * @param root0 - Component props.
+ * @param root0.item - The normalized resource key.
+ * @param root0.value - The numeric rate value.
+ * @param root0.isGlobal - Whether this resource uses global bus routing.
+ * @returns Rendered JSX for the resource row.
+ */
 function HUDResourceRow({ item, value, isGlobal }: { item: string; value: number; isGlobal: boolean }) {
   const userCategories = useGlobalResourceTable((state) => state.categories)
   const userOverrides = useGlobalResourceTable((state) => state.overrides)
@@ -39,6 +53,16 @@ function HUDResourceRow({ item, value, isGlobal }: { item: string; value: number
   )
 }
 
+/**
+ * Panel component that displays intermediate products (items with zero net rate)
+ * that exist in recipe inputs/outputs but are neither system inputs nor outputs.
+ * These are items produced and consumed entirely within the canvas.
+ *
+ * @param props - Component props
+ * @param props.systemInputs - Map of resource keys to their system input rates
+ * @param props.systemOutputs - Map of resource keys to their system output rates
+ * @returns Rendered JSX element for the intermediate products panel, or null if no intermediates exist.
+ */
 export function IntermediateProductsPanel({
   systemInputs,
   systemOutputs,

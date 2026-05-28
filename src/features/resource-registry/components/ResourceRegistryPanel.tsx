@@ -8,16 +8,21 @@ import { generateId } from '@/common/utils/id'
 import modalStyles from '@/common/components/Modal.module.css'
 import styles from './ResourceRegistryPanel.module.css'
 
+/** Props for the `ResourceRegistryPanel` component. */
 type ResourceRegistryPanelProps = {
   onClose: () => void
 }
 
+/** Available tabs in the resource registry panel. */
 const ResourceRegistryTab = {
   Categories: 'categories',
   Overrides: 'overrides',
   Entries: 'entries',
 } as const satisfies Record<string, string>
 
+/**
+ *
+ */
 type ResourceRegistryTab = ValueOf<typeof ResourceRegistryTab>
 
 const COLOR_PALETTE = [
@@ -27,6 +32,11 @@ const COLOR_PALETTE = [
   '#f87171', '#a3e635', '#cbd5e1', '#67e8f9', '#d4d4d8',
 ]
 
+/**
+ * Pick the first unused colour from the palette.
+ * @param used - Set of already-used colour strings.
+ * @returns An unused colour string.
+ */
 function unusedColor(used: Set<string>): string {
   for (const c of COLOR_PALETTE) {
     if (!used.has(c)) return c
@@ -34,14 +44,30 @@ function unusedColor(used: Set<string>): string {
   return `#${Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0')}`
 }
 
+/** Draft override entry used within the registry editor before committing changes. */
 type DraftOverride = UnitOverride & { _category?: string; _asset?: string }
 
+/** Complete draft state for the resource registry editor. */
 type DraftState = {
   categories: Record<string, ResourceCategoryDef>
   overrides: Record<string, DraftOverride>
   entries: Record<string, ResourceEntry>
 }
 
+/**
+ * Full-screen modal panel for managing the global resource registry.
+ * Provides three tabs:
+ *  - **Categories** – define resource categories (id, display name, base unit, time base, color).
+ *  - **Overrides** – override the unit for specific `category:asset` pairs.
+ *  - **Entries** – view and annotate every resource that has appeared in the project.
+ *
+ * Changes are staged in a local draft and committed to the global store when the user
+ * clicks "Apply" or "Confirm".
+ *
+ * @param props - Component props.
+ * @param props.onClose – Callback fired when the panel is dismissed.
+ * @returns Rendered JSX element for the resource registry panel.
+ */
 export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
   const categories = useGlobalResourceTable((state) => state.categories)
   const overrides = useGlobalResourceTable((state) => state.overrides)

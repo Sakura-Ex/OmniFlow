@@ -5,11 +5,13 @@ import type { RecipeNodeData } from '@/common/types/recipe'
 import { stripState } from '@/features/canvas/canvas.utils'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 
+/** Shape of the clipboard serialisation payload. */
 type ClipboardPayload = {
   nodes: Node[]
   edges: Edge[]
 }
 
+/** Parameters for the `useClipboard` hook. */
 type UseClipboardParams = {
   nodesRef: MutableRefObject<Node[]>
   edgesRef: MutableRefObject<Edge[]>
@@ -19,10 +21,28 @@ type UseClipboardParams = {
   onDeleteSelected: () => void
 }
 
+/**
+ * Generate a unique node identifier.
+ * @returns A unique node ID string.
+ */
 function makeId() {
   return `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
 }
 
+/**
+ * Provides clipboard operations — copy, cut, paste, and duplicate — for
+ * selected nodes and edges.
+ *
+ * @param root0 - Hook parameters.
+ * @param root0.nodesRef - Mutable ref holding the current node array.
+ * @param root0.edgesRef - Mutable ref holding the current edge array.
+ * @param root0.setNodes - State setter for nodes.
+ * @param root0.setEdges - State setter for edges.
+ * @param root0.takeSnapshot - Pushes the current state onto the undo stack.
+ * @param root0.onDeleteSelected - Callback that deletes the currently selected items.
+ * @returns An object with {@link handleCopy}, {@link handlePaste},
+ *          {@link handleCut} and {@link handleDuplicate}.
+ */
 export function useClipboard({
   nodesRef,
   edgesRef,

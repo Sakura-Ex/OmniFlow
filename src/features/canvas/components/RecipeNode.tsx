@@ -13,11 +13,28 @@ import type { TimeBase, ResourceIo, NormalizedResource, ComputedNodePayload } fr
 import styles from './RecipeNode.module.css'
 import shared from './shared-port.module.css'
 
+/**
+ * Format a machine count value for display, using exact or rounded formatting.
+ * @param value - The machine count, or undefined.
+ * @param isExact - Whether to show exact decimal notation.
+ * @returns A formatted machine count string, or empty string if undefined/NaN.
+ */
 function formatMachineCount(value: number | undefined, isExact: boolean) {
   if (typeof value !== 'number' || Number.isNaN(value)) return ''
   return isExact ? formatMachineExact(value) : formatCapEx(value)
 }
 
+/**
+ * Canvas node component representing a machine/recipe.
+ * Displays the machine name, input/output resource ports (with inline rates),
+ * utility infrastructure ports, implemented status toggle, auto-fill and edit buttons,
+ * mode selector (auto / limit), and a manual machine count input with utilization hint.
+ *
+ * @param props - Node props from ReactFlow
+ * @param props.id - Unique node identifier
+ * @param props.data - Recipe node data containing machine configuration, modifiers, and endpoint specs
+ * @returns Rendered JSX element for the recipe node.
+ */
 export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   const { onEdit, onAutoFill } = useRecipeEditor()
   const { updateNodeData } = useNodeData()

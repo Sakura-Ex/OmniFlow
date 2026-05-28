@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from 'react'
+import { useState, useRef } from 'react'
 import type { TimeBase } from '@/common/types/resource'
 import type { ColumnDef } from './ResourceDefinitionRow.config'
 import { TIME_BASE_OPTIONS } from './ResourceDefinitionRow.config'
@@ -6,6 +6,9 @@ import { parseResourceId } from '@/common/utils/resourceId'
 import { useClickOutside } from '@/hooks/useClickOutside'
 import styles from './ResourceDefinitionRow.module.css'
 
+/**
+ *
+ */
 type RowItem = {
   category?: string
   id?: string
@@ -21,6 +24,7 @@ type RowItem = {
   amount_mutable?: boolean
 }
 
+/** Props for the `ResourceDefinitionRow` component. */
 export interface ResourceDefinitionRowProps {
   item: RowItem
   index: number
@@ -47,6 +51,37 @@ export interface ResourceDefinitionRowProps {
   ioToggleLocked?: boolean
 }
 
+/**
+ * Renders a single row in a resource definition table.
+ * Each column is rendered based on its `col.id`:
+ *  - `id` / `amount` / `time_base` / `category` / `probability` – editable inputs or selects.
+ *  - `routing` / `io_toggle` – toggle buttons.
+ *  - `delete` – a remove button.
+ *  - `preview_rate` / `label` / `spacer` – read-only display.
+ *
+ * @param root0
+ * @param root0.item
+ * @param root0.index
+ * @param root0.columns
+ * @param root0.onUpdate
+ * @param root0.onRemove
+ * @param root0.onToggleRouting
+ * @param root0.onIoTToggle
+ * @param root0.rateText
+ * @param root0.unitSuffix
+ * @param root0.suggestions
+ * @param root0.categoryOptions
+ * @param root0.routingLocked
+ * @param root0.amountLocked
+ * @param root0.canDelete
+ * @param root0.rowLabel
+ * @param root0.categoryLocked
+ * @param root0.idLocked
+ * @param root0.timeBaseLocked
+ * @param root0.probabilityLocked
+ * @param root0.ioToggleLocked
+ * @returns Rendered JSX for the resource definition row.
+ */
 export function ResourceDefinitionRow({
   item,
   index,

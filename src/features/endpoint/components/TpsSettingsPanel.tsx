@@ -2,6 +2,12 @@ import { useSettingsStore } from '@/features/settings/settings.store'
 import { SettingsDrawerShell } from '@/features/canvas/components/SettingsDrawerShell'
 import styles from './TpsSettingsPanel.module.css'
 
+/**
+ * TPS settings panel for configuring ticks-per-second used in rate calculations.
+ * @param root0 - Component props.
+ * @param root0.onClose - Callback fired when the panel is dismissed.
+ * @returns Rendered JSX element for the TPS settings panel.
+ */
 export function TpsSettingsPanel({ onClose }: { onClose: () => void }) {
   const tps = useSettingsStore((s) => s.tps)
   const setTps = useSettingsStore((s) => s.setTps)

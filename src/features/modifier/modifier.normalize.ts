@@ -5,22 +5,45 @@ import { getModifierById } from './modifier.registry'
 import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArchetype } from '@/data/archetypes'
 import { generateId } from '@/common/utils/id'
 
+/**
+ * Normalise the duration from a recipe node, preferring `base_duration_seconds` and falling back to `duration_seconds`.
+ * @param data - The recipe node data.
+ * @returns A non-negative duration in seconds.
+ */
 function normalizeDurationSeconds(data: RecipeNodeData): number {
   if (typeof data.base_duration_seconds === 'number') return Math.max(0, data.base_duration_seconds)
   if (typeof data.duration_seconds === 'number') return Math.max(0, data.duration_seconds)
   return 0
 }
 
+/**
+ * Coerce a raw value into a valid resource category string.
+ * @param raw - The raw category value.
+ * @returns A category string, defaulting to `'item'`.
+ */
 function normalizeCategory(raw: unknown): ResourceCategory {
   if (typeof raw === 'string' && raw.length > 0) return raw
   return 'item'
 }
 
+/**
+ * Coerce a raw value into a finite number, defaulting to `0`.
+ * @param raw - The raw amount value.
+ * @returns A finite number.
+ */
 function normalizeAmount(raw: unknown): number {
   const amount = Number(raw)
   return Number.isFinite(amount) ? amount : 0
 }
 
+/**
+ * Normalize a partial port or resource object into a fully-shaped {@link Resource}.
+ *
+ * Fills in defaults for `category`, `amount`, `routing_mode`, and other optional fields.
+ *
+ * @param port - A partial resource or recipe port object.
+ * @returns A fully-typed {@link Resource} with sensible defaults for missing fields.
+ */
 export function toResource(port: Partial<RecipePort> | Partial<Resource>): Resource {
   const routingRaw = (port as Partial<Resource>).routing_mode
   const routing_mode: RoutingMode = routingRaw === 'global' ? 'global' : 'wired'
@@ -41,6 +64,20 @@ export function toResource(port: Partial<RecipePort> | Partial<Resource>): Resou
   }
 }
 
+/**
+ * Normalize raw recipe node data into a complete, well-shaped {@link RecipeNodeData}.
+ *
+ * Responsibilities:
+ * - Resolves `base_inputs` / `base_outputs` from legacy `inputs` / `outputs` fields.
+ * - Applies the machine archetype to derive utility inputs/outputs.
+ * - Upgrades legacy modifier arrays to the `ActiveModifier[]` shape.
+ * - Injects default modifiers from the archetype.
+ * - Filters modifiers by compatibility and enforces `max_placements`.
+ * - Resolves hardware specs from archetype traits and user overrides.
+ *
+ * @param data - The raw recipe node data, possibly with legacy or missing fields.
+ * @returns A fully-normalized {@link RecipeNodeData} ready for the modifier pipeline.
+ */
 export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
   const baseInputsRaw = (data.base_inputs?.length ? data.base_inputs : data.inputs) ?? []
   const baseOutputsRaw = (data.base_outputs?.length ? data.base_outputs : data.outputs) ?? []

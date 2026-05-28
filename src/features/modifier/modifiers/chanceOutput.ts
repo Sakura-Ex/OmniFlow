@@ -1,5 +1,12 @@
 import type { IMachineModifier, PipelineContext } from '../modifier.types'
 
+/**
+ * Chance Output modifier plugin.
+ *
+ * Applies a probability factor (0–1) to a specific output resource's amount.
+ * When no target resource ID is specified, the probability applies to all outputs.
+ * Can be placed up to 4 times for targeting different outputs.
+ */
 export const chanceOutputModifier: IMachineModifier = {
   id: 'chance_output',
   name: 'Chance Output',

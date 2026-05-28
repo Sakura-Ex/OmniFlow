@@ -1,5 +1,6 @@
 import type { Node, Edge } from 'reactflow'
 
+/** Pre-configured demo nodes for the canvas, including source, recipe, and target nodes. */
 export const initialNodes: Node[] = [
   {
     id: 'source-1',

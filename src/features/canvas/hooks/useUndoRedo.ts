@@ -3,11 +3,13 @@ import type { MutableRefObject } from 'react'
 import type { Edge, Node } from 'reactflow'
 import { deepClone, stripState } from '@/features/canvas/canvas.utils'
 
+/** A snapshot of node/edge state for undo/redo history. */
 type Snapshot = {
   nodes: Node[]
   edges: Edge[]
 }
 
+/** Parameters for the `useUndoRedo` hook. */
 type UseUndoRedoParams = {
   nodesRef: MutableRefObject<Node[]>
   edgesRef: MutableRefObject<Edge[]>
@@ -16,6 +18,17 @@ type UseUndoRedoParams = {
   historyLimit?: number
 }
 
+/**
+ * Provides undo/redo history tracking for canvas node/edge state.
+ *
+ * @param root0 - Hook parameters.
+ * @param root0.nodesRef - Mutable ref holding the current node array.
+ * @param root0.edgesRef - Mutable ref holding the current edge array.
+ * @param root0.setNodes - State setter for nodes.
+ * @param root0.setEdges - State setter for edges.
+ * @param root0.historyLimit - Maximum number of snapshots kept in the undo stack (defaults to 20).
+ * @returns An object with `takeSnapshot`, `undo` and `redo` functions.
+ */
 export function useUndoRedo({
   nodesRef,
   edgesRef,

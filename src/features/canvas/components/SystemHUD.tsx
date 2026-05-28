@@ -6,6 +6,9 @@ import { normalizeResourceKey, parseNormalizedKey, stripNetPrefix, isVirtualGlob
 import { IntermediateProductsPanel } from './IntermediateProductsPanel'
 import styles from './SystemHUD.module.css'
 
+/**
+ *
+ */
 type SystemHUDProps = {
   systemInputs: Record<string, number>
   systemOutputs: Record<string, number>
@@ -14,15 +17,33 @@ type SystemHUDProps = {
   capexList: Record<string, number>
 }
 
+/**
+ * Split a normalized resource key into its category and name parts.
+ * @param item - The normalized resource key.
+ * @returns An object with `category` and `name`.
+ */
 function parseItemKey(item: string): { category: string; name: string } {
   const { category, id } = parseNormalizedKey(item)
   return { category, name: id }
 }
 
+/**
+ * Normalize a resource key for global bus matching.
+ * @param item - The resource key to normalize.
+ * @returns The normalized resource key.
+ */
 function getGlobalKey(item: string): string {
   return normalizeResourceKey(item)
 }
 
+/**
+ * Renders a single resource row within the system HUD.
+ * @param root0 - Component props.
+ * @param root0.item - The normalized resource key.
+ * @param root0.value - The numeric rate value.
+ * @param root0.isGlobal - Whether this resource uses global bus routing.
+ * @returns Rendered JSX for the resource row.
+ */
 function HUDResourceRow({ item, value, isGlobal }: { item: string; value: number; isGlobal: boolean }) {
   const userCategories = useGlobalResourceTable((state) => state.categories)
   const userOverrides = useGlobalResourceTable((state) => state.overrides)
@@ -43,6 +64,20 @@ function HUDResourceRow({ item, value, isGlobal }: { item: string; value: number
   )
 }
 
+/**
+ * System-level heads-up display showing real-time material balances.
+ * Displays system inputs (wired and global), system outputs (wired and global),
+ * and a build-list (CapEx) panel. Each section can be collapsed independently.
+ * Material rates are computed from the net difference between system inputs and outputs.
+ *
+ * @param props - Component props
+ * @param props.systemInputs - Raw map of resource keys to input rates across the canvas
+ * @param props.systemOutputs - Raw map of resource keys to output rates across the canvas
+ * @param props.globalInputIds - Set of resource IDs designated as global bus inputs
+ * @param props.globalOutputIds - Set of resource IDs designated as global bus outputs
+ * @param props.capexList - Map of resource keys to their capital expenditure (build) quantities
+ * @returns Rendered JSX element for the system HUD.
+ */
 export function SystemHUD({
   systemInputs,
   systemOutputs,

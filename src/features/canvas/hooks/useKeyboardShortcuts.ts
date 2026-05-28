@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 
+/** Parameters for the `useKeyboardShortcuts` hook. */
 type UseKeyboardShortcutsParams = {
   takeSnapshot: () => void
   undo: () => void
@@ -14,6 +15,23 @@ type UseKeyboardShortcutsParams = {
   isEditing: boolean
 }
 
+/**
+ * Registers global keyboard shortcuts for canvas actions (Ctrl+Z/Y, Ctrl+C/V,
+ * Ctrl+D, Ctrl+A, Delete, Escape, etc.).
+ *
+ * @param root0 - Hook parameters.
+ * @param root0.takeSnapshot - Pushes the current state onto the undo stack.
+ * @param root0.undo - Undo callback.
+ * @param root0.redo - Redo callback.
+ * @param root0.handleSelectAll - Select-all callback.
+ * @param root0.handleClearSelection - Clear-selection callback.
+ * @param root0.handleCopy - Copy callback.
+ * @param root0.handleCut - Cut callback.
+ * @param root0.handlePaste - Paste callback.
+ * @param root0.handleDuplicate - Duplicate callback.
+ * @param root0.onDelete - Delete-selected callback.
+ * @param root0.isEditing - When `true`, keyboard shortcuts are suppressed.
+ */
 export function useKeyboardShortcuts({
   takeSnapshot,
   undo,

@@ -2,6 +2,15 @@ import { useLayoutEffect, useRef, useCallback } from 'react'
 import { applyNodeChanges, applyEdgeChanges, type Edge, type Node, type NodeChange, type EdgeChange } from 'reactflow'
 import { useCanvasStore } from '@/features/canvas/canvas.store'
 
+/**
+ * Manages React Flow node/edge state and synchronises it with the canvas store.
+ *
+ * @param initialNodes  Nodes to seed the store with on first render.
+ * @param initialEdges  Edges to seed the store with on first render.
+ * @returns An object containing the current `nodes`, `edges`, their setters,
+ *          React Flow-compatible change handlers (`onNodesChange`,
+ *          `onEdgesChange`), and mutable refs (`nodesRef`, `edgesRef`).
+ */
 export function useCanvasState(initialNodes: Node[], initialEdges: Edge[]) {
   const nodes = useCanvasStore((s) => s.nodes)
   const edges = useCanvasStore((s) => s.edges)

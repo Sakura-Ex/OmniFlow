@@ -5,6 +5,7 @@ import type { RecipeNodeData } from '@/common/types/recipe'
 import { useCanvasStore, type HandleUpdate } from '@/features/canvas/canvas.store'
 import { computeAutoFillEndpoints } from '@/features/calculation/autoFillEndpoints'
 
+/** Parameters for the `useNodeOperations` hook. */
 type UseNodeOperationsParams = {
   nodesRef: MutableRefObject<Node[]>
   edgesRef: MutableRefObject<Edge[]>
@@ -15,10 +16,30 @@ type UseNodeOperationsParams = {
   lastSystemOutputs: Record<string, number>
 }
 
+/**
+ * Generate a unique node identifier.
+ * @returns A unique node ID string.
+ */
 function makeId() {
   return `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
 }
 
+/**
+ * Provides utility actions for updating recipe node data and auto-filling endpoints.
+ *
+ * @param root0 - Hook parameters.
+ * @param root0.nodesRef - Mutable ref holding the current node array.
+ * @param root0.edgesRef - Mutable ref holding the current edge array.
+ * @param root0.setNodes - State setter for nodes.
+ * @param root0.setEdges - State setter for edges.
+ * @param root0.takeSnapshot - Pushes the current state onto the undo stack.
+ * @param root0.lastSystemInputs - Last computed system input rates.
+ * @param root0.lastSystemOutputs - Last computed system output rates.
+ * @returns An object containing:
+ *  - `updateNodeData` - apply a partial data patch to a node and take a snapshot.
+ *  - `autoFillEndpoints` - compute and add missing source/target endpoints for a recipe node.
+ *  - `handleAutoFillSelected` - run `autoFillEndpoints` on every currently-selected recipe node.
+ */
 export function useNodeOperations({
   nodesRef,
   edgesRef,

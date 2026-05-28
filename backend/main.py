@@ -18,13 +18,46 @@ VIRTUAL_GLOBAL_PREFIX = "Virtual_Global_"
 
 
 def is_void_name(name: str) -> bool:
-    """Void_xxx → 孤立端口，直接排空"""
+    """Check if a resource identifier represents a void port.
+    
+    Void ports (prefixed with 'Void_') are isolated endpoints that should be 
+    directly discarded from the material balance constraints.
+    
+    Args:
+        name: The resource identifier to check.
+    
+    Returns:
+        True if the name starts with VOID_PREFIX, False otherwise.
+    
+    Example:
+        >>> is_void_name("Void_Heat")
+        True
+        >>> is_void_name("Net_Power")
+        False
+    """
     return name.startswith(VOID_PREFIX)
 
 
 def is_net_name(name: str) -> bool:
-    """Net_xxx → 有线连通分量"""
+    """Check if a resource identifier represents a networked item.
+    
+    Networked items (prefixed with 'Net_') are connected through physical 
+    conduits and participate in the topological network analysis.
+    
+    Args:
+        name: The resource identifier to check.
+    
+    Returns:
+        True if the name starts with NET_PREFIX, False otherwise.
+    
+    Example:
+        >>> is_net_name("Net_Electricity")
+        True
+        >>> is_net_name("Global_Steam")
+        False
+    """
     return name.startswith(NET_PREFIX)
+
 
 # =====================================================================
 # 1. 基础环境与 FastAPI 实例初始化
@@ -35,12 +68,13 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# 配置 CORS，允许前端跨域访问
-# 开发环境放行 localhost，线上环境根据实际域名配置
+# Configure CORS middleware to allow cross-origin requests from the frontend.
+# In development, localhost:5173 is allowed. In production, replace '*' with 
+# specific domain names for security.
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "*",  # 内网测试可临时放开，生产环境建议配置具体域名
+    "*",  # Allow all origins for development; restrict in production
 ]
 
 app.add_middleware(
@@ -56,44 +90,109 @@ app.add_middleware(
 # 2. Pydantic 数据模型定义 (API 契约)
 # =====================================================================
 class RecipeNodeData(BaseModel):
-    recipe_id: str = Field("", description="配方 ID")
-    machine_name: str = Field("Recipe", description="机器名称")
-    system: Optional[str] = Field(None, description="所属模组")
-    inputs: Dict[str, float] = Field(default_factory=dict, description="输入速率: {category:id → rate/s}")
-    outputs: Dict[str, float] = Field(default_factory=dict, description="输出速率: {category:id → rate/s}")
-    mode: Optional[str] = Field(None, description="运行模式: auto|limit")
-    manual_machines: Optional[float] = Field(None, description="手动设定产能上限机器数量")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="机器元数据")
+    """Data model for recipe node configuration.
+    
+    Represents a processing machine in the production flow with defined 
+    input/output rates and operational constraints.
+    
+    Attributes:
+        recipe_id: Unique identifier for the recipe being executed.
+        machine_name: Display name for the machine in the UI.
+        system: The mod/system this machine belongs to (e.g., 'gregtech').
+        inputs: Dictionary mapping resource identifiers to input rates (items/s).
+        outputs: Dictionary mapping resource identifiers to output rates (items/s).
+        mode: Operation mode - 'auto' for unlimited, 'limit' for manual cap.
+        manual_machines: Maximum number of machines when mode is 'limit'.
+        metadata: Additional machine-specific configuration data.
+    """
+    recipe_id: str = Field("", description="Recipe ID")
+    machine_name: str = Field("Recipe", description="Machine name")
+    system: Optional[str] = Field(None, description="Mod system")
+    inputs: Dict[str, float] = Field(default_factory=dict, description="Input rates")
+    outputs: Dict[str, float] = Field(default_factory=dict, description="Output rates")
+    mode: Optional[str] = Field(None, description="Operation mode: auto|limit")
+    manual_machines: Optional[float] = Field(None, description="Manual machine cap")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Machine metadata")
 
 
 class SourceNodeData(BaseModel):
-    id: str = Field(..., description="物品 ID")
-    amount: float = Field(0, description="数量/速率")
-    mode: Optional[str] = Field(None, description="供应模式: infinite|limit")
-    actual_amounts: Optional[Dict[str, float]] = Field(None, description="后端计算后的各端口实际吞吐量")
+    """Data model for source node (input provider).
+    
+    Represents an external source that provides resources to the production flow.
+    
+    Attributes:
+        id: The resource identifier being supplied.
+        amount: The supply rate or total amount available.
+        mode: Supply mode - 'infinite' for unlimited, 'limit' for capped supply.
+        actual_amounts: Backend-calculated actual throughput per port (for multi-port sources).
+    """
+    id: str = Field(..., description="Resource ID")
+    amount: float = Field(0, description="Amount/rate")
+    mode: Optional[str] = Field(None, description="Supply mode: infinite|limit")
+    actual_amounts: Optional[Dict[str, float]] = Field(None, description="Calculated throughput")
 
 
 class TargetNodeData(BaseModel):
-    id: str = Field(..., description="物品 ID")
-    amount: float = Field(0, description="数量/速率")
-    mode: Optional[str] = Field(None, description="目标模式: demand|maximize|overflow")
-    actual_amounts: Optional[Dict[str, float]] = Field(None, description="后端计算后的各端口实际吞吐量")
+    """Data model for target node (output consumer).
+    
+    Represents an external sink that consumes resources from the production flow.
+    
+    Attributes:
+        id: The resource identifier being consumed.
+        amount: The demand rate or target amount.
+        mode: Target mode - 'demand' for fixed requirement, 'maximize' for unbounded output,
+              'overflow' for excess disposal.
+        actual_amounts: Backend-calculated actual throughput per port (for multi-port targets).
+    """
+    id: str = Field(..., description="Resource ID")
+    amount: float = Field(0, description="Amount/rate")
+    mode: Optional[str] = Field(None, description="Target mode: demand|maximize|overflow")
+    actual_amounts: Optional[Dict[str, float]] = Field(None, description="Calculated throughput")
 
 
 class GraphNode(BaseModel):
-    id: str = Field(..., description="节点的唯一标识符")
-    type: str = Field(..., description="节点类型，如 'recipeNode', 'sourceNode', 'targetNode'")
-    data: Dict[str, Any] = Field(default_factory=dict, description="节点数据负载")
+    """Data model for a node in the React Flow graph.
+    
+    Generic wrapper for any node type in the production flow diagram.
+    
+    Attributes:
+        id: Unique identifier for the node in the graph.
+        type: Node type discriminator - 'recipeNode', 'sourceNode', or 'targetNode'.
+        data: Node-specific data payload matching the corresponding data model.
+    """
+    id: str = Field(..., description="Unique node identifier")
+    type: str = Field(..., description="Node type: recipeNode|sourceNode|targetNode")
+    data: Dict[str, Any] = Field(default_factory=dict, description="Node data payload")
+
 
 class GraphEdge(BaseModel):
-    source: str = Field(..., description="起点的节点 ID")
-    target: str = Field(..., description="终点的节点 ID")
-    sourceHandle: Optional[str] = Field(None, description="对应连线流转的物品 ID")
-    targetHandle: Optional[str] = Field(None, description="目标端口的物品 ID")
+    """Data model for an edge (connection) in the React Flow graph.
+    
+    Represents a material flow connection between two nodes.
+    
+    Attributes:
+        source: The source node's ID.
+        target: The target node's ID.
+        sourceHandle: The resource identifier flowing out of the source.
+        targetHandle: The resource identifier flowing into the target.
+    """
+    source: str = Field(..., description="Source node ID")
+    target: str = Field(..., description="Target node ID")
+    sourceHandle: Optional[str] = Field(None, description="Output resource ID")
+    targetHandle: Optional[str] = Field(None, description="Input resource ID")
+
 
 class CalculateRequest(BaseModel):
-    nodes: List[GraphNode] = Field(..., description="前端传递的所有工艺图节点")
-    edges: List[GraphEdge] = Field(..., description="前端传递的所有工艺图连线")
+    """Request payload for the /api/calculate endpoint.
+    
+    Contains the complete graph representation of the production flow to be solved.
+    
+    Attributes:
+        nodes: List of all nodes in the production flow graph.
+        edges: List of all connections between nodes.
+    """
+    nodes: List[GraphNode] = Field(..., description="All graph nodes")
+    edges: List[GraphEdge] = Field(..., description="All graph edges")
 
 
 # =====================================================================
@@ -101,13 +200,34 @@ class CalculateRequest(BaseModel):
 # =====================================================================
 @app.post("/api/calculate", summary="提交工艺图解算请求")
 async def calculate_flow(request: CalculateRequest):
-    """
-    接收前端 React Flow 图表数据，进行拓扑分析和配方解算。
+    """Receive React Flow graph data and perform topology analysis and recipe solving.
+    
+    Uses linear programming (SciPy linprog) to solve material balance constraints
+    for the production flow graph. Supports multiple node types (recipe, source, target)
+    and operation modes.
+    
+    Args:
+        request: CalculateRequest object containing nodes and edges.
+    
+    Returns:
+        dict: Calculation result with the following fields:
+            - status: Solver status (success/unbounded/infeasible)
+            - node_results: Machine counts and utilization per node
+            - system_inputs: Total system input rates
+            - system_outputs: Total system output rates
+    
+    Raises:
+        ValidationError: If node data format is invalid.
+    
+    Note:
+        - Void_ prefixed ports are directly discarded from constraints
+        - Spill variables use dynamic Big-M method (White Paper §7.3.4)
     """
     nodes = request.nodes
     edges = request.edges
 
     def parse_model(model_cls, payload):
+        """Parse payload into Pydantic model, supporting both v1 and v2 APIs."""
         if hasattr(model_cls, "model_validate"):
             return model_cls.model_validate(payload)
         return model_cls.parse_obj(payload)
@@ -128,11 +248,12 @@ async def calculate_flow(request: CalculateRequest):
         except ValidationError as e:
             logger.warning("Skipping invalid node %s: %s", node.id, e)
 
-    # 步骤 1：解析网络，提取物品全集与变量映射
+    # Step 1: Parse network, extract all items and build index
     items: List[str] = []
     item_index: Dict[str, int] = {}
 
     def ensure_item(item_id: str) -> None:
+        """Ensure item exists in the index, adding if necessary."""
         if item_id not in item_index:
             item_index[item_id] = len(items)
             items.append(item_id)
@@ -144,13 +265,13 @@ async def calculate_flow(request: CalculateRequest):
         for item_id in recipe_data.outputs:
             ensure_item(item_id)
 
-    # 额外补齐只在 source/target 中出现的物品，避免缺失行
+    # Also include items that only appear in source/target nodes
     for source in source_nodes:
         ensure_item(source["data"].id)
     for target in target_nodes:
         ensure_item(target["data"].id)
 
-    # 步骤 2：统一变量向量 x = [x_recipes | x_sources | x_sinks]
+    # Step 2: Build unified variable vector x = [x_recipes | x_sources | x_sinks]
     recipe_count = len(recipe_nodes)
     source_count = len(source_nodes)
     sink_count = len(target_nodes)
@@ -163,7 +284,7 @@ async def calculate_flow(request: CalculateRequest):
         for item_id in items
     }
 
-    # 步骤 2：写入所有节点的物品系数（必须在构建 spill 之前完成）
+    # Write item coefficients for all nodes (must be done before building spill)
     for col, recipe in enumerate(recipe_nodes):
         recipe_data: RecipeNodeData = recipe["data"]
         for item_id, rate in recipe_data.outputs.items():
@@ -199,12 +320,9 @@ async def calculate_flow(request: CalculateRequest):
             "amount": target_data.amount,
         })
 
-    # 步骤 2.5：识别溢流物品，扩展矩阵维度（白皮书 §7.2.2）
-    # Void_ 端口 = 直接排空，不进入守恒约束，不分配溢流变量
-    # 注意：必须在写入所有节点系数之后构建，否则无法检测 source/target 的正系数
-    # 统一使用 spill 软约束：所有非 Void 物品走 Ax - v_k = 0
-    # Target 需求由 bounds 下界保证，equality_items 已移除
-
+    # Step 2.5: Identify spill items and extend matrix (White Paper §7.2.2)
+    # Void_ ports = directly discarded, no conservation constraint, no spill variable
+    # Use spill soft constraint for all non-Void items: Ax - v_k = 0
     spill_items: List[str] = []
     spill_index: Dict[str, int] = {}
     for item_id in items:
@@ -224,7 +342,7 @@ async def calculate_flow(request: CalculateRequest):
     for spill_item in spill_items:
         item_rows[spill_item][spill_start + spill_index[spill_item]] = -1.0
 
-    # 步骤 3：构建目标函数 c 与变量边界 bounds
+    # Step 3: Build objective function c and variable bounds
     c = np.zeros(total_vars, dtype=float)
     bounds: List[tuple[float, Optional[float]]] = []
     for col, recipe in enumerate(recipe_nodes):
@@ -255,7 +373,7 @@ async def calculate_flow(request: CalculateRequest):
             c[sink["col"]] = 0.001
             bounds.append((0, None))
 
-    # 动态大 M（白皮书 §7.3.4）：溢流惩罚 = max(1,000,000, max(|c_user|) × 10)
+    # Dynamic Big-M (White Paper §7.3.4): spill penalty = max(1,000,000, max(|c_user|) × 10)
     user_weights = [abs(c[col]) for col in range(spill_start) if abs(c[col]) > 0]
     _spill_m = max(1_000_000, (max(user_weights) * 10) if user_weights else 1)
 
@@ -263,8 +381,8 @@ async def calculate_flow(request: CalculateRequest):
         c[spill_start + i] = _spill_m
         bounds.append((0, None))
 
-    # 步骤 4：约束构建（白皮书 §7.2.3）
-    # Void_ 端口无约束 — 直接排空，不参与物质守恒
+    # Step 4: Build constraints (White Paper §7.2.3)
+    # Void_ ports have no constraint - directly discarded
     A_eq_rows: List[List[float]] = []
     b_eq: List[float] = []
     A_ub_rows: List[List[float]] = []
@@ -283,62 +401,7 @@ async def calculate_flow(request: CalculateRequest):
     A_ub = np.array(A_ub_rows, dtype=float) if A_ub_rows else None
     b_ub_arr = np.array(b_ub, dtype=float) if b_ub else None
 
-    # # ── DEBUG: 写矩阵诊断到文件 ──
-    # import json as _json
-    # from datetime import datetime as _datetime
-    # from pathlib import Path as _Path
-    # _debug = {
-    #     "time": _datetime.now().isoformat(timespec="seconds"),
-    #     "nodes": len(recipe_nodes) + len(source_nodes) + len(target_nodes),
-    #     "recipes": [r["node_id"] for r in recipe_nodes],
-    #     "sources": [s["node_id"] for s in source_nodes],
-    #     "targets": [t["node_id"] for t in target_nodes],
-    #     "total_vars": total_vars,
-    #     "spill_count": spill_count,
-    #     "spill_m": _spill_m,
-    #     "spill_items": spill_items,
-    #     "items": items,
-    #     "edges": [(e.source, e.target, e.sourceHandle, e.targetHandle) for e in edges],
-    #     "vars": [],
-    #     "constraints": [],
-    # }
-    # for recipe in recipe_nodes:
-    #     rd: RecipeNodeData = recipe["data"]
-    #     _debug["vars"].append({
-    #         "type": "recipe", "node_id": recipe["node_id"],
-    #         "mode": rd.mode or 'auto',
-    #         "manual_machines": rd.manual_machines,
-    #     })
-    # for source in source_nodes:
-    #     sd: SourceNodeData = source["data"]
-    #     _debug["vars"].append({
-    #         "type": "source", "node_id": source["node_id"], "id": sd.id,
-    #         "mode": sd.mode or 'infinite',
-    #         "amount": sd.amount,
-    #     })
-    # for target in target_nodes:
-    #     td: TargetNodeData = target["data"]
-    #     _debug["vars"].append({
-    #         "type": "target", "node_id": target["node_id"], "id": td.id,
-    #         "mode": td.mode or 'maximize',
-    #         "amount": td.amount,
-    #     })
-    # for item_id in items:
-    #     row = item_rows[item_id]
-    #     _debug["constraints"].append({
-    #         "item": item_id,
-    #         "row": [round(float(v), 6) for v in row.tolist()],
-    #         "spill": item_id in spill_index,
-    #         "has_pos": bool(np.any(row > 1e-12)),
-    #     })
-    # _log_dir = _Path(__file__).resolve().parent / "logs"
-    # _log_dir.mkdir(exist_ok=True)
-    # _ts = _datetime.now().strftime("%Y%m%d_%H%M%S")
-    # _log_path = _log_dir / f"debug_{_ts}.json"
-    # _log_path.write_text(_json.dumps(_debug, indent=2, ensure_ascii=False), encoding="utf-8")
-    # print(f"[DEBUG] written to {_log_path}")
-
-    # 步骤 5：调用 SciPy 求解
+    # Step 5: Solve with SciPy
     if total_vars == 0:
         return {
             "status": "success",
@@ -360,7 +423,7 @@ async def calculate_flow(request: CalculateRequest):
     if res.status == 3:  # INFEASIBLE_OR_UNBOUNDED / Unbounded
         return {
             "status": "unbounded",
-            "message": "发现最大化节点，但产线缺乏物理瓶颈。请为任意上游机器或输入源设定'产能上限'！",
+            "message": "Found maximize node but no physical bottleneck. Set a machine cap or source limit upstream.",
         }
     if not res.success:
         return {
@@ -368,7 +431,7 @@ async def calculate_flow(request: CalculateRequest):
             "message": res.message,
         }
 
-    # 步骤 6：格式化结果并返回
+    # Step 6: Format and return results
     node_results: Dict[str, Dict[str, float]] = {}
     rounding_eps = 1e-8
     for idx, recipe in enumerate(recipe_nodes):
@@ -401,7 +464,7 @@ async def calculate_flow(request: CalculateRequest):
             "actual_amounts": {sink_spec["item_id"]: actual_value},
         }
 
-    # ── 全量矩阵回代清算 ──
+    # Full matrix back-substitution
     full_matrix = np.array([item_rows[item_id] for item_id in items], dtype=float)
     net_rates = full_matrix @ res.x
 
@@ -424,13 +487,31 @@ async def calculate_flow(request: CalculateRequest):
 
 @app.post("/api/debug", summary="诊断：转储矩阵构建过程")
 async def debug_matrix(request: CalculateRequest):
-    """与 /api/calculate 走完全相同的逻辑，但不求解，只返回诊断信息。"""
+    """Dump matrix construction process for debugging without solving.
+    
+    Follows the same logic as /api/calculate but returns diagnostic information
+    about the constraint matrix, variable bounds, and objective coefficients
+    instead of solving the linear program.
+    
+    Args:
+        request: CalculateRequest object containing nodes and edges.
+    
+    Returns:
+        dict: Diagnostic information including:
+            - nodes_summary: Counts of recipes, sources, targets, spills
+            - variables: List of variable names
+            - variable_bounds: Bounds for each variable
+            - objective_coeffs: Objective function coefficients
+            - constraint_details: Detailed constraint information per item
+            - edges_received: All edges with handles
+    """
     import json
 
     nodes = request.nodes
     edges = request.edges
 
     def parse_model(model_cls, payload):
+        """Parse payload into Pydantic model, supporting both v1 and v2 APIs."""
         if hasattr(model_cls, "model_validate"):
             return model_cls.model_validate(payload)
         return model_cls.parse_obj(payload)
@@ -455,6 +536,7 @@ async def debug_matrix(request: CalculateRequest):
     item_index: Dict[str, int] = {}
 
     def ensure_item(item_id: str) -> None:
+        """Ensure item exists in the index, adding if necessary."""
         if item_id not in item_index:
             item_index[item_id] = len(items)
             items.append(item_id)
@@ -482,7 +564,7 @@ async def debug_matrix(request: CalculateRequest):
         for item_id in items
     }
 
-    # 写入所有节点的物品系数（必须在构建 spill 之前完成）
+    # Write item coefficients for all nodes (must be done before building spill)
     for col, recipe in enumerate(recipe_nodes):
         recipe_data: RecipeNodeData = recipe["data"]
         for item_id, rate in recipe_data.outputs.items():
@@ -518,11 +600,7 @@ async def debug_matrix(request: CalculateRequest):
             "amount": target_data.amount,
         })
 
-    # 步骤 2.5：识别溢流物品（§7.2.2）
-    # Void_ 端口 = 直接排空，不进入守恒约束，不分配溢流变量
-    # 注意：必须在写入所有节点系数之后构建，否则无法检测 source/target 的正系数
-    # 统一使用 spill 软约束：所有非 Void 物品走 Ax - v_k = 0
-
+    # Step 2.5: Identify spill items (White Paper §7.2.2)
     spill_items2: List[str] = []
     spill_index2: Dict[str, int] = {}
     for item_id in items:
@@ -572,7 +650,7 @@ async def debug_matrix(request: CalculateRequest):
             c[sink["col"]] = 0.001
             bounds.append((0, None))
 
-    # 动态大 M（白皮书 §7.3.4）
+    # Dynamic Big-M (White Paper §7.3.4)
     user_weights2 = [abs(c[col]) for col in range(spill_start2) if abs(c[col]) > 0]
     _spill_m2 = max(1_000_000, (max(user_weights2) * 10) if user_weights2 else 1)
 
@@ -580,7 +658,7 @@ async def debug_matrix(request: CalculateRequest):
         c[spill_start2 + i] = _spill_m2
         bounds.append((0, None))
 
-    # ── 约束构建 ──
+    # Build constraints
     A_eq_rows: List[List[float]] = []
     b_eq: List[float] = []
     A_ub_rows: List[List[float]] = []
@@ -596,16 +674,16 @@ async def debug_matrix(request: CalculateRequest):
             "has_negative": bool(np.any(row < -1e-12)),
         }
         if is_void_name(item_id):
-            detail["constraint"] = "skip (Void — 直接排空)"
+            detail["constraint"] = "skip (Void — directly discarded)"
         elif item_id in spill_index2:
             A_eq_rows.append(row.tolist())
             b_eq.append(0.0)
             detail["constraint"] = f"soft_eq + spill (M={_spill_m2})"
         else:
-            detail["constraint"] = "skip (无正系数)"
+            detail["constraint"] = "skip (no positive coefficients)"
         constraint_details.append(detail)
 
-    # ── 变量列名 ──
+    # Variable names
     var_names: List[str] = []
     for i, r in enumerate(recipe_nodes):
         var_names.append(f"Recipe[{r['node_id']}]")

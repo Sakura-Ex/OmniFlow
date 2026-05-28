@@ -11,6 +11,17 @@ import type { SourceNodeData, SourceNodeMode } from '@/common/types/recipe'
 import styles from './SourceNode.module.css'
 import shared from './shared-port.module.css'
 
+/**
+ * Canvas node component representing an input source (e.g. raw material supply).
+ * Supports two modes: "infinite" (unlimited supply) and "limit" (bounded supply).
+ * Displays output ports with inline amount editing, category badges, global bus indicators,
+ * and mode toggle buttons.
+ *
+ * @param props - Node props from ReactFlow
+ * @param props.id - Unique node identifier
+ * @param props.data - Source node data containing port definitions and mode configuration
+ * @returns Rendered JSX element for the source node.
+ */
 export function SourceNode({ id, data }: NodeProps<SourceNodeData>) {
   const { updateNodeData } = useNodeData()
   const { onEdit } = useEndpointEditor()

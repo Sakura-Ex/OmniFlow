@@ -13,6 +13,7 @@ import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArche
 import modalStyles from '@/common/components/Modal.module.css'
 import styles from './RecipeEditorModal.module.css'
 
+/** Form data shape for the recipe editor modal. */
 export type RecipeFormData = {
   machine_name: string
   base_duration_seconds: number
@@ -25,17 +26,25 @@ export type RecipeFormData = {
   hardware_specs: Record<string, unknown>
 }
 
+/** The node target for the recipe editor. */
 type EditorTarget = {
   id: string
   data: RecipeNodeData
 }
 
+/** Props for the `RecipeEditorModal` component. */
 type RecipeEditorModalProps = {
   node: EditorTarget | null
   onClose: () => void
   onSave: (id: string, data: RecipeNodeData) => void
 }
 
+/**
+ * Build default form values from a node target and optional stored recipe data.
+ * @param node - The editor target, or null.
+ * @param stored - Optional stored recipe data to merge defaults from.
+ * @returns A complete `RecipeFormData` with sensible defaults.
+ */
 function buildFormDefaults(node: EditorTarget | null, stored?: RecipeNodeData): RecipeFormData {
   if (!node && !stored) {
     return {
@@ -65,6 +74,16 @@ function buildFormDefaults(node: EditorTarget | null, stored?: RecipeNodeData): 
   }
 }
 
+/**
+ * Modal dialog for editing a recipe node's configuration.
+ * Provides a full form with machine settings, resource I/O, modifier slots and real-time preview.
+ *
+ * @param root0 - Component props.
+ * @param root0.node - The node target to edit, or null (modal hidden).
+ * @param root0.onClose - Callback to dismiss the modal.
+ * @param root0.onSave - Callback invoked with the node ID and assembled recipe data on save.
+ * @returns Rendered JSX element for the recipe editor modal, or null when closed.
+ */
 export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalProps) {
   const storedRecipe = useRecipeStore((state) => state.recipes[node?.id ?? ''])
 

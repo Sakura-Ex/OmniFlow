@@ -45,6 +45,14 @@ const fitViewOptions = { padding: 0.2 }
 const proOptions = { hideAttribution: true }
 const STORAGE_KEY = 'omniflow.canvas.v1'
 
+/**
+ * Bridge component that exposes the ReactFlow `updateNodeInternals` function
+ * via a callback so parent components can invoke it imperatively.
+ *
+ * @param _ - Component props.
+ * @param _.onReady - Callback receiving the `updateNodeInternals` function.
+ * @returns A null render.
+ */
 function UpdateInternalsBridge({ onReady }: { onReady: (fn: (nodeId: string) => void) => void }) {
   const updateNodeInternals = useUpdateNodeInternals()
   useEffect(() => {
@@ -53,6 +61,14 @@ function UpdateInternalsBridge({ onReady }: { onReady: (fn: (nodeId: string) => 
   return null
 }
 
+/**
+ * Root application component.
+ * Renders the ReactFlow canvas, menu bar, system HUD, modals (recipe editor / endpoint editor),
+ * and wires up all state management, keyboard shortcuts, undo/redo, clipboard, file I/O,
+ * and calculation logic.
+ *
+ * @returns Rendered JSX element for the entire application shell.
+ */
 export default function App() {
   const {
     nodes,

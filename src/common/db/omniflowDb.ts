@@ -3,6 +3,9 @@ import type { Node, Edge } from 'reactflow'
 import type { Resource } from '@/common/types/resource'
 import type { ValueOf } from '@/common/types/common'
 
+/**
+ *
+ */
 interface Project {
   id: string
   name: string
@@ -18,6 +21,9 @@ interface Project {
   updatedAt: string
 }
 
+/**
+ *
+ */
 interface Canvas {
   id: string
   projectId: string
@@ -35,8 +41,14 @@ const ProjectRecipeSource = {
   Manual: 'manual',
 } as const satisfies Record<string, string>
 
+/**
+ *
+ */
 type ProjectRecipeSource = ValueOf<typeof ProjectRecipeSource>
 
+/**
+ *
+ */
 interface ProjectRecipe {
   id: string
   projectId: string
@@ -55,6 +67,9 @@ interface ProjectRecipe {
   updatedAt: string
 }
 
+/**
+ *
+ */
 interface Tag {
   id: string
   projectId: string
@@ -63,6 +78,9 @@ interface Tag {
   createdAt: string
 }
 
+/**
+ *
+ */
 interface ImportRecord {
   id: string
   projectId: string
@@ -76,11 +94,18 @@ interface ImportRecord {
   importedAt: string
 }
 
+/**
+ *
+ */
 interface ImportError {
   row: number
   message: string
 }
 
+/**
+ * Dexie database for the OmniFlow application.
+ * Stores projects, canvases, project recipes, tags and import records.
+ */
 class OmniFlowDB extends Dexie {
   projects!: Table<Project, string>
   canvases!: Table<Canvas, string>
@@ -88,6 +113,9 @@ class OmniFlowDB extends Dexie {
   tags!: Table<Tag, string>
   importRecords!: Table<ImportRecord, string>
 
+  /**
+   *
+   */
   constructor() {
     super('OmniFlow')
 
@@ -108,4 +136,5 @@ class OmniFlowDB extends Dexie {
   }
 }
 
+/** Shared singleton instance of the OmniFlow IndexedDB database. */
 export const db = new OmniFlowDB()

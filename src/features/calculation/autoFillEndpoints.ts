@@ -3,6 +3,17 @@ import type { RecipeNodeData } from '@/common/types/recipe'
 import { buildResourceId } from '@/common/utils/resourceId'
 import { generateId } from '@/common/utils/id'
 
+/**
+ * Parameters for {@link computeAutoFillEndpoints}.
+ *
+ * @property nodeId           - The recipe node ID to auto-fill endpoints for.
+ * @property recipeNodeData   - The shaped recipe node data.
+ * @property allNodes         - All canvas nodes (used to locate the recipe node's position).
+ * @property allEdges         - All canvas edges (used to detect missing connections).
+ * @property lastSystemInputs - Cached input amounts from the previous calculation, keyed by resource ID.
+ * @property lastSystemOutputs - Cached output amounts from the previous calculation, keyed by resource ID.
+ * @property makeId           - Factory function that produces unique IDs for new source/target nodes.
+ */
 export type ComputeAutoFillParams = {
   nodeId: string
   recipeNodeData: RecipeNodeData
@@ -13,11 +24,29 @@ export type ComputeAutoFillParams = {
   makeId: () => string
 }
 
+/**
+ * The result of auto-filling missing endpoints.
+ *
+ * @property nodesToAdd - Source/target nodes that should be added to the canvas.
+ * @property edgesToAdd - Edges that connect the new nodes to the recipe node.
+ */
 export type AutoFillResult = {
   nodesToAdd: Node[]
   edgesToAdd: Edge[]
 }
 
+/**
+ * Auto-create source and target nodes (with edges) for every input/output port
+ * of a recipe node that is not yet connected on the canvas.
+ *
+ * Missing inputs get a new `sourceNode` placed to the left of the recipe node;
+ * missing outputs get a new `targetNode` placed to the right. Cached amounts
+ * from the previous calculation are reused when available.
+ *
+ * @param params - Configuration object (see {@link ComputeAutoFillParams}).
+ * @returns An {@link AutoFillResult} containing the nodes and edges to add.
+ *          Returns empty arrays when all ports are already connected.
+ */
 export function computeAutoFillEndpoints(params: ComputeAutoFillParams): AutoFillResult {
   const {
     nodeId,

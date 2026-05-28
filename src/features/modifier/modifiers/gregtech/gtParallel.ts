@@ -3,6 +3,17 @@ import type { Resource } from '@/common/types/resource'
 import { computePowerPool, toGtHatches, toFiniteNumber } from './gtOverclocker'
 import { ParallelCardBody } from './gtParallelCard'
 
+/**
+ * Evaluate how many parallel operations are possible given the machine's energy pool.
+ *
+ * The actual parallel count is the minimum of `floor(totalEuPerTick / baseEuPerTick)` and the
+ * user-configured `parallelLimit`. Returns `canStart: false` when the machine lacks sufficient
+ * energy or the calculated parallel count is zero.
+ *
+ * @param uiState - The parallel modifier UI state, expected to contain `energyHatches` and `parallelLimit`.
+ * @param baseEuPerTick - The recipe's baseline EU-per-tick consumption for a single operation.
+ * @returns An object indicating whether the machine can start, the actual parallel count, total EU/t, and the highest voltage tier.
+ */
 export function evaluateGtParallel(
   uiState: Record<string, unknown>,
   baseEuPerTick: number
@@ -24,6 +35,12 @@ export function evaluateGtParallel(
   return { canStart: true, actualParallel, totalEuPerTick, highestTier }
 }
 
+/**
+ * GT Parallel modifier plugin.
+ *
+ * Scales all resource inputs and outputs by the number of parallel operations the machine's
+ * energy pool can sustain. When insufficient energy is available, the machine is stopped.
+ */
 export const gtParallelModifier: IMachineModifier = {
   id: 'gt_parallel',
   name: 'GT Parallel',

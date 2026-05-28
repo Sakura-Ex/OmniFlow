@@ -5,10 +5,22 @@ import { GT_VOLTAGE_TIERS, computePowerPool, toGtHatches } from './gtOverclocker
 
 const BOOST_KEY_PREFIX = 'boost:'
 
+/**
+ * Return the array index of a given voltage tier ID.
+ * @param tierId - The voltage tier identifier.
+ * @returns The index in the GT_VOLTAGE_TIERS array, or `-1` if not found.
+ */
 function tierIndex(tierId: string): number {
   return GT_VOLTAGE_TIERS.findIndex((t) => t.id === tierId)
 }
 
+/**
+ * GT Probability Output modifier plugin.
+ *
+ * Boosts the probability of recipe outputs based on the voltage tier difference between the
+ * recipe's required tier and the machine's highest installed tier. Each tier of difference
+ * applies a configurable per-resource probability boost.
+ */
 export const gtProbabilityOutputModifier: IMachineModifier = {
   id: 'gt_probability_output',
   name: 'GT Probability Output',

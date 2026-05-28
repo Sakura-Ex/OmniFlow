@@ -4,6 +4,11 @@ import { useGlobalResourceTable } from '@/features/resource-registry/registry.st
 
 const BOOST_KEY_PREFIX = 'boost:'
 
+/**
+ * Build a boost-state key for a resource identifier.
+ * @param id - The fully qualified resource ID.
+ * @returns The boost key used to look up the probability boost value in UI state.
+ */
 function getBoostKey(id: string): string {
   return `${BOOST_KEY_PREFIX}${id}`
 }
@@ -14,6 +19,18 @@ const READONLY_BASE: React.CSSProperties = {
   minWidth: 0,
 }
 
+/**
+ * Card body for the GT Probability Output modifier.
+ * Displays per-resource probability boost inputs for chance-based outputs.
+ *
+ * @param root0 - Render props from the card shell.
+ * @param root0.state - Current modifier UI state.
+ * @param root0.onChange - Callback to update a state key.
+ * @param root0.readOnly - Whether the card is in read-only mode.
+ * @param root0.recipeOutputs - The recipe's output resources.
+ * @param root0.Field - Field wrapper component from the card shell.
+ * @returns Rendered JSX for the probability output card body.
+ */
 export function GtProbabilityOutputCardBody({ state, onChange, readOnly, recipeOutputs, Field }: ModifierCardRenderProps) {
   const categories = useGlobalResourceTable((s) => s.categories)
   const outputs: Resource[] = recipeOutputs ?? []

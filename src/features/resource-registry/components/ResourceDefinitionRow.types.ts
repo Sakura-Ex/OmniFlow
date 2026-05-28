@@ -14,4 +14,5 @@ export const ResourceColumnId = {
   IoToggle: 'io_toggle',
 } as const satisfies Record<string, string>
 
+/** Union type of all valid resource column identifiers. */
 export type ResourceColumnId = ValueOf<typeof ResourceColumnId>

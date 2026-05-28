@@ -5,12 +5,14 @@ import type { RecipeNodeData } from '@/common/types/recipe'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { stripState } from '@/features/canvas/canvas.utils'
 
+/** Serialisable canvas payload format for save/export. */
 type CanvasPayloadV2 = {
   version: 2
   ui: { nodes: Node[]; edges: Edge[] }
   domain: { recipes: Record<string, RecipeNodeData> }
 }
 
+/** Parameters for the `useFileIO` hook. */
 type UseFileIOParams = {
   storageKey: string
   fileInputRef: MutableRefObject<HTMLInputElement | null>
@@ -23,6 +25,23 @@ type UseFileIOParams = {
   resetSystemStats: () => void
 }
 
+/**
+ * Provides canvas save/load, JSON export/import and local-storage persistence.
+ *
+ * @param root0 - Hook parameters.
+ * @param root0.storageKey - localStorage key used for saving/loading.
+ * @param root0.fileInputRef - Hidden `<input>` ref triggered for JSON import.
+ * @param root0.nodesRef - Mutable ref holding the current node array.
+ * @param root0.edgesRef - Mutable ref holding the current edge array.
+ * @param root0.setNodes - State setter for nodes.
+ * @param root0.setEdges - State setter for edges.
+ * @param root0.takeSnapshot - Pushes the current state onto the undo stack.
+ * @param root0.normalizeCanvasNode - Callback that normalises a deserialised node.
+ * @param root0.resetSystemStats - Resets system-level statistics after loading.
+ * @returns An object with {@link handleSaveCanvas}, {@link handleLoadCanvas},
+ *          {@link handleExportJson}, {@link handleImportClick} and
+ *          {@link handleImportJson}.
+ */
 export function useFileIO({
   storageKey,
   fileInputRef,

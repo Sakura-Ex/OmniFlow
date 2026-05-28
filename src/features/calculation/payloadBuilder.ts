@@ -6,9 +6,16 @@ import { normalizeEndpointPorts } from '@/features/recipe/recipe.endpointNorm'
 import { buildTopologicalNets } from './topology'
 import { isNetName, isVoidName, buildResourceId, DEFAULT_RESOURCE_CATEGORY } from '@/common/utils/resourceId'
 
+/** Virtual node ID representing the aggregate source for all global-routed inputs (§7.3.4). */
 const VIRTUAL_GLOBAL_SOURCE = 'Virtual_Global_Source'
+/** Virtual node ID representing the aggregate sink for all global-routed outputs (§7.3.4). */
 const VIRTUAL_GLOBAL_TARGET = 'Virtual_Global_Target'
 
+/**
+ * Resolve whether an endpoint node operates in automatic (unlimited) mode.
+ * @param data - The node's raw data payload.
+ * @returns `true` when the mode is neither `'limit'` nor `'demand'`, or when `is_virtual` is set; `false` otherwise.
+ */
 function resolveIsAuto(data: Record<string, unknown> | undefined): boolean {
   if (typeof data?.mode === 'string') {
     return data.mode !== 'limit' && data.mode !== 'demand'
@@ -17,6 +24,13 @@ function resolveIsAuto(data: Record<string, unknown> | undefined): boolean {
   return true
 }
 
+/**
+ * Collect globally-routed port resource IDs from a recipe into the respective
+ * input / output sets for later implicit edge wiring (§7.3.4).
+ * @param recipeData - The shaped recipe node data.
+ * @param inputSet  - Mutable set to which global input resource IDs are added.
+ * @param outputSet - Mutable set to which global output resource IDs are added.
+ */
 function processGlobalPorts(
   recipeData: RecipeNodeData,
   inputSet: Set<string>,
@@ -39,6 +53,13 @@ function processGlobalPorts(
   collect(recipeData.base_utility_outputs, outputSet)
 }
 
+/**
+ * Build implicit virtual edges that connect a recipe node's globally-routed
+ * ports to the virtual global source / target nodes (§7.3.4).
+ * @param nodeId       - The recipe node ID.
+ * @param recipeData   - The shaped recipe node data.
+ * @param implicitEdges - Mutable array to which the generated edges are appended.
+ */
 function buildImplicitEdgesForGlobalPorts(
   nodeId: string,
   recipeData: RecipeNodeData,
@@ -81,6 +102,15 @@ function buildImplicitEdgesForGlobalPorts(
   pushOutputEdges(recipeData.base_utility_outputs)
 }
 
+/**
+ * The complete calculation payload sent to the OmniFlow backend.
+ *
+ * @property payloadNodes  - Flattened list of all nodes (recipe + endpoint sub-nodes + virtual globals).
+ * @property payloadEdges  - All edges after port-to-sub-node translation and implicit global wiring.
+ * @property globalInputSet  - Set of resource IDs that feed into the virtual global source.
+ * @property globalOutputSet - Set of resource IDs that drain into the virtual global target.
+ * @property zeroOutputNodeNames - Human-readable names of recipe nodes whose material outputs are all zero.
+ */
 export interface CalculationPayload {
   payloadNodes: Array<{ id: string; type: string; data: Record<string, unknown> }>
   payloadEdges: Array<{
@@ -94,6 +124,36 @@ export interface CalculationPayload {
   zeroOutputNodeNames: string[]
 }
 
+/**
+ * Build the full calculation payload from canvas nodes, edges and recipe store.
+ *
+ * The function:
+ * 1. Shapes recipe data and collects globally-routed ports.
+ * 2. Filters out global-port edges from the physical edge list.
+ * 3. Builds topological nets (net names via union-find) for the remaining edges.
+ * 4. Translates every port ID to its net name inside recipe input/output maps.
+ * 5. Splits endpoint nodes into per-port sub-nodes.
+ * 6. Wires physical edges to the correct sub-node IDs.
+ * 7. Appends implicit edges for globally-routed ports.
+ * 8. Appends virtual global source/target nodes.
+ *
+ * @param nodes       - All canvas nodes (recipe, source, target, etc.).
+ * @param edges       - All canvas edges.
+ * @param recipeStore - Recipe store keyed by node ID.
+ * @returns The complete {@link CalculationPayload} ready to be serialised and sent to the backend.
+ *
+ * @example
+ * ```ts
+ * const result = buildCalculationPayload(nodes, edges, recipeStore)
+ * fetch('/api/calculate', {
+ *   method: 'POST',
+ *   body: JSON.stringify({
+ *     nodes: result.payloadNodes,
+ *     edges: result.payloadEdges,
+ *   }),
+ * })
+ * ```
+ */
 export function buildCalculationPayload(
   nodes: Node[],
   edges: Edge[],
@@ -201,6 +261,12 @@ export function buildCalculationPayload(
   const topologicalNets = buildTopologicalNets(nodes, physicalEdges, shapedRecipeByNodeId)
   const netLookup = topologicalNets.lookup
 
+  /**
+   * Translate flattened port keys to their net names using the net lookup table.
+   * @param nodeId - The node ID these keys belong to.
+   * @param dict - The flattened input/output dictionary keyed by qualified resource ID.
+   * @returns A new dictionary with keys replaced by net names where applicable.
+   */
   function translateFlattenedKeys(
     nodeId: string,
     dict: Record<string, number>,

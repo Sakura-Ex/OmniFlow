@@ -19,8 +19,10 @@ export const ProjectRecipeSchema = z.object({
   updatedAt: z.string(),
 })
 
+/** Inferred TypeScript type for a project-scoped recipe. */
 export type ProjectRecipeSchemaType = z.infer<typeof ProjectRecipeSchema>
 
+/** Zod schema for the data payload of a recipe node on the flow canvas, including modifiers and machine settings. */
 export const RecipeNodeDataSchema = z.object({
   recipe_id: z.string(),
   machine_name: z.string(),
@@ -55,4 +57,5 @@ export const RecipeNodeDataSchema = z.object({
   }).passthrough(),
 })
 
+/** Inferred TypeScript type for a recipe node's data payload. */
 export type RecipeNodeDataSchemaType = z.infer<typeof RecipeNodeDataSchema>

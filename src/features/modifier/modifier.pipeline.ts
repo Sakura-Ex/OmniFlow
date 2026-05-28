@@ -11,10 +11,27 @@ import { useSettingsStore } from '@/features/settings/settings.store'
 
 const MAX_INSTANT_RATE = 1e9
 
+/**
+ * Create a shallow clone of a resource array (each element is copied by spread).
+ * @param resources - The resource array to clone.
+ * @returns A new array of shallow-cloned resources.
+ */
 function deepCloneResources(resources: Resource[]): Resource[] {
   return resources.map((res) => ({ ...res }))
 }
 
+/**
+ * Normalize a resource's amount into a per-second rate given the recipe duration.
+ *
+ * Handles three time-base modes:
+ * - `per_cycle`: amount / duration (or a large constant for instant recipes)
+ * - `rate_per_tick`: amount * TPS
+ * - `rate_per_sec`: amount as-is
+ *
+ * @param res - The resource whose rate is being computed.
+ * @param dur - The recipe duration in seconds.
+ * @returns The effective per-second rate, factoring in probability. Returns 0 for non-consumable resources or zero-probability outputs.
+ */
 export function normalizeRate(res: Resource, dur: number): number {
   const probability = res.probability ?? 1
   if (res.consumable === false || probability === 0) return 0
@@ -27,6 +44,17 @@ export function normalizeRate(res: Resource, dur: number): number {
   return baseRate * probability
 }
 
+/**
+ * Execute the full modifier pipeline for a recipe node.
+ *
+ * 1. Normalizes the raw recipe data via {@link ensureRecipeDataShape}.
+ * 2. Deep-clones inputs/outputs/duration into a baseline snapshot.
+ * 3. Iterates over active modifiers in order, calling each modifier's `evaluate` to mutate the pipeline context.
+ * 4. Converts the final context into a {@link ComputedNodePayload} with per-second rates.
+ *
+ * @param rawData - Raw recipe node data from the graph model.
+ * @returns The computed node payload containing normalized rates and final duration.
+ */
 export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayload {
   const normalized = ensureRecipeDataShape(rawData)
   const recipeInputs = deepCloneResources(normalized.base_inputs ?? [])
@@ -88,6 +116,15 @@ export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayloa
   }
 }
 
+/**
+ * Flatten a computed node payload into flat input/output maps keyed by `"category:id"`.
+ *
+ * Skips non-consumable resources, zero-probability outputs, and resources whose category
+ * is not recognised by the default resource registry.
+ *
+ * @param payload - The computed node payload from the modifier pipeline.
+ * @returns An object with `inputs` and `outputs` records mapping resource keys to total amounts.
+ */
 export function flattenForBackend(payload: ComputedNodePayload): {
   inputs: Record<string, number>
   outputs: Record<string, number>

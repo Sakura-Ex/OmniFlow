@@ -1,10 +1,11 @@
-﻿import { useMemo } from 'react'
+import { useMemo } from 'react'
 import { ResourceDefinitionRow, type ResourceDefinitionRowProps } from './ResourceDefinitionRow'
 import type { ColumnDef } from './ResourceDefinitionRow.config'
 import { formatOpExRate } from '@/common/utils/format'
 import styles from './ResourceDefinitionRow.module.css'
 
 
+/** Props for the `ResourceDefinitionList` component. */
 type ResourceDefinitionListProps<T extends Record<string, unknown> & { _uid?: string }> = {
   items: T[]
   columns: ColumnDef[]
@@ -35,11 +36,45 @@ type ResourceDefinitionListProps<T extends Record<string, unknown> & { _uid?: st
   getIoToggleLocked?: (index: number) => boolean
 }
 
+/**
+ * Format a numeric rate value into a human-readable string.
+ * @param value - The rate value, or undefined.
+ * @returns A formatted rate string.
+ */
 function formatRate(value: number | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '0.00'
   return formatOpExRate(value)
 }
 
+/**
+ * Renders a table-like list of resource definition rows with configurable columns,
+ * add/remove behaviour, routing toggles and category options.
+ * @param root0
+ * @param root0.items
+ * @param root0.columns
+ * @param root0.emptyMessage
+ * @param root0.addLabel
+ * @param root0.onUpdateItem
+ * @param root0.onAddItem
+ * @param root0.onRemoveItem
+ * @param root0.onToggleRoutingItem
+ * @param root0.onIoTToggleItem
+ * @param root0.rateMap
+ * @param root0.suggestions
+ * @param root0.categoryOptions
+ * @param root0.probabilityLabel
+ * @param root0.getRoutingLocked
+ * @param root0.getAmountLocked
+ * @param root0.getCanDelete
+ * @param root0.getRowLabel
+ * @param root0.getUnitSuffix
+ * @param root0.getCategoryLocked
+ * @param root0.getIdLocked
+ * @param root0.getTimeBaseLocked
+ * @param root0.getProbabilityLocked
+ * @param root0.getIoToggleLocked
+ * @returns Rendered JSX for the resource definition list.
+ */
 export function ResourceDefinitionList<T extends Record<string, unknown> & { _uid?: string }>({
   items,
   columns,

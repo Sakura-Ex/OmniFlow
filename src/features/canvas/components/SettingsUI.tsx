@@ -37,6 +37,9 @@ import { RECIPE_INPUT_COLUMNS, RECIPE_OUTPUT_COLUMNS, UTILITY_COLUMNS } from '@/
 import { formatOpExRate } from '@/common/utils/format'
 import editorStyles from './SettingsUI.module.css'
 
+/**
+ *
+ */
 type SettingsUIProps = {
   inputFields: UseFieldArrayReturn<RecipeFormData, 'base_inputs', 'id'>
   outputFields: UseFieldArrayReturn<RecipeFormData, 'base_outputs', 'id'>
@@ -49,11 +52,21 @@ type SettingsUIProps = {
   previewPowerActualEu: number
 }
 
+/**
+ * Format a duration value into a human-readable string.
+ * @param value - The duration in seconds.
+ * @returns A formatted duration string (e.g. `"5.00s"`) or `"Instant"` for non-positive values.
+ */
 function formatDuration(value: number): string {
   if (!Number.isFinite(value) || value <= 0) return 'Instant'
   return `${formatOpExRate(value)}s`
 }
 
+/**
+ * Build a map of resource key to total amount from a resource array.
+ * @param rates - Array of resources with `category`, `id`, and `amount`.
+ * @returns A map of `"category:id"` to total amount.
+ */
 function buildRateMap(rates: Resource[]): Map<string, number> {
   const map = new Map<string, number>()
   for (const rate of rates) {
@@ -64,6 +77,13 @@ function buildRateMap(rates: Resource[]): Map<string, number> {
   return map
 }
 
+/**
+ * A sortable wrapper for a modifier card, enabling drag-and-drop reordering.
+ * @param root0 - Component props.
+ * @param root0.id - The unique sortable identifier.
+ * @param root0.children - The card content to render.
+ * @returns Rendered JSX for the sortable modifier card wrapper.
+ */
 function SortableModifierCard({ id, children }: { id: string; children: React.ReactNode }) {
   const {
     setNodeRef,
@@ -92,6 +112,24 @@ function SortableModifierCard({ id, children }: { id: string; children: React.Re
   )
 }
 
+/**
+ * Main settings panel for the recipe editor.
+ * Provides a three-column layout for configuring recipe inputs, machine core (archetype,
+ * duration, hardware specs, utility I/O, modifier slots with drag-and-drop reordering),
+ * and recipe outputs. Integrates real-time preview of calculated rates and power consumption.
+ *
+ * @param props - Component props
+ * @param props.inputFields - Field array controller for recipe base inputs
+ * @param props.outputFields - Field array controller for recipe base outputs
+ * @param props.utilityInputFields - Field array controller for utility inputs
+ * @param props.utilityOutputFields - Field array controller for utility outputs
+ * @param props.onArchetypeChange - Optional callback invoked when the archetype selection changes
+ * @param props.previewDurationSeconds - Computed preview duration after modifiers
+ * @param props.previewInputRates - Computed input resource rates for preview display
+ * @param props.previewOutputRates - Computed output resource rates for preview display
+ * @param props.previewPowerActualEu - Computed actual EU/t power consumption for preview display
+ * @returns Rendered JSX element for the recipe settings UI.
+ */
 export function SettingsUI(props: SettingsUIProps) {
   const {
     inputFields,

@@ -3,6 +3,7 @@ import type { IMachineModifier, ModifierCardRenderProps } from '@/features/modif
 import type { Resource } from '@/common/types/resource'
 import styles from './ModifierCardShell.module.css'
 
+/** Props for the `ModifierCardShell` component. */
 interface ModifierCardShellProps {
   modifier: IMachineModifier
   state: Record<string, unknown>
@@ -15,6 +16,13 @@ interface ModifierCardShellProps {
   hardwareSpecs?: Record<string, unknown>
 }
 
+/**
+ * Field wrapper component that renders a labelled control row.
+ * @param root0 - Component props.
+ * @param root0.label - The label text.
+ * @param root0.children - The control element(s).
+ * @returns Rendered JSX for a labelled field.
+ */
 const Field: FC<{ label: string; children: ReactNode }> = ({ label, children }) => (
   <label className={styles.control}>
     <span>{label}</span>
@@ -54,6 +62,23 @@ const Input: ModifierCardRenderProps['Input'] = ({ label, value, onChange, min, 
   </label>
 )
 
+/**
+ * Shell component that renders a modifier card with its UI elements.
+ * Delegates body rendering to the modifier's `renderBody` or auto-generates
+ * controls from its `ui_schema`.
+ *
+ * @param root0 - Component props.
+ * @param root0.modifier - The modifier definition.
+ * @param root0.state - Current modifier UI state.
+ * @param root0.isFixedModifier - Whether the modifier is fixed and cannot be removed.
+ * @param root0.onRemove - Callback to remove this modifier instance.
+ * @param root0.onChange - Callback to update a state key.
+ * @param root0.readOnly - Whether the card is in read-only mode.
+ * @param root0.recipeInputs - Recipe input resources for context.
+ * @param root0.recipeOutputs - Recipe output resources for context.
+ * @param root0.hardwareSpecs - Hardware specifications from the archetype.
+ * @returns Rendered JSX for the modifier card shell.
+ */
 export function ModifierCardShell({
   modifier,
   state,

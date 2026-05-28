@@ -5,8 +5,17 @@ import { resolveResourceProps } from '@/features/resource-registry/registry.stor
 import { getCategory, DEFAULT_RESOURCE_CATEGORY } from '@/common/utils/resourceId'
 import { generateId } from '@/common/utils/id'
 
+/** Resolve display properties (unit, colour, name) for a fully qualified resource ID. */
 export { resolveResourceProps }
 
+/**
+ * Resolve a resource's category definition by looking up user-defined
+ * categories and overrides, falling back to {@link FALLBACK_CATEGORY}.
+ * @param typeId - Fully qualified resource type ID (e.g. `item:iron_ingot`).
+ * @param userCategories - Optional map of user-defined category definitions.
+ * @param userOverrides - Optional map of per-resource unit overrides.
+ * @returns The resolved category definition.
+ */
 export function resolveCategoryDef(
   typeId?: string | null,
   userCategories?: Record<string, ResourceCategoryDef>,
@@ -28,6 +37,12 @@ export function resolveCategoryDef(
   }
 }
 
+/**
+ * Extract and filter valid endpoint ports from source/target node data.
+ * Returns only ports that have both an `id` and a numeric `amount`.
+ * @param data - Source or target node data.
+ * @returns An array of valid endpoint ports.
+ */
 export function normalizeEndpointPorts(
   data: SourceNodeData | TargetNodeData
 ): EndpointPort[] {
@@ -37,6 +52,12 @@ export function normalizeEndpointPorts(
   return []
 }
 
+/**
+ * Normalise source/target node data so it always contains a valid `ports` array.
+ * If the data has no usable ports a single empty port is injected.
+ * @param data - Source or target node data.
+ * @returns The normalised node data with a guaranteed `ports` array.
+ */
 export function normalizeEndpointData<T extends SourceNodeData | TargetNodeData>(
   data: T
 ): T {
@@ -50,6 +71,11 @@ export function normalizeEndpointData<T extends SourceNodeData | TargetNodeData>
   return data
 }
 
+/**
+ * Create an empty endpoint port with sensible defaults.
+ * @param category - Optional resource category; defaults to `DEFAULT_RESOURCE_CATEGORY`.
+ * @returns A new endpoint port with default values.
+ */
 export function emptyEndpointPort(category?: string): EndpointPort {
   return {
     id: '',

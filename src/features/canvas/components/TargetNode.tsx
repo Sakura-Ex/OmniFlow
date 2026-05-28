@@ -11,6 +11,17 @@ import type { TargetNodeData, TargetNodeMode } from '@/common/types/recipe'
 import styles from './TargetNode.module.css'
 import shared from './shared-port.module.css'
 
+/**
+ * Canvas node component representing an output demand target.
+ * Supports three modes: "demand" (fixed quantity demand), "maximize" (maximize production),
+ * and "overflow" (dump excess). Displays input ports with inline amount editing,
+ * category badges, global bus indicators, and mode toggle buttons.
+ *
+ * @param props - Node props from ReactFlow
+ * @param props.id - Unique node identifier
+ * @param props.data - Target node data containing port definitions and mode configuration
+ * @returns Rendered JSX element for the target node.
+ */
 export function TargetNode({ id, data }: NodeProps<TargetNodeData>) {
   const { updateNodeData } = useNodeData()
   const { onEdit } = useEndpointEditor()

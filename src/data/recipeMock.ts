@@ -1,5 +1,6 @@
 import type { RecipeNodeData } from '@/common/types/recipe'
 
+/** @description Mock recipe data representing a steel-smelting blast-furnace recipe used for development and testing. */
 export const recipeMock: RecipeNodeData = {
   recipe_id: 'blast_furnace_steel_01',
   machine_name: 'Electric Blast Furnace',

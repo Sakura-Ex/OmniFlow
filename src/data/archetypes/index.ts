@@ -6,15 +6,23 @@ import { gtElectricArchetype } from './gtElectric'
 import { deriveUtilityAmount } from './shared'
 import { getId, getCategory } from '@/common/utils/resourceId'
 
-// Add new archetypes by creating a new file and registering it here.
+/** @description Registry of all registered machine archetypes, keyed by their ID. */
 export const machineArchetypeRegistry: Record<string, MachineArchetype> = {
   [customGenericArchetype.id]: customGenericArchetype,
   [gtElectricArchetype.id]: gtElectricArchetype,
   [fluidNetworkedArchetype.id]: fluidNetworkedArchetype,
 }
 
+/** @description Flat array of all registered machine archetypes. */
 export const machineArchetypes: MachineArchetype[] = Object.values(machineArchetypeRegistry)
 
+/**
+ * Looks up a machine archetype by its ID. Falls back to `custom_generic` when
+ * the ID is missing or unknown.
+ *
+ * @param archetypeId The archetype ID to look up.
+ * @returns The matching {@link MachineArchetype}, or the default `custom_generic` archetype.
+ */
 export function getMachineArchetype(archetypeId?: string | null): MachineArchetype {
   if (archetypeId && machineArchetypeRegistry[archetypeId]) {
     return machineArchetypeRegistry[archetypeId]
@@ -22,12 +30,27 @@ export function getMachineArchetype(archetypeId?: string | null): MachineArchety
   return machineArchetypeRegistry.custom_generic
 }
 
+/**
+ * Return the default archetype ID for a given machine system.
+ * @param system - The machine system identifier.
+ * @returns The corresponding default archetype ID.
+ */
 export function getDefaultArchetypeIdForSystem(system?: MachineSystem): string {
   if (system === 'gregtech') return 'gt_electric'
   if (system === 'thermal') return 'fluid_networked'
   return 'custom_generic'
 }
 
+/**
+ * Applies an archetype's fixed utilities to the given resource inputs,
+ * separating material inputs from utility inputs/outputs.
+ *
+ * @param inputs      Raw resource list (may contain both materials and utilities).
+ * @param archetypeId The archetype ID to apply.
+ * @param metadata    Recipe metadata used to derive utility amounts.
+ * @returns An object with three arrays: `materials`, `utilityInputs` and
+ *          `utilityOutputs`.
+ */
 export function applyArchetypeToInputs(
   inputs: Resource[],
   archetypeId: string,
@@ -81,6 +104,13 @@ export function applyArchetypeToInputs(
   return { materials: normalizedMaterials, utilityInputs, utilityOutputs }
 }
 
+/**
+ * Finds the matching utility definition for a given resource and archetype.
+ *
+ * @param resource    The resource to look up (must have `is_utility === true`).
+ * @param archetypeId The archetype ID to search within.
+ * @returns The matching {@link UtilityDef}, or `null` if not found.
+ */
 export function getUtilityDefForResource(
   resource: Resource,
   archetypeId: string

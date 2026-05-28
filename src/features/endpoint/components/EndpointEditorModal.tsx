@@ -10,12 +10,26 @@ import { ENDPOINT_COLUMNS } from '@/features/resource-registry/components/Resour
 import modalStyles from '@/common/components/Modal.module.css'
 import styles from './EndpointEditorModal.module.css'
 
+/**
+ *
+ */
 type Props = {
   node: EndpointEditorTarget | null
   onClose: () => void
   onSave: (id: string, data: Partial<SourceNodeData & TargetNodeData>) => void
 }
 
+/**
+ * Modal dialog for editing endpoint (source/target) node port configurations.
+ * Allows adding, removing, and modifying endpoint ports including their resource category,
+ * identifier, amount, routing mode (wired/global), and other column-defined properties.
+ *
+ * @param props - Component props
+ * @param props.node - The endpoint editor target containing the node ID, role (source/target), and current data
+ * @param props.onClose - Callback to close the modal without saving
+ * @param props.onSave - Callback invoked with the node ID and partial data patch when save is confirmed
+ * @returns Rendered JSX element for the endpoint editor modal, or null if no node is provided.
+ */
 export function EndpointEditorModal({ node, onClose, onSave }: Props) {
   const resourceIndex = useGlobalResourceTable((state) => state.entries)
   const registryCategories = useGlobalResourceTable((state) => state.categories)

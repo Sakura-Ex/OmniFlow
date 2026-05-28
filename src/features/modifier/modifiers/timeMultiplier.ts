@@ -1,5 +1,11 @@
 import type { IMachineModifier, PipelineContext } from '../modifier.types'
 
+/**
+ * Time Multiplier modifier plugin.
+ *
+ * Scales the recipe duration by a configurable multiplier without affecting resource amounts.
+ * Can be placed an effectively unlimited number of times.
+ */
 export const timeMultiplierModifier: IMachineModifier = {
   id: 'time_multiplier',
   name: 'Time Multiplier',

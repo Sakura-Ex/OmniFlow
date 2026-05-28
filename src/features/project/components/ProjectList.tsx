@@ -1,5 +1,9 @@
 import { useProjects } from '../useProjects'
 
+/**
+ * Simple project list component displaying all projects with create/delete/switch actions.
+ * @returns Rendered JSX element for the project list.
+ */
 export function ProjectList() {
   const { projectList, isLoading, currentProjectId, createProject, deleteProject, switchProject } = useProjects()
 

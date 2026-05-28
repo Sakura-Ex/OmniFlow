@@ -1,6 +1,14 @@
 import { useEffect } from 'react'
 import { useProjectStore } from './project.store'
 
+/**
+ * Convenience hook that subscribes to the project store and exposes
+ * the project list, loading state, current project ID, and CRUD actions.
+ * Automatically triggers a project list refresh on mount.
+ *
+ * @returns An object with `projectList`, `isLoading`, `currentProjectId`,
+ *          `createProject`, `deleteProject`, `switchProject` and `refreshProjects`.
+ */
 export function useProjects() {
   const projectList = useProjectStore(s => s.projectList)
   const isLoading = useProjectStore(s => s.isLoading)

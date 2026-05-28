@@ -7,6 +7,11 @@ import { normalizeEndpointPorts } from '@/features/recipe/recipe.endpointNorm'
 import { buildResourceId, normalizeResourceKey, DEFAULT_RESOURCE_CATEGORY } from '@/common/utils/resourceId'
 import { computeCapexList } from '@/features/calculation/capEx'
 
+/**
+ * Normalize and extract `actual_amounts` from a single sub-node calculation result.
+ * @param subResult - An optional sub-result containing `actual_amounts`.
+ * @returns A record of resource keys (normalized) to their actual amounts.
+ */
 function extractActualAmounts(
   subResult: { actual_amounts?: Record<string, number> } | undefined,
 ): Record<string, number> {
@@ -18,54 +23,98 @@ function extractActualAmounts(
   return result
 }
 
+/**
+ * Describes a handle (port) reconnection event on a node.
+ * Used when a user drags an edge from one port to another.
+ */
 export type HandleUpdate = {
+  /** Whether the handle belongs to a source or target role. */
   role: EndpointRole
+  /** The ID of the port being disconnected. */
   previousId: string
+  /** The ID of the port being connected. */
   nextId: string
 }
 
+/** Root state and actions for the canvas Zustand store. */
 export type CanvasStore = {
+  /** All React Flow nodes currently on the canvas. */
   nodes: Node[]
+  /** All React Flow edges currently on the canvas. */
   edges: Edge[]
+  /** Current viewport position and zoom level. */
   viewport: { x: number; y: number; zoom: number }
+  /** Aggregated system-wide input resource amounts keyed by resource ID. */
   systemInputs: Record<string, number>
+  /** Aggregated system-wide output resource amounts keyed by resource ID. */
   systemOutputs: Record<string, number>
+  /** Snapshot of `systemInputs` from the most recent calculation. */
   lastSystemInputs: Record<string, number>
+  /** Snapshot of `systemOutputs` from the most recent calculation. */
   lastSystemOutputs: Record<string, number>
+  /** IDs of resources routed globally as inputs. */
   globalInputIds: string[]
+  /** IDs of resources routed globally as outputs. */
   globalOutputIds: string[]
+  /** Computed CAPEX (capital expenditure) map keyed by recipe node ID. */
   capexList: Record<string, number>
+  /** Latest calculation error message, or `null` if none. */
   error: string | null
+  /** Whether the canvas has unsaved changes. */
   isDirty: boolean
+  /** The loaded canvas document ID from the database, or `null`. */
   canvasId: string | null
+  /** The owning project ID, or `null`. */
   projectId: string | null
 
+  /** Replace all nodes on the canvas. */
   setNodes: (nodes: Node[]) => void
+  /** Replace all edges on the canvas. */
   setEdges: (edges: Edge[]) => void
+  /** Set the system-wide input resource amounts. */
   setSystemInputs: (v: Record<string, number>) => void
+  /** Set the system-wide output resource amounts. */
   setSystemOutputs: (v: Record<string, number>) => void
+  /** Set the snapshot of system inputs from the last calculation. */
   setLastSystemInputs: (v: Record<string, number>) => void
+  /** Set the snapshot of system outputs from the last calculation. */
   setLastSystemOutputs: (v: Record<string, number>) => void
+  /** Set the list of globally routed input resource IDs. */
   setGlobalInputIds: (v: string[]) => void
+  /** Set the list of globally routed output resource IDs. */
   setGlobalOutputIds: (v: string[]) => void
+  /** Set the computed CAPEX map. */
   setCapexList: (v: Record<string, number>) => void
+  /** Set the current calculation error (or clear it with `null`). */
   setError: (v: string | null) => void
+  /** Mark the canvas as having unsaved changes. */
   markDirty: () => void
+  /** Load a canvas from the database, replacing all state and clearing the dirty flag. */
   loadFromDB: (canvasId: string, projectId: string, nodes: Node[], edges: Edge[], viewport: { x: number; y: number; zoom: number }) => void
+  /** Reset the canvas to its initial empty state (clears nodes, edges, and metadata). */
   resetCanvas: () => void
 
+  /** Reset only the calculation-derived state (inputs, outputs, globals, capex, error). */
   resetCalculationState: () => void
 
+  /** Append a single node to the canvas. */
   addNode: (node: Node) => void
+  /** Add a recipe node and register its recipe data in the recipe store. */
   addRecipeNode: (id: string, nodeData: RecipeNodeData, newNode: Node) => void
+  /** Delete all currently selected nodes and their connected edges. */
   deleteSelected: () => void
+  /** Delete all currently selected edges without removing nodes. */
   deleteSelectedEdges: () => void
+  /** Clear all nodes, edges, and calculation state from the canvas. */
   clearAll: () => void
 
+  /** Merge partial data into a node and update its edges if a handle reconnection occurred. */
   updateNodeData: (nodeId: string, nextData: Record<string, unknown>, handleUpdate?: HandleUpdate) => void
+  /** Apply a calculation result to the canvas, updating node data, system balances, and CAPEX. */
   setCalculationResult: (result: CalculateResponse) => void
 }
 
+/** Zustand store managing all canvas state, including nodes, edges, viewport, calculation results, and derived data. */
 export const useCanvasStore = create<CanvasStore>((set) => ({
   nodes: [],
   edges: [],
