@@ -96,7 +96,7 @@ export function SystemHUD({
             ⬇️ SYSTEM INPUTS (/s)
           </span>
           <button
-            className={`${styles['system-hud__toggle']}${inputsCollapsed ? ` ${styles['is-collapsed']}` : ''}`}
+            className={`${styles['system-hud__toggle']}${inputsCollapsed ? ` ${styles['system-hud__toggle--collapsed']}` : ''}`}
             type="button"
             onClick={() => setInputsCollapsed((prev) => !prev)}
             aria-label="Toggle inputs panel"
@@ -134,7 +134,7 @@ export function SystemHUD({
             🏗️ BUILD LIST (CapEx)
           </span>
           <button
-            className={`${styles['system-hud__toggle']}${capexCollapsed ? ` ${styles['is-collapsed']}` : ''}`}
+            className={`${styles['system-hud__toggle']}${capexCollapsed ? ` ${styles['system-hud__toggle--collapsed']}` : ''}`}
             type="button"
             onClick={() => setCapexCollapsed((prev) => !prev)}
             aria-label="Toggle CapEx panel"
@@ -163,7 +163,7 @@ export function SystemHUD({
             ⬆️ SYSTEM OUTPUTS (/s)
           </span>
           <button
-            className={`${styles['system-hud__toggle']}${outputsCollapsed ? ` ${styles['is-collapsed']}` : ''}`}
+            className={`${styles['system-hud__toggle']}${outputsCollapsed ? ` ${styles['system-hud__toggle--collapsed']}` : ''}`}
             type="button"
             onClick={() => setOutputsCollapsed((prev) => !prev)}
             aria-label="Toggle outputs panel"

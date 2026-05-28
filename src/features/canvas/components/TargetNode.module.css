@@ -35,7 +35,7 @@
     var(--panel);
 }
 
-.react-flow__node.selected .target-node {
+:global(.react-flow__node.selected) .target-node {
   border-color: #fb923c;
   box-shadow: 0 10px 30px rgba(2, 6, 23, 0.46);
 }
@@ -101,7 +101,7 @@
   border-color: rgba(251, 146, 60, 0.5);
 }
 
-.target-node__mode-btn.is-active {
+.target-node__mode-btn--active {
   background: rgba(251, 146, 60, 0.18);
   border-color: rgba(251, 146, 60, 0.5);
   color: #fb923c;
@@ -135,13 +135,13 @@
   color: #fb923c;
 }
 
-.target-node__seg .target-node__mode-btn.is-active {
+.target-node__seg .target-node__mode-btn--active {
   background: rgba(251, 146, 60, 0.18);
   color: #fb923c;
   box-shadow: none;
 }
 
-.target-node--maximize .target-node__seg .target-node__mode-btn.is-active {
+.target-node--maximize .target-node__seg .target-node__mode-btn--active {
   background: rgba(234, 179, 8, 0.18);
   color: #eab308;
   box-shadow: none;

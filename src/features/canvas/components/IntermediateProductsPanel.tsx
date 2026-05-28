@@ -99,7 +99,7 @@ export function IntermediateProductsPanel({
           🔗 INTERMEDIATE (s=0)
         </span>
         <button
-          className={`${styles['system-hud__toggle']}${collapsed ? ` ${styles['is-collapsed']}` : ''}`}
+          className={`${styles['system-hud__toggle']}${collapsed ? ` ${styles['system-hud__toggle--collapsed']}` : ''}`}
           type="button"
           onClick={() => setCollapsed((prev) => !prev)}
           aria-label="Toggle intermediate panel"

@@ -229,19 +229,19 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
 
         <div className={styles['resource-registry__tabs']}>
           <button
-            className={`${styles['resource-registry__tab']}${tab === 'categories' ? ` ${styles['is-active']}` : ''}`}
+            className={`${styles['resource-registry__tab']}${tab === 'categories' ? ` ${styles['resource-registry__tab--active']}` : ''}`}
             onClick={() => setTab('categories')}
           >
             类别定义
           </button>
           <button
-            className={`${styles['resource-registry__tab']}${tab === 'overrides' ? ` ${styles['is-active']}` : ''}`}
+            className={`${styles['resource-registry__tab']}${tab === 'overrides' ? ` ${styles['resource-registry__tab--active']}` : ''}`}
             onClick={() => setTab('overrides')}
           >
             单位覆盖
           </button>
           <button
-            className={`${styles['resource-registry__tab']}${tab === 'entries' ? ` ${styles['is-active']}` : ''}`}
+            className={`${styles['resource-registry__tab']}${tab === 'entries' ? ` ${styles['resource-registry__tab--active']}` : ''}`}
             onClick={() => setTab('entries')}
           >
             全部已使用资源

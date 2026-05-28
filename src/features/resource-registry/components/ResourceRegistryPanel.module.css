@@ -35,7 +35,7 @@
   color: var(--text-strong);
 }
 
-.resource-registry__tab.is-active {
+.resource-registry__tab--active {
   color: var(--accent);
   border-bottom-color: var(--accent);
 }
@@ -209,5 +209,3 @@
   border-color: rgba(248, 113, 113, 0.4);
   color: #fca5a5;
 }
-
-.is-active {}

@@ -79,7 +79,7 @@ export function TargetNode({ id, data }: NodeProps<TargetNodeData>) {
             {(Object.keys(modeConfig) as TargetNodeMode[]).map((m) => (
               <button
                 key={m}
-                className={`${styles['target-node__mode-btn']} nodrag${mode === m ? ` ${styles['is-active']}` : ''}`}
+                className={`${styles['target-node__mode-btn']} nodrag${mode === m ? ` ${styles['target-node__mode-btn--active']}` : ''}`}
                 onClick={() => handleSetMode(m)}
                 title={modeConfig[m].title}
               >

@@ -71,11 +71,11 @@ export function SourceNode({ id, data }: NodeProps<SourceNodeData>) {
           >⚙</button>
           <div className={styles['source-node__seg']}>
             <button
-              className={`${styles['source-node__mode-btn']} nodrag${mode === 'limit' ? ` ${styles['is-active']}` : ''}`}
+              className={`${styles['source-node__mode-btn']} nodrag${mode === 'limit' ? ` ${styles['source-node__mode-btn--active']}` : ''}`}
               onClick={() => handleSetMode('limit')} title="供给上限"
             >🚧</button>
             <button
-              className={`${styles['source-node__mode-btn']} nodrag${mode === 'infinite' ? ` ${styles['is-active']}` : ''}`}
+              className={`${styles['source-node__mode-btn']} nodrag${mode === 'infinite' ? ` ${styles['source-node__mode-btn--active']}` : ''}`}
               onClick={() => handleSetMode('infinite')} title="无限供应"
             >♾️</button>
           </div>

@@ -21,7 +21,7 @@ export function SegmentedControl({ value, options, onChange, className }: Segmen
           <button
             key={option.value}
             type="button"
-            className={`${styles['segmented-control__item']}${isActive ? ` ${styles['is-active']}` : ''}`}
+            className={`${styles['segmented-control__item']}${isActive ? ` ${styles['segmented-control__item--active']}` : ''}`}
             role="tab"
             aria-selected={isActive}
             onClick={() => onChange(option.value)}

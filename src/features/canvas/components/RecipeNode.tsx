@@ -210,7 +210,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
         <div className={styles['recipe-node__header-actions']}>
           <button
             type="button"
-            className={`${styles['recipe-node__implement-btn']} nodrag${isImplemented ? ` ${styles['is-active']}` : ''}`}
+            className={`${styles['recipe-node__implement-btn']} nodrag${isImplemented ? ` ${styles['recipe-node__implement-btn--active']}` : ''}`}
             onClick={handleToggleImplemented}
             title={isImplemented ? '已实装' : '未实装'}
             aria-label="切换实装状态"
@@ -234,14 +234,14 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
           </button>
           <div className={styles['recipe-node__seg']}>
             <button
-              className={`${styles['recipe-node__mode-btn']} nodrag${mode === 'auto' ? ` ${styles['is-active']}` : ''}`}
+              className={`${styles['recipe-node__mode-btn']} nodrag${mode === 'auto' ? ` ${styles['recipe-node__mode-btn--active']}` : ''}`}
               onClick={() => handleSetMode('auto')}
               title="按需运转"
             >
               🔄
             </button>
             <button
-              className={`${styles['recipe-node__mode-btn']} nodrag${mode === 'limit' ? ` ${styles['is-active']}` : ''}`}
+              className={`${styles['recipe-node__mode-btn']} nodrag${mode === 'limit' ? ` ${styles['recipe-node__mode-btn--active']}` : ''}`}
               onClick={() => handleSetMode('limit')}
               title="产能上限"
             >

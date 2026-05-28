@@ -20,7 +20,7 @@
     var(--panel);
 }
 
-.react-flow__node.selected .source-node {
+:global(.react-flow__node.selected) .source-node {
   border-color: #2dd4bf;
   box-shadow: 0 10px 30px rgba(2, 6, 23, 0.46);
 }
@@ -86,7 +86,7 @@
   border-color: rgba(45, 212, 191, 0.5);
 }
 
-.source-node__mode-btn.is-active {
+.source-node__mode-btn--active {
   background: rgba(45, 212, 191, 0.18);
   border-color: rgba(45, 212, 191, 0.5);
   color: #2dd4bf;
@@ -120,7 +120,7 @@
   color: #2dd4bf;
 }
 
-.source-node__seg .source-node__mode-btn.is-active {
+.source-node__seg .source-node__mode-btn--active {
   background: rgba(45, 212, 191, 0.20);
   color: #2dd4bf;
   box-shadow: none;
@@ -134,5 +134,3 @@
   text-transform: uppercase;
   font-weight: 600;
 }
-
-.is-active {}

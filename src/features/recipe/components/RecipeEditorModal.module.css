@@ -471,7 +471,7 @@
   color: rgba(203, 213, 225, 0.95);
 }
 
-.recipe-editor__route-btn.is-global {
+.recipe-editor__route-btn--global {
   border-color: rgba(104, 225, 253, 0.45);
   background: rgba(104, 225, 253, 0.16);
 }
@@ -493,7 +493,7 @@
   font-family: var(--mono);
 }
 
-.recipe-editor__io-btn.is-output {
+.recipe-editor__io-btn--output {
   border-color: rgba(248, 113, 113, 0.4);
   background: rgba(248, 113, 113, 0.12);
   color: #fca5a5;

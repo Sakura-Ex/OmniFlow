@@ -124,7 +124,7 @@
   transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-.system-hud__toggle.is-collapsed {
+.system-hud__toggle--collapsed {
   transform: rotate(-90deg);
 }
 
@@ -225,5 +225,3 @@
 .system-hud__panel::-webkit-scrollbar-thumb:hover {
   background: rgba(226, 232, 240, 0.55);
 }
-
-.is-collapsed {}

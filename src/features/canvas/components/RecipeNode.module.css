@@ -26,12 +26,12 @@
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18), 0 14px 30px rgba(2, 6, 23, 0.3);
 }
 
-.react-flow__node:not(.selected) .recipe-node--implemented {
+:global(.react-flow__node:not(.selected)) .recipe-node--implemented {
   border-color: rgba(74, 222, 128, 0.55);
   opacity: 0.4;
 }
 
-.react-flow__node.selected .recipe-node {
+:global(.react-flow__node.selected) .recipe-node {
   border-color: #68e1fd;
   box-shadow: 0 16px 34px rgba(2, 6, 23, 0.34);
 }
@@ -94,7 +94,7 @@
   border-color: rgba(104, 225, 253, 0.45);
 }
 
-.recipe-node__mode-btn.is-active {
+.recipe-node__mode-btn--active {
   background: rgba(104, 225, 253, 0.16);
   border-color: rgba(104, 225, 253, 0.5);
   color: #68e1fd;
@@ -128,7 +128,7 @@
   color: #68e1fd;
 }
 
-.recipe-node__seg .recipe-node__mode-btn.is-active {
+.recipe-node__seg .recipe-node__mode-btn--active {
   background: rgba(104, 225, 253, 0.18);
   color: #68e1fd;
   box-shadow: none;
@@ -168,7 +168,7 @@
   color: rgba(134, 239, 172, 0.8);
 }
 
-.recipe-node__implement-btn.is-active {
+.recipe-node__implement-btn--active {
   background: rgba(74, 222, 128, 0.16);
   border-color: rgba(74, 222, 128, 0.5);
   color: #4ade80;
@@ -552,7 +552,3 @@
 .recipe-node__global-icon--right {
   right: -4px;
 }
-
-.is-active {}
-
-.is-collapsed {}
