@@ -1,4 +1,4 @@
-import type { MachineArchetype } from '../../types/types'
+import type { MachineArchetype } from '@/common/types/resource'
 
 export const fluidNetworkedArchetype: MachineArchetype = {
   id: 'fluid_networked',

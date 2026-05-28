@@ -5,33 +5,35 @@ import ReactFlow, {
   Controls,
   useUpdateNodeInternals,
   type ReactFlowInstance,
+  type Node as RFNode,
+  type Edge as RFEdge,
 } from 'reactflow'
-import { nodeTypes, edgeTypes } from './flowConfig'
-import { RecipeEditorModal } from './components/RecipeEditorModal'
-import { EndpointEditorModal } from './components/EndpointEditorModal'
-import { SystemHUD } from './components/SystemHUD'
-import { ResourceRegistryPanel } from './components/ResourceRegistryPanel'
-import { TpsSettingsPanel } from './components/TpsSettingsPanel'
-import { RecipeEditorProvider } from './RecipeEditorContext'
-import { EndpointEditorProvider } from './EndpointEditorContext'
-import { NodeDataProvider } from './NodeDataContext'
-import { useCanvasState } from './hooks/useCanvasState'
-import { useUndoRedo } from './hooks/useUndoRedo'
-import { useTheme } from './hooks/useTheme'
-import { useClickOutside } from './hooks/useClickOutside'
-import { useCanvasOperations } from './hooks/useCanvasOperations'
-import { useClipboard } from './hooks/useClipboard'
-import { useFileIO } from './hooks/useFileIO'
-import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
-import { useNodeEditor } from './hooks/useNodeEditor'
-import { useCalculation } from './hooks/useCalculation'
-import { useNodeOperations } from './hooks/useNodeOperations'
-import { useRecipeStore } from './stores/recipeStore'
-import { useCanvasStore } from './stores/canvasStore'
-import type { RecipeNodeData } from './types/recipe'
-import { MenuBar } from './components/MenuBar'
-import { initialNodes, initialEdges } from './domain/canvas/initialState'
-import { normalizeCanvasNode } from './domain/canvas/validators'
+import { nodeTypes, edgeTypes } from '@/features/canvas/canvas.flowConfig'
+import { RecipeEditorModal } from '@/features/recipe/components/RecipeEditorModal'
+import { EndpointEditorModal } from '@/features/endpoint/components/EndpointEditorModal'
+import { SystemHUD } from '@/features/canvas/components/SystemHUD'
+import { ResourceRegistryPanel } from '@/features/resource-registry/components/ResourceRegistryPanel'
+import { TpsSettingsPanel } from '@/features/endpoint/components/TpsSettingsPanel'
+import { RecipeEditorProvider } from '@/features/recipe/contexts/RecipeEditorContext'
+import { EndpointEditorProvider } from '@/features/canvas/contexts/EndpointEditorContext'
+import { NodeDataProvider } from '@/features/canvas/contexts/NodeDataContext'
+import { useCanvasState } from '@/features/canvas/hooks/useCanvasState'
+import { useUndoRedo } from '@/features/canvas/hooks/useUndoRedo'
+import { useTheme } from '@/hooks/useTheme'
+import { useClickOutside } from '@/hooks/useClickOutside'
+import { useCanvasOperations } from '@/features/canvas/hooks/useCanvasOperations'
+import { useClipboard } from '@/features/canvas/hooks/useClipboard'
+import { useFileIO } from '@/features/file-io/hooks/useFileIO'
+import { useKeyboardShortcuts } from '@/features/canvas/hooks/useKeyboardShortcuts'
+import { useNodeEditor } from '@/features/recipe/hooks/useNodeEditor'
+import { useCalculation } from '@/features/calculation/hooks/useCalculation'
+import { useNodeOperations } from '@/features/recipe/hooks/useNodeOperations'
+import { useRecipeStore } from '@/features/recipe/recipe.store'
+import { useCanvasStore } from '@/features/canvas/canvas.store'
+import type { RecipeNodeData } from '@/common/types/recipe'
+import { MenuBar } from '@/features/canvas/components/MenuBar'
+import { initialNodes, initialEdges } from '@/features/canvas/canvas.initialState'
+import { normalizeCanvasNode } from '@/features/canvas/canvas.validators'
 import './App.css'
 
 const defaultEdgeOptions = {
@@ -54,14 +56,16 @@ function UpdateInternalsBridge({ onReady }: { onReady: (fn: (nodeId: string) => 
 export default function App() {
   const {
     nodes,
-    setNodes,
+    setNodes: _setNodes,
     onNodesChange,
     edges,
-    setEdges,
+    setEdges: _setEdges,
     onEdgesChange,
     nodesRef,
     edgesRef,
   } = useCanvasState(initialNodes, initialEdges)
+  const setNodes = useCallback((value: RFNode[]) => _setNodes(value), [_setNodes])
+  const setEdges = useCallback((value: RFEdge[]) => _setEdges(value), [_setEdges])
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const { theme, toggleTheme } = useTheme()
   const [showRegistry, setShowRegistry] = useState(false)
@@ -150,8 +154,8 @@ export default function App() {
   const { handleCopy, handlePaste, handleCut, handleDuplicate } = useClipboard({
     nodesRef,
     edgesRef,
-    setNodes,
-    setEdges,
+    setNodes: _setNodes,
+    setEdges: _setEdges,
     takeSnapshot,
     onDeleteSelected: handleDeleteSelected,
   })
@@ -170,8 +174,8 @@ export default function App() {
   const { updateNodeData, autoFillEndpoints, handleAutoFillSelected } = useNodeOperations({
     nodesRef,
     edgesRef,
-    setNodes,
-    setEdges,
+    setNodes: _setNodes,
+    setEdges: _setEdges,
     takeSnapshot,
     lastSystemInputs,
     lastSystemOutputs,

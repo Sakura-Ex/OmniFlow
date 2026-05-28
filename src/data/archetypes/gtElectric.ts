@@ -1,4 +1,4 @@
-import type { MachineArchetype } from '../../types/types'
+import type { MachineArchetype } from '@/common/types/resource'
 
 export const gtElectricArchetype: MachineArchetype = {
   id: 'gt_electric',

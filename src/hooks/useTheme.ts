@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
+import type { ValueOf } from '@/common/types/common'
 
-export type ThemeMode = 'dark' | 'light'
+export const ThemeMode = {
+  Dark: 'dark',
+  Light: 'light',
+} as const satisfies Record<string, string>
+
+export type ThemeMode = ValueOf<typeof ThemeMode>
 
 const DEFAULT_STORAGE_KEY = 'omniflow.theme.v1'
 

@@ -1,4 +1,4 @@
-import type { RecipeNodeData } from '../types/recipe'
+import type { RecipeNodeData } from '@/common/types/recipe'
 
 export const recipeMock: RecipeNodeData = {
   recipe_id: 'blast_furnace_steel_01',

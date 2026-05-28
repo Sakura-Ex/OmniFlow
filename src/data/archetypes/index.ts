@@ -1,10 +1,10 @@
-import type { MachineSystem, RecipeNodeData } from '../../types/recipe'
-import type { MachineArchetype, Resource, RoutingMode, UtilityDef } from '../../types/types'
+import type { MachineSystem, RecipeNodeData } from '@/common/types/recipe'
+import type { MachineArchetype, Resource, RoutingMode, UtilityDef } from '@/common/types/resource'
 import { customGenericArchetype } from './customGeneric'
 import { fluidNetworkedArchetype } from './fluidNetworked'
 import { gtElectricArchetype } from './gtElectric'
 import { deriveUtilityAmount } from './shared'
-import { getId, getCategory } from '../../utils/resourceIdentifier'
+import { getId, getCategory } from '@/common/utils/resourceId'
 
 // Add new archetypes by creating a new file and registering it here.
 export const machineArchetypeRegistry: Record<string, MachineArchetype> = {

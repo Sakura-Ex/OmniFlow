@@ -1,5 +1,5 @@
-import type { RecipeNodeData } from '../../types/recipe'
-import { getId } from '../../utils/resourceIdentifier'
+import type { RecipeNodeData } from '@/common/types/recipe'
+import { getId } from '@/common/utils/resourceId'
 
 const utilityCategoryHints: Array<{ pattern: RegExp; category: string }> = [
   { pattern: /eu|rf|power|energy|voltage/i, category: 'energy' },
