@@ -1,0 +1,95 @@
+[
+  {
+    "id": "T09-slow-production",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "slow-production",
+      "document_revision": 7,
+      "compiler_fingerprint": "math:slow-production:v1",
+      "variables": [
+        { "id": "operation", "lower": 0, "upper": null },
+        { "id": "delivery", "lower": 0, "upper": null }
+      ],
+      "equalities": {
+        "row_ids": ["production"], "rhs": [0],
+        "entries": [{ "row": 0, "col": 0, "value": 0.00005 }, { "row": 0, "col": 1, "value": -1 }]
+      },
+      "inequalities": {
+        "row_ids": ["bottleneck"], "rhs": [1],
+        "entries": [{ "row": 0, "col": 1, "value": 1 }]
+      },
+      "objectives": [
+        { "id": "operation-cost", "priority": 20, "coefficients": [{ "col": 0, "value": 1 }], "normalization_scale": 1, "abs_tolerance": 0, "rel_tolerance": 0 },
+        { "id": "delivery-first", "priority": 10, "coefficients": [{ "col": 1, "value": -1 }], "normalization_scale": 1, "abs_tolerance": 0, "rel_tolerance": 0 }
+      ],
+      "solver_options": { "time_limit_ms": 10000 }
+    },
+    "expected": { "status": "success", "values": [20000, 1], "objective_ids": ["delivery-first", "operation-cost"] }
+  },
+  {
+    "id": "T23-fractional-duplicates",
+    "request": {
+      "schema_version": "omniflow.lp.v1", "request_id": "fractional-duplicates", "document_revision": 8,
+      "compiler_fingerprint": "math:fractional-duplicates:v1",
+      "variables": [{ "id": "fractional", "lower": 0, "upper": null }, { "id": "signed", "lower": null, "upper": null }],
+      "equalities": {
+        "row_ids": ["fraction", "negative"], "rhs": [0.5, -0.5],
+        "entries": [
+          { "row": 0, "col": 0, "value": 1 }, { "row": 0, "col": 0, "value": 2 }, { "row": 0, "col": 0, "value": -1 },
+          { "row": 1, "col": 1, "value": 1 }
+        ]
+      },
+      "inequalities": { "row_ids": [], "rhs": [], "entries": [] },
+      "objectives": [{ "id": "cost", "priority": 0, "coefficients": [{ "col": 0, "value": 0.5 }, { "col": 0, "value": 0.5 }], "normalization_scale": 1, "abs_tolerance": 0, "rel_tolerance": 0 }],
+      "solver_options": { "time_limit_ms": 10000 }
+    },
+    "expected": { "status": "success", "values": [0.25, -0.5], "objective_ids": ["cost"] }
+  },
+  {
+    "id": "T16-unbounded",
+    "request": {
+      "schema_version": "omniflow.lp.v1", "request_id": "unbounded", "document_revision": 9,
+      "compiler_fingerprint": "math:unbounded:v1",
+      "variables": [{ "id": "uncapped", "lower": 0, "upper": null }],
+      "equalities": { "row_ids": [], "rhs": [], "entries": [] },
+      "inequalities": { "row_ids": [], "rhs": [], "entries": [] },
+      "objectives": [{ "id": "maximize", "priority": 0, "coefficients": [{ "col": 0, "value": -1 }], "normalization_scale": 1, "abs_tolerance": 0, "rel_tolerance": 0 }],
+      "solver_options": { "time_limit_ms": 10000 }
+    },
+    "expected": { "status": "unbounded", "values": null, "objective_ids": ["maximize"] }
+  },
+  {
+    "id": "infeasible-bound",
+    "request": {
+      "schema_version": "omniflow.lp.v1", "request_id": "infeasible-bound", "document_revision": 10,
+      "compiler_fingerprint": "math:infeasible-bound:v1",
+      "variables": [{ "id": "bounded", "lower": 0, "upper": 1 }],
+      "equalities": { "row_ids": ["demand"], "rhs": [2], "entries": [{ "row": 0, "col": 0, "value": 1 }] },
+      "inequalities": { "row_ids": [], "rhs": [], "entries": [] },
+      "objectives": [], "solver_options": { "time_limit_ms": 10000 }
+    },
+    "expected": { "status": "infeasible", "values": null, "objective_ids": [null] }
+  },
+  {
+    "id": "constant-infeasible",
+    "request": {
+      "schema_version": "omniflow.lp.v1", "request_id": "constant-infeasible", "document_revision": 11,
+      "compiler_fingerprint": "math:constant-infeasible:v1", "variables": [],
+      "equalities": { "row_ids": ["nonzero-demand"], "rhs": [1], "entries": [] },
+      "inequalities": { "row_ids": [], "rhs": [], "entries": [] },
+      "objectives": [], "solver_options": { "time_limit_ms": 10000 }
+    },
+    "expected": { "status": "infeasible", "values": null, "objective_ids": [null] }
+  },
+  {
+    "id": "empty-feasible",
+    "request": {
+      "schema_version": "omniflow.lp.v1", "request_id": "empty-feasible", "document_revision": 12,
+      "compiler_fingerprint": "math:empty-feasible:v1", "variables": [],
+      "equalities": { "row_ids": ["zero"], "rhs": [0], "entries": [] },
+      "inequalities": { "row_ids": [], "rhs": [], "entries": [] },
+      "objectives": [], "solver_options": { "time_limit_ms": 10000 }
+    },
+    "expected": { "status": "success", "values": [], "objective_ids": [null] }
+  }
+]

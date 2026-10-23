@@ -1,0 +1,983 @@
+[
+  {
+    "id": "T09-slow-production",
+    "response": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "slow-production",
+      "document_revision": 7,
+      "compiler_fingerprint": "math:slow-production:v1",
+      "status": "success",
+      "solution": {
+        "variable_ids": [
+          "operation",
+          "delivery"
+        ],
+        "values": [
+          20000.0,
+          1.0
+        ],
+        "feasibility": {
+          "passed": true,
+          "absolute_tolerance": 1e-07,
+          "relative_tolerance": 1e-09,
+          "max_violation": 0.0,
+          "row_residuals": [
+            {
+              "row_id": "production",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1.02e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "bottleneck",
+              "kind": "inequality",
+              "activity": 1.0,
+              "rhs": 1.0,
+              "residual": 0.0,
+              "slack": -0.0,
+              "tolerance": 1.0099999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "delivery-first",
+              "kind": "objective_lock",
+              "activity": -1.0,
+              "rhs": -1.0,
+              "residual": 0.0,
+              "slack": -0.0,
+              "tolerance": 1.0099999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "operation-cost",
+              "kind": "objective_lock",
+              "activity": 20000.0,
+              "rhs": 20000.0,
+              "residual": 0.0,
+              "slack": -0.0,
+              "tolerance": 2.01e-05,
+              "violation": 0.0,
+              "passed": true
+            }
+          ],
+          "bound_slacks": [
+            {
+              "variable_id": "operation",
+              "value": 20000.0,
+              "lower_slack": 20000.0,
+              "upper_slack": null,
+              "tolerance": 2.01e-05,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "delivery",
+              "value": 1.0,
+              "lower_slack": 1.0,
+              "upper_slack": null,
+              "tolerance": 1.0099999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ]
+        }
+      },
+      "objective_results": [
+        {
+          "objective_id": "delivery-first",
+          "priority": 10,
+          "status": "optimal",
+          "proven_optimal": true,
+          "value": -1.0,
+          "normalized_value": -1.0,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 0.0,
+          "rel_tolerance": 0.0,
+          "lock_upper": -1.0,
+          "elapsed_ms": 0,
+          "feasibility": {
+            "passed": true,
+            "absolute_tolerance": 1e-07,
+            "relative_tolerance": 1e-09,
+            "max_violation": 0.0,
+            "row_residuals": [
+              {
+                "row_id": "production",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1.02e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "row_id": "bottleneck",
+                "kind": "inequality",
+                "activity": 1.0,
+                "rhs": 1.0,
+                "residual": 0.0,
+                "slack": -0.0,
+                "tolerance": 1.0099999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ],
+            "bound_slacks": [
+              {
+                "variable_id": "operation",
+                "value": 20000.0,
+                "lower_slack": 20000.0,
+                "upper_slack": null,
+                "tolerance": 2.01e-05,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "delivery",
+                "value": 1.0,
+                "lower_slack": 1.0,
+                "upper_slack": null,
+                "tolerance": 1.0099999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ]
+          }
+        },
+        {
+          "objective_id": "operation-cost",
+          "priority": 20,
+          "status": "optimal",
+          "proven_optimal": true,
+          "value": 20000.0,
+          "normalized_value": 20000.0,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 0.0,
+          "rel_tolerance": 0.0,
+          "lock_upper": 20000.0,
+          "elapsed_ms": 0,
+          "feasibility": {
+            "passed": true,
+            "absolute_tolerance": 1e-07,
+            "relative_tolerance": 1e-09,
+            "max_violation": 0.0,
+            "row_residuals": [
+              {
+                "row_id": "production",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1.02e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "row_id": "bottleneck",
+                "kind": "inequality",
+                "activity": 1.0,
+                "rhs": 1.0,
+                "residual": 0.0,
+                "slack": -0.0,
+                "tolerance": 1.0099999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "row_id": "delivery-first",
+                "kind": "objective_lock",
+                "activity": -1.0,
+                "rhs": -1.0,
+                "residual": 0.0,
+                "slack": -0.0,
+                "tolerance": 1.0099999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ],
+            "bound_slacks": [
+              {
+                "variable_id": "operation",
+                "value": 20000.0,
+                "lower_slack": 20000.0,
+                "upper_slack": null,
+                "tolerance": 2.01e-05,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "delivery",
+                "value": 1.0,
+                "lower_slack": 1.0,
+                "upper_slack": null,
+                "tolerance": 1.0099999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ]
+          }
+        }
+      ],
+      "diagnostics": [],
+      "model_stats": {
+        "variables": 2,
+        "equality_rows": 1,
+        "inequality_rows": 1,
+        "matrix_nonzeros": 3,
+        "objective_nonzeros": 2,
+        "objective_layers": 2
+      },
+      "timings": {
+        "queue_ms": 0,
+        "solve_ms": 0,
+        "total_ms": 0
+      }
+    }
+  },
+  {
+    "id": "T23-fractional-duplicates",
+    "response": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "fractional-duplicates",
+      "document_revision": 8,
+      "compiler_fingerprint": "math:fractional-duplicates:v1",
+      "status": "success",
+      "solution": {
+        "variable_ids": [
+          "fractional",
+          "signed"
+        ],
+        "values": [
+          0.25,
+          -0.5
+        ],
+        "feasibility": {
+          "passed": true,
+          "absolute_tolerance": 1e-07,
+          "relative_tolerance": 1e-09,
+          "max_violation": 0.0,
+          "row_residuals": [
+            {
+              "row_id": "fraction",
+              "kind": "equality",
+              "activity": 0.5,
+              "rhs": 0.5,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1.0049999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "negative",
+              "kind": "equality",
+              "activity": -0.5,
+              "rhs": -0.5,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1.0049999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "cost",
+              "kind": "objective_lock",
+              "activity": 0.25,
+              "rhs": 0.25,
+              "residual": 0.0,
+              "slack": -0.0,
+              "tolerance": 1.0025e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ],
+          "bound_slacks": [
+            {
+              "variable_id": "fractional",
+              "value": 0.25,
+              "lower_slack": 0.25,
+              "upper_slack": null,
+              "tolerance": 1.0025e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "signed",
+              "value": -0.5,
+              "lower_slack": null,
+              "upper_slack": null,
+              "tolerance": 1.0049999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ]
+        }
+      },
+      "objective_results": [
+        {
+          "objective_id": "cost",
+          "priority": 0,
+          "status": "optimal",
+          "proven_optimal": true,
+          "value": 0.25,
+          "normalized_value": 0.25,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 0.0,
+          "rel_tolerance": 0.0,
+          "lock_upper": 0.25,
+          "elapsed_ms": 0,
+          "feasibility": {
+            "passed": true,
+            "absolute_tolerance": 1e-07,
+            "relative_tolerance": 1e-09,
+            "max_violation": 0.0,
+            "row_residuals": [
+              {
+                "row_id": "fraction",
+                "kind": "equality",
+                "activity": 0.5,
+                "rhs": 0.5,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1.0049999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "row_id": "negative",
+                "kind": "equality",
+                "activity": -0.5,
+                "rhs": -0.5,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1.0049999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ],
+            "bound_slacks": [
+              {
+                "variable_id": "fractional",
+                "value": 0.25,
+                "lower_slack": 0.25,
+                "upper_slack": null,
+                "tolerance": 1.0025e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "signed",
+                "value": -0.5,
+                "lower_slack": null,
+                "upper_slack": null,
+                "tolerance": 1.0049999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ]
+          }
+        }
+      ],
+      "diagnostics": [],
+      "model_stats": {
+        "variables": 2,
+        "equality_rows": 2,
+        "inequality_rows": 0,
+        "matrix_nonzeros": 2,
+        "objective_nonzeros": 1,
+        "objective_layers": 1
+      },
+      "timings": {
+        "queue_ms": 0,
+        "solve_ms": 0,
+        "total_ms": 0
+      }
+    }
+  },
+  {
+    "id": "T16-unbounded",
+    "response": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "unbounded",
+      "document_revision": 9,
+      "compiler_fingerprint": "math:unbounded:v1",
+      "status": "unbounded",
+      "solution": null,
+      "objective_results": [
+        {
+          "objective_id": "maximize",
+          "priority": 0,
+          "status": "unbounded",
+          "proven_optimal": false,
+          "value": null,
+          "normalized_value": null,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 0.0,
+          "rel_tolerance": 0.0,
+          "lock_upper": null,
+          "elapsed_ms": 0,
+          "feasibility": null
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "unbounded",
+          "message": "Optimization stopped with unbounded",
+          "path": [],
+          "row_id": null,
+          "variable_id": null,
+          "objective_id": "maximize"
+        }
+      ],
+      "model_stats": {
+        "variables": 1,
+        "equality_rows": 0,
+        "inequality_rows": 0,
+        "matrix_nonzeros": 0,
+        "objective_nonzeros": 1,
+        "objective_layers": 1
+      },
+      "timings": {
+        "queue_ms": 0,
+        "solve_ms": 0,
+        "total_ms": 0
+      }
+    }
+  },
+  {
+    "id": "infeasible-bound",
+    "response": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "infeasible-bound",
+      "document_revision": 10,
+      "compiler_fingerprint": "math:infeasible-bound:v1",
+      "status": "infeasible",
+      "solution": null,
+      "objective_results": [
+        {
+          "objective_id": null,
+          "priority": null,
+          "status": "infeasible",
+          "proven_optimal": false,
+          "value": null,
+          "normalized_value": null,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 0.0,
+          "rel_tolerance": 0.0,
+          "lock_upper": null,
+          "elapsed_ms": 0,
+          "feasibility": null
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "infeasible",
+          "message": "Optimization stopped with infeasible",
+          "path": [],
+          "row_id": null,
+          "variable_id": null,
+          "objective_id": null
+        }
+      ],
+      "model_stats": {
+        "variables": 1,
+        "equality_rows": 1,
+        "inequality_rows": 0,
+        "matrix_nonzeros": 1,
+        "objective_nonzeros": 0,
+        "objective_layers": 0
+      },
+      "timings": {
+        "queue_ms": 0,
+        "solve_ms": 0,
+        "total_ms": 0
+      }
+    }
+  },
+  {
+    "id": "constant-infeasible",
+    "response": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "constant-infeasible",
+      "document_revision": 11,
+      "compiler_fingerprint": "math:constant-infeasible:v1",
+      "status": "infeasible",
+      "solution": null,
+      "objective_results": [
+        {
+          "objective_id": null,
+          "priority": null,
+          "status": "infeasible",
+          "proven_optimal": false,
+          "value": null,
+          "normalized_value": null,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 0.0,
+          "rel_tolerance": 0.0,
+          "lock_upper": null,
+          "elapsed_ms": 0,
+          "feasibility": null
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "constant_row_infeasible",
+          "message": "A zero-coefficient row has an incompatible nonzero right-hand side",
+          "path": [],
+          "row_id": "nonzero-demand",
+          "variable_id": null,
+          "objective_id": null
+        }
+      ],
+      "model_stats": {
+        "variables": 0,
+        "equality_rows": 1,
+        "inequality_rows": 0,
+        "matrix_nonzeros": 0,
+        "objective_nonzeros": 0,
+        "objective_layers": 0
+      },
+      "timings": {
+        "queue_ms": 0,
+        "solve_ms": 0,
+        "total_ms": 0
+      }
+    }
+  },
+  {
+    "id": "empty-feasible",
+    "response": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "empty-feasible",
+      "document_revision": 12,
+      "compiler_fingerprint": "math:empty-feasible:v1",
+      "status": "success",
+      "solution": {
+        "variable_ids": [],
+        "values": [],
+        "feasibility": {
+          "passed": true,
+          "absolute_tolerance": 1e-07,
+          "relative_tolerance": 1e-09,
+          "max_violation": 0.0,
+          "row_residuals": [
+            {
+              "row_id": "zero",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ],
+          "bound_slacks": []
+        }
+      },
+      "objective_results": [
+        {
+          "objective_id": null,
+          "priority": null,
+          "status": "optimal",
+          "proven_optimal": true,
+          "value": 0.0,
+          "normalized_value": 0.0,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 0.0,
+          "rel_tolerance": 0.0,
+          "lock_upper": 0.0,
+          "elapsed_ms": 0,
+          "feasibility": {
+            "passed": true,
+            "absolute_tolerance": 1e-07,
+            "relative_tolerance": 1e-09,
+            "max_violation": 0.0,
+            "row_residuals": [
+              {
+                "row_id": "zero",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ],
+            "bound_slacks": []
+          }
+        }
+      ],
+      "diagnostics": [],
+      "model_stats": {
+        "variables": 0,
+        "equality_rows": 1,
+        "inequality_rows": 0,
+        "matrix_nonzeros": 0,
+        "objective_nonzeros": 0,
+        "objective_layers": 0
+      },
+      "timings": {
+        "queue_ms": 0,
+        "solve_ms": 0,
+        "total_ms": 0
+      }
+    }
+  },
+  {
+    "id": "T21-verified-first-layer-timeout",
+    "response": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "slow-production",
+      "document_revision": 7,
+      "compiler_fingerprint": "math:slow-production:v1",
+      "status": "limit_reached",
+      "solution": {
+        "variable_ids": [
+          "operation",
+          "delivery"
+        ],
+        "values": [
+          20000.0,
+          1.0
+        ],
+        "feasibility": {
+          "passed": true,
+          "absolute_tolerance": 1e-07,
+          "relative_tolerance": 1e-09,
+          "max_violation": 0.0,
+          "row_residuals": [
+            {
+              "row_id": "production",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1.02e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "bottleneck",
+              "kind": "inequality",
+              "activity": 1.0,
+              "rhs": 1.0,
+              "residual": 0.0,
+              "slack": -0.0,
+              "tolerance": 1.0099999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "delivery-first",
+              "kind": "objective_lock",
+              "activity": -1.0,
+              "rhs": -1.0,
+              "residual": 0.0,
+              "slack": -0.0,
+              "tolerance": 1.0099999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ],
+          "bound_slacks": [
+            {
+              "variable_id": "operation",
+              "value": 20000.0,
+              "lower_slack": 20000.0,
+              "upper_slack": null,
+              "tolerance": 2.01e-05,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "delivery",
+              "value": 1.0,
+              "lower_slack": 1.0,
+              "upper_slack": null,
+              "tolerance": 1.0099999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ]
+        }
+      },
+      "objective_results": [
+        {
+          "objective_id": "delivery-first",
+          "priority": 10,
+          "status": "optimal",
+          "proven_optimal": true,
+          "value": -1.0,
+          "normalized_value": -1.0,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 0.0,
+          "rel_tolerance": 0.0,
+          "lock_upper": -1.0,
+          "elapsed_ms": 0,
+          "feasibility": {
+            "passed": true,
+            "absolute_tolerance": 1e-07,
+            "relative_tolerance": 1e-09,
+            "max_violation": 0.0,
+            "row_residuals": [
+              {
+                "row_id": "production",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1.02e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "row_id": "bottleneck",
+                "kind": "inequality",
+                "activity": 1.0,
+                "rhs": 1.0,
+                "residual": 0.0,
+                "slack": -0.0,
+                "tolerance": 1.0099999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ],
+            "bound_slacks": [
+              {
+                "variable_id": "operation",
+                "value": 20000.0,
+                "lower_slack": 20000.0,
+                "upper_slack": null,
+                "tolerance": 2.01e-05,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "delivery",
+                "value": 1.0,
+                "lower_slack": 1.0,
+                "upper_slack": null,
+                "tolerance": 1.0099999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ]
+          }
+        },
+        {
+          "objective_id": "operation-cost",
+          "priority": 20,
+          "status": "limit_reached",
+          "proven_optimal": false,
+          "value": null,
+          "normalized_value": null,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 0.0,
+          "rel_tolerance": 0.0,
+          "lock_upper": null,
+          "elapsed_ms": 0,
+          "feasibility": null
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "limit_reached",
+          "message": "Optimization stopped with limit_reached",
+          "path": [],
+          "row_id": null,
+          "variable_id": null,
+          "objective_id": "operation-cost"
+        }
+      ],
+      "model_stats": {
+        "variables": 2,
+        "equality_rows": 1,
+        "inequality_rows": 1,
+        "matrix_nonzeros": 3,
+        "objective_nonzeros": 2,
+        "objective_layers": 2
+      },
+      "timings": {
+        "queue_ms": 0,
+        "solve_ms": 0,
+        "total_ms": 0
+      }
+    }
+  },
+  {
+    "id": "solver-exception",
+    "response": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "slow-production",
+      "document_revision": 7,
+      "compiler_fingerprint": "math:slow-production:v1",
+      "status": "solver_error",
+      "solution": null,
+      "objective_results": [
+        {
+          "objective_id": "delivery-first",
+          "priority": 10,
+          "status": "solver_error",
+          "proven_optimal": false,
+          "value": null,
+          "normalized_value": null,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 0.0,
+          "rel_tolerance": 0.0,
+          "lock_upper": null,
+          "elapsed_ms": 0,
+          "feasibility": null
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "solver_exception",
+          "message": "The optimizer failed to execute or returned malformed data",
+          "path": [],
+          "row_id": null,
+          "variable_id": null,
+          "objective_id": "delivery-first"
+        }
+      ],
+      "model_stats": {
+        "variables": 2,
+        "equality_rows": 1,
+        "inequality_rows": 1,
+        "matrix_nonzeros": 3,
+        "objective_nonzeros": 2,
+        "objective_layers": 2
+      },
+      "timings": {
+        "queue_ms": 0,
+        "solve_ms": 0,
+        "total_ms": 0
+      }
+    }
+  },
+  {
+    "id": "invalid-model",
+    "response": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": null,
+      "document_revision": null,
+      "compiler_fingerprint": null,
+      "status": "invalid_model",
+      "solution": null,
+      "objective_results": [],
+      "diagnostics": [
+        {
+          "code": "literal_error",
+          "message": "Input should be 'omniflow.lp.v1'",
+          "path": [
+            "schema_version"
+          ],
+          "row_id": null,
+          "variable_id": null,
+          "objective_id": null
+        },
+        {
+          "code": "missing",
+          "message": "Field required",
+          "path": [
+            "request_id"
+          ],
+          "row_id": null,
+          "variable_id": null,
+          "objective_id": null
+        },
+        {
+          "code": "missing",
+          "message": "Field required",
+          "path": [
+            "document_revision"
+          ],
+          "row_id": null,
+          "variable_id": null,
+          "objective_id": null
+        },
+        {
+          "code": "missing",
+          "message": "Field required",
+          "path": [
+            "compiler_fingerprint"
+          ],
+          "row_id": null,
+          "variable_id": null,
+          "objective_id": null
+        },
+        {
+          "code": "missing",
+          "message": "Field required",
+          "path": [
+            "variables"
+          ],
+          "row_id": null,
+          "variable_id": null,
+          "objective_id": null
+        },
+        {
+          "code": "missing",
+          "message": "Field required",
+          "path": [
+            "equalities"
+          ],
+          "row_id": null,
+          "variable_id": null,
+          "objective_id": null
+        },
+        {
+          "code": "missing",
+          "message": "Field required",
+          "path": [
+            "inequalities"
+          ],
+          "row_id": null,
+          "variable_id": null,
+          "objective_id": null
+        },
+        {
+          "code": "missing",
+          "message": "Field required",
+          "path": [
+            "objectives"
+          ],
+          "row_id": null,
+          "variable_id": null,
+          "objective_id": null
+        },
+        {
+          "code": "missing",
+          "message": "Field required",
+          "path": [
+            "solver_options"
+          ],
+          "row_id": null,
+          "variable_id": null,
+          "objective_id": null
+        }
+      ],
+      "model_stats": null,
+      "timings": {
+        "queue_ms": 0,
+        "solve_ms": 0,
+        "total_ms": 0
+      }
+    }
+  }
+]
