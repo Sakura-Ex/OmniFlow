@@ -1,0 +1,890 @@
+{
+  "version": 4,
+  "pluginApiVersion": 2,
+  "environment": {
+    "ticksPerSecond": 20,
+    "definitions": [
+      {
+        "id": "s",
+        "symbol": "s"
+      },
+      {
+        "id": "g",
+        "symbol": "g"
+      },
+      {
+        "id": "m",
+        "symbol": "m"
+      },
+      {
+        "id": "L",
+        "symbol": "L"
+      },
+      {
+        "id": "J",
+        "symbol": "J"
+      },
+      {
+        "id": "EU",
+        "symbol": "EU"
+      },
+      {
+        "id": "RF",
+        "symbol": "RF"
+      },
+      {
+        "id": "HU",
+        "symbol": "HU"
+      },
+      {
+        "id": "su",
+        "symbol": "su"
+      },
+      {
+        "id": "RPM",
+        "symbol": "RPM"
+      },
+      {
+        "id": "mB",
+        "symbol": "mB"
+      },
+      {
+        "id": "item",
+        "symbol": "个"
+      },
+      {
+        "id": "tick",
+        "symbol": "t",
+        "scale": 0.05,
+        "derived": [
+          {
+            "baseUnitId": "s",
+            "exponent": 1
+          }
+        ]
+      },
+      {
+        "id": "W",
+        "symbol": "W",
+        "nativeRate": true,
+        "derived": [
+          {
+            "baseUnitId": "J",
+            "exponent": 1
+          },
+          {
+            "baseUnitId": "s",
+            "exponent": -1
+          }
+        ]
+      }
+    ],
+    "prefixes": [
+      {
+        "id": "k",
+        "symbol": "k",
+        "scale": 1000
+      },
+      {
+        "id": "milli",
+        "symbol": "m",
+        "scale": 0.001
+      },
+      {
+        "id": "micro",
+        "symbol": "µ",
+        "scale": 0.000001
+      },
+      {
+        "id": "mega",
+        "symbol": "M",
+        "scale": 1000000
+      }
+    ]
+  },
+  "registry": {
+    "categories": {
+      "item": {
+        "id": "item",
+        "displayName": "物品",
+        "base_unit": "个",
+        "themeColor": "#e5e7eb",
+        "preferred_time_base": "per_cycle"
+      },
+      "fluid": {
+        "id": "fluid",
+        "displayName": "流体",
+        "base_unit": "mB",
+        "themeColor": "#4ddcff",
+        "preferred_time_base": "per_cycle"
+      },
+      "energy": {
+        "id": "energy",
+        "displayName": "能源",
+        "base_unit": "EU",
+        "themeColor": "#f59e0b",
+        "preferred_time_base": "rate_per_tick"
+      },
+      "stress": {
+        "id": "stress",
+        "displayName": "应力",
+        "base_unit": "su",
+        "themeColor": "#c084fc",
+        "preferred_time_base": "per_cycle"
+      },
+      "heat": {
+        "id": "heat",
+        "displayName": "热能",
+        "base_unit": "HU",
+        "themeColor": "#fb7185",
+        "preferred_time_base": "rate_per_tick"
+      }
+    },
+    "overrides": {
+      "stress:create_su": {
+        "unit_override": "RPM"
+      },
+      "energy:thermal_rf": {
+        "unit_override": "RF"
+      }
+    },
+    "entries": {
+      "fluid:water": {
+        "fullId": "fluid:water"
+      },
+      "fluid:hydrogen": {
+        "fullId": "fluid:hydrogen"
+      },
+      "fluid:oxygen": {
+        "fullId": "fluid:oxygen"
+      },
+      "energy:gt_eu": {
+        "fullId": "energy:gt_eu"
+      },
+      "item:iron_ore": {
+        "fullId": "item:iron_ore"
+      },
+      "item:iron_dust": {
+        "fullId": "item:iron_dust"
+      },
+      "item:steel_ingot": {
+        "fullId": "item:steel_ingot"
+      },
+      "item:tiny_dark_ashes": {
+        "fullId": "item:tiny_dark_ashes"
+      },
+      "item:oak_planks": {
+        "fullId": "item:oak_planks"
+      },
+      "item:chest": {
+        "fullId": "item:chest"
+      }
+    }
+  },
+  "ui": {
+    "nodes": [
+      {
+        "id": "source-1",
+        "type": "sourceNode",
+        "position": {
+          "x": -280,
+          "y": 150
+        },
+        "data": {
+          "mode": "infinite",
+          "ports": [
+            {
+              "id": "water",
+              "amount": 1000,
+              "category": "fluid",
+              "unit": [
+                {
+                  "baseUnitId": "mB",
+                  "exponent": 1
+                }
+              ],
+              "portId": "endpoint:0"
+            }
+          ]
+        },
+        "width": 240,
+        "height": 134
+      },
+      {
+        "id": "node-1",
+        "type": "recipeNode",
+        "position": {
+          "x": 50,
+          "y": 150
+        },
+        "data": {
+          "label": "Electrolyzer"
+        },
+        "width": 427,
+        "height": 408
+      },
+      {
+        "id": "node-2",
+        "type": "recipeNode",
+        "position": {
+          "x": 50,
+          "y": 350
+        },
+        "data": {
+          "label": "Macerator"
+        },
+        "width": 441,
+        "height": 361
+      },
+      {
+        "id": "node-3",
+        "type": "recipeNode",
+        "position": {
+          "x": 600,
+          "y": 250
+        },
+        "data": {
+          "label": "Electric Blast Furnace"
+        },
+        "width": 523,
+        "height": 464
+      },
+      {
+        "id": "node-vanilla",
+        "type": "recipeNode",
+        "position": {
+          "x": 600,
+          "y": 550
+        },
+        "data": {
+          "label": "Crafting Table"
+        },
+        "width": 456,
+        "height": 255
+      },
+      {
+        "id": "target-1",
+        "type": "targetNode",
+        "position": {
+          "x": 1100,
+          "y": 250
+        },
+        "data": {
+          "mode": "maximize",
+          "ports": [
+            {
+              "id": "steel_ingot",
+              "amount": 1,
+              "category": "item",
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "portId": "endpoint:0"
+            }
+          ]
+        },
+        "width": 287,
+        "height": 134
+      }
+    ],
+    "edges": [
+      {
+        "id": "e-source1-water-node1-water",
+        "source": "source-1",
+        "sourceHandle": "endpoint:0",
+        "target": "node-1",
+        "targetHandle": "input:0",
+        "type": "default",
+        "className": "custom-edge-fluid",
+        "style": {
+          "stroke": "#4ddcff",
+          "strokeWidth": 2
+        },
+        "data": {}
+      },
+      {
+        "id": "e-node1-oxygen-node3-oxygen",
+        "source": "node-1",
+        "sourceHandle": "output:1",
+        "target": "node-3",
+        "targetHandle": "input:1",
+        "type": "default",
+        "className": "custom-edge-fluid",
+        "style": {
+          "stroke": "#4ddcff",
+          "strokeWidth": 2
+        },
+        "data": {}
+      },
+      {
+        "id": "e-node2-iron-node3-iron",
+        "source": "node-2",
+        "sourceHandle": "output:0",
+        "target": "node-3",
+        "targetHandle": "input:0",
+        "type": "default",
+        "className": "custom-edge-item",
+        "style": {
+          "stroke": "#e5e7eb",
+          "strokeWidth": 2
+        },
+        "data": {}
+      },
+      {
+        "id": "e-node3-steel-target1-steel",
+        "source": "node-3",
+        "sourceHandle": "output:0",
+        "target": "target-1",
+        "targetHandle": "endpoint:0",
+        "type": "default",
+        "className": "custom-edge-item",
+        "style": {
+          "stroke": "#e5e7eb",
+          "strokeWidth": 2
+        },
+        "data": {}
+      }
+    ]
+  },
+  "domain": {
+    "recipes": {
+      "node-1": {
+        "recipe_id": "electrolyzer_water",
+        "machine_name": "Electrolyzer",
+        "system": "gregtech",
+        "inputs": [
+          {
+            "portId": "input:0",
+            "unit": [
+              {
+                "baseUnitId": "mB",
+                "exponent": 1,
+                "prefixId": "k"
+              }
+            ],
+            "category": "fluid",
+            "id": "water",
+            "amount": 1,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "output:0",
+            "unit": [
+              {
+                "baseUnitId": "mB",
+                "exponent": 1
+              }
+            ],
+            "category": "fluid",
+            "id": "hydrogen",
+            "amount": 2000,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          },
+          {
+            "portId": "output:1",
+            "unit": [
+              {
+                "baseUnitId": "mB",
+                "exponent": 1
+              }
+            ],
+            "category": "fluid",
+            "id": "oxygen",
+            "amount": 1000,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "duration_seconds": 5,
+        "mode": "auto",
+        "metadata": {
+          "eu_per_tick": 32,
+          "can_overclock": true
+        },
+        "archetype_id": "gt_electric",
+        "base_inputs": [
+          {
+            "portId": "input:0",
+            "unit": [
+              {
+                "baseUnitId": "mB",
+                "exponent": 1,
+                "prefixId": "k"
+              }
+            ],
+            "category": "fluid",
+            "id": "water",
+            "amount": 1,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "output:0",
+            "unit": [
+              {
+                "baseUnitId": "mB",
+                "exponent": 1
+              }
+            ],
+            "category": "fluid",
+            "id": "hydrogen",
+            "amount": 2000,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          },
+          {
+            "portId": "output:1",
+            "unit": [
+              {
+                "baseUnitId": "mB",
+                "exponent": 1
+              }
+            ],
+            "category": "fluid",
+            "id": "oxygen",
+            "amount": 1000,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "base_utility_inputs": [
+          {
+            "category": "energy",
+            "id": "gt_eu",
+            "amount": 32,
+            "time_base": "rate_per_tick",
+            "_uid": "utility-gt_energy",
+            "is_utility": true,
+            "utility_type": "energy:gt_eu",
+            "amount_mutable": true,
+            "routing_mode": "global",
+            "routing_locked": true,
+            "portId": "utility-gt_energy",
+            "unit": [
+              {
+                "baseUnitId": "EU",
+                "exponent": 1
+              }
+            ]
+          }
+        ],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 5,
+        "active_modifiers": [
+          {
+            "instance_id": "default:gt_overclocker",
+            "definition_id": "gt_overclocker",
+            "uiState": {
+              "perfectOverclock": false
+            }
+          }
+        ],
+        "hardware_specs": {
+          "energyHatches": [
+            {
+              "tier": "LV",
+              "amps": 1
+            }
+          ]
+        }
+      },
+      "node-2": {
+        "recipe_id": "macerator_iron",
+        "machine_name": "Macerator",
+        "system": "gregtech",
+        "inputs": [
+          {
+            "portId": "input:0",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "iron_ore",
+            "amount": 1,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "output:0",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "iron_dust",
+            "amount": 2,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "duration_seconds": 20,
+        "mode": "auto",
+        "metadata": {
+          "eu_per_tick": 16,
+          "can_overclock": true
+        },
+        "archetype_id": "gt_electric",
+        "base_inputs": [
+          {
+            "portId": "input:0",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "iron_ore",
+            "amount": 1,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "output:0",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "iron_dust",
+            "amount": 2,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "base_utility_inputs": [
+          {
+            "category": "energy",
+            "id": "gt_eu",
+            "amount": 16,
+            "time_base": "rate_per_tick",
+            "_uid": "utility-gt_energy",
+            "is_utility": true,
+            "utility_type": "energy:gt_eu",
+            "amount_mutable": true,
+            "routing_mode": "global",
+            "routing_locked": true,
+            "portId": "utility-gt_energy",
+            "unit": [
+              {
+                "baseUnitId": "EU",
+                "exponent": 1
+              }
+            ]
+          }
+        ],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 20,
+        "active_modifiers": [
+          {
+            "instance_id": "default:gt_overclocker",
+            "definition_id": "gt_overclocker",
+            "uiState": {
+              "perfectOverclock": false
+            }
+          }
+        ],
+        "hardware_specs": {
+          "energyHatches": [
+            {
+              "tier": "LV",
+              "amps": 1
+            }
+          ]
+        }
+      },
+      "node-3": {
+        "recipe_id": "blast_furnace_steel_01",
+        "machine_name": "Electric Blast Furnace",
+        "system": "gregtech",
+        "inputs": [
+          {
+            "portId": "input:0",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "iron_dust",
+            "amount": 1,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          },
+          {
+            "portId": "input:1",
+            "unit": [
+              {
+                "baseUnitId": "mB",
+                "exponent": 1
+              }
+            ],
+            "category": "fluid",
+            "id": "oxygen",
+            "amount": 1000,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "output:0",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "steel_ingot",
+            "amount": 1,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          },
+          {
+            "portId": "output:1",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "tiny_dark_ashes",
+            "amount": 1,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "duration_seconds": 60,
+        "mode": "auto",
+        "metadata": {
+          "eu_per_tick": 120,
+          "can_overclock": true
+        },
+        "archetype_id": "gt_electric",
+        "base_inputs": [
+          {
+            "portId": "input:0",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "iron_dust",
+            "amount": 1,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          },
+          {
+            "portId": "input:1",
+            "unit": [
+              {
+                "baseUnitId": "mB",
+                "exponent": 1
+              }
+            ],
+            "category": "fluid",
+            "id": "oxygen",
+            "amount": 1000,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "output:0",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "steel_ingot",
+            "amount": 1,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          },
+          {
+            "portId": "output:1",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "tiny_dark_ashes",
+            "amount": 1,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "base_utility_inputs": [
+          {
+            "category": "energy",
+            "id": "gt_eu",
+            "amount": 120,
+            "time_base": "rate_per_tick",
+            "_uid": "utility-gt_energy",
+            "is_utility": true,
+            "utility_type": "energy:gt_eu",
+            "amount_mutable": true,
+            "routing_mode": "global",
+            "routing_locked": true,
+            "portId": "utility-gt_energy",
+            "unit": [
+              {
+                "baseUnitId": "EU",
+                "exponent": 1
+              }
+            ]
+          }
+        ],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 60,
+        "active_modifiers": [
+          {
+            "instance_id": "default:gt_overclocker",
+            "definition_id": "gt_overclocker",
+            "uiState": {
+              "perfectOverclock": false
+            }
+          }
+        ],
+        "hardware_specs": {
+          "energyHatches": [
+            {
+              "tier": "LV",
+              "amps": 1
+            }
+          ]
+        }
+      },
+      "node-vanilla": {
+        "recipe_id": "vanilla_chest",
+        "machine_name": "Crafting Table",
+        "system": "vanilla",
+        "inputs": [
+          {
+            "portId": "input:0",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "oak_planks",
+            "amount": 8,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "output:0",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "chest",
+            "amount": 1,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "duration_seconds": 1,
+        "mode": "auto",
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "input:0",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "oak_planks",
+            "amount": 8,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "output:0",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "chest",
+            "amount": 1,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {}
+      }
+    }
+  }
+}

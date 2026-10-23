@@ -58,7 +58,7 @@ type SettingsUIProps = {
  * @returns A formatted duration string (e.g. `"5.00s"`) or `"Instant"` for non-positive values.
  */
 function formatDuration(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return 'Instant'
+  if (!Number.isFinite(value) || value <= 0) return '周期无效'
   return `${formatOpExRate(value)}s`
 }
 
@@ -71,7 +71,7 @@ function buildRateMap(rates: Resource[]): Map<string, number> {
   const map = new Map<string, number>()
   for (const rate of rates) {
     if (!rate.id) continue
-    const key = `${rate.category}:${rate.id}`
+    const key = rate.portId ?? ''
     map.set(key, (map.get(key) ?? 0) + rate.amount)
   }
   return map
@@ -167,6 +167,7 @@ export function SettingsUI(props: SettingsUIProps) {
     routing_mode: 'wired',
     routing_locked: false,
     _uid: generateId(),
+    portId: generateId(),
   }), [])
 
   const categoryOptions = useMemo(
@@ -375,269 +376,277 @@ export function SettingsUI(props: SettingsUIProps) {
 
   return (
     <div className={es['recipe-settings__layout']}>
-      <section className={es['recipe-settings__column']}>
-        <ResourceDefinitionList<Resource>
-          items={baseInputs}
-          columns={RECIPE_INPUT_COLUMNS}
-          emptyMessage="暂无输入资源"
-          addLabel="添加输入"
-          onUpdateItem={handleUpdateInput}
-          onAddItem={handleAddInput}
-          onRemoveItem={handleRemoveInput}
-          onToggleRoutingItem={handleToggleInputRouting}
-          rateMap={inputRateMap}
-          suggestions={resourceSuggestions}
-          categoryOptions={categoryOptions}
-          probabilityLabel="消耗几率"
-        />
-      </section>
+      <div className={es.stack}>
+        <section className={es['recipe-settings__column']} aria-label="输入">
+          <h4>输入</h4>
+          <ResourceDefinitionList<Resource>
+            items={baseInputs}
+            columns={RECIPE_INPUT_COLUMNS}
+            emptyMessage="暂无输入资源"
+            addLabel="添加输入"
+            onUpdateItem={handleUpdateInput}
+            onAddItem={handleAddInput}
+            onRemoveItem={handleRemoveInput}
+            onToggleRoutingItem={handleToggleInputRouting}
+            rateMap={inputRateMap}
+            suggestions={resourceSuggestions}
+            categoryOptions={categoryOptions}
+            probabilityLabel="消耗几率"
+          />
+        </section>
 
-      <section className={`${es['recipe-settings__column']} ${es['recipe-settings__column--core']}`}>
-        <h4>Machine Core</h4>
+        <section className={es['recipe-settings__column']} aria-label="输出">
+          <h4>输出</h4>
+          <ResourceDefinitionList<Resource>
+            items={baseOutputs}
+            columns={RECIPE_OUTPUT_COLUMNS}
+            emptyMessage="暂无输出资源"
+            addLabel="添加输出"
+            onUpdateItem={handleUpdateOutput}
+            onAddItem={handleAddOutput}
+            onRemoveItem={handleRemoveOutput}
+            onToggleRoutingItem={handleToggleOutputRouting}
+            rateMap={outputRateMap}
+            suggestions={resourceSuggestions}
+            categoryOptions={categoryOptions}
+            probabilityLabel="产出几率"
+          />
+        </section>
 
-        <label className={es['recipe-editor__field']}>
-          <span>机器范式 (Archetype)</span>
-          <select value={archetypeId} onChange={(e) => { if (onArchetypeChange) onArchetypeChange(e.target.value); else setValue('archetype_id', e.target.value) }}>
-            {machineArchetypes.map((item) => (
-              <option key={item.id} value={item.id}>{item.name}</option>
-            ))}
-          </select>
-        </label>
+      </div>
+      <div className={es.stack}>
+        <section className={`${es['recipe-settings__column']} ${es['recipe-settings__column--core']}`}>
+          <h4>机器属性</h4>
 
-        <label className={es['recipe-editor__field']}>
-          <span>机器名称</span>
-          <input type="text" value={machineName} onChange={(e) => setValue('machine_name', e.target.value)} />
-        </label>
+          <label className={es['recipe-editor__field']}>
+            <span>机器范式</span>
+            <select value={archetypeId} onChange={(e) => { if (onArchetypeChange) onArchetypeChange(e.target.value); else setValue('archetype_id', e.target.value) }}>
+              {machineArchetypes.map((item) => (
+                <option key={item.id} value={item.id}>{item.name}</option>
+              ))}
+            </select>
+          </label>
 
-        <label className={es['recipe-editor__field']}>
-          <span>基础耗时 (s)</span>
-          <div className={`${es['recipe-editor__row']} ${es['recipe-editor__row--utility-no-buttons']}`}>
-            <span className={es['recipe-editor__row-label']}>耗时</span>
-            <div className={es['recipe-editor__input-wrap']}>
-              <input
-                type="number"
-                min={0}
-                step={0.05}
-                value={baseDurationSeconds}
-                onChange={(e) => setValue('base_duration_seconds', Number(e.target.value) || 0)}
-              />
-              <span className={es['recipe-editor__input-suffix']}>s</span>
+          <label className={es['recipe-editor__field']}>
+            <span>机器名称</span>
+            <input type="text" value={machineName} onChange={(e) => setValue('machine_name', e.target.value)} />
+          </label>
+
+          <label className={es['recipe-editor__field']}>
+            <span>基础耗时 (s)</span>
+            <div className={`${es['recipe-editor__row']} ${es['recipe-editor__row--utility-no-buttons']}`}>
+              <span className={es['recipe-editor__row-label']}>耗时</span>
+              <div className={es['recipe-editor__input-wrap']}>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.05}
+                  value={baseDurationSeconds}
+                  onChange={(e) => setValue('base_duration_seconds', Number(e.target.value) || 0)}
+                />
+                <span className={es['recipe-editor__input-suffix']}>s</span>
+              </div>
+              <span></span>
+              <span className={es['recipe-editor__row-rate']}>{formatDuration(previewDurationSeconds)}</span>
             </div>
-            <span></span>
-            <span className={es['recipe-editor__row-rate']}>{formatDuration(previewDurationSeconds)}</span>
-          </div>
-        </label>
+          </label>
 
-        {archetype.traits && Object.keys(archetype.traits).length > 0 && (
+          {archetype.traits && Object.keys(archetype.traits).length > 0 && (
+            <div className={es['recipe-settings__modifier-pool']}>
+              <h5>硬件参数</h5>
+              {Object.entries(archetype.traits).map(([traitKey, traitDef]) => {
+                if (traitKey === 'energyHatches') {
+                  const hatchRows = normalizeGtHatches({ energyHatches: hardwareSpecs?.energyHatches ?? traitDef.default })
+                  const { totalEuPerTick, highestTier } = computePowerPool(hatchRows)
+
+                  const updateHatchRows = (nextRows: GtEnergyHatch[]) => {
+                    setHardwareSpecsValue('energyHatches', nextRows)
+                  }
+
+                  return (
+                    <div key={traitKey}>
+                      <span className={es['recipe-settings__utility-label-text']}>{traitDef.label}</span>
+                      <div className={es['recipe-settings__hatch-table']} style={{ marginTop: 6 }}>
+                        {hatchRows.map((row, rowIndex) => (
+                          <div className={es['recipe-settings__hatch-row']} key={`hs-hatch-${rowIndex}`}>
+                            <select
+                              value={row.tier}
+                              onChange={(e) => {
+                                const nextRows = hatchRows.map((entry, idx) => (idx === rowIndex ? { ...entry, tier: e.target.value } : entry))
+                                updateHatchRows(nextRows)
+                              }}
+                            >
+                              {GT_VOLTAGE_TIERS.map((tier) => (
+                                <option key={tier.id} value={tier.id}>{tier.id} ({tier.euPerAmp} EU/A)</option>
+                              ))}
+                            </select>
+                            <div className={es['recipe-editor__input-wrap']}>
+                              <input
+                                type="number"
+                                min={0}
+                                step={1}
+                                value={row.amps}
+                                onChange={(e) => {
+                                  const nextRows = hatchRows.map((entry, idx) => (idx === rowIndex ? { ...entry, amps: Number(e.target.value) || 0 } : entry))
+                                  updateHatchRows(nextRows)
+                                }}
+                              />
+                              <span className={es['recipe-editor__input-suffix']}>A</span>
+                            </div>
+                            <button
+                              className={`${es['recipe-editor__icon-action']} ${es['recipe-editor__icon-action--danger']}`}
+                              type="button"
+                              onClick={() => {
+                                const nextRows = hatchRows.filter((_, idx) => idx !== rowIndex)
+                                updateHatchRows(nextRows.length > 0 ? nextRows : [{ tier: 'LV', amps: 1 }])
+                              }}
+                              title="删除能源仓"
+                              aria-label="删除能源仓"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          className={`${es['recipe-editor__btn']} ${es['recipe-editor__btn--ghost']}`}
+                          type="button"
+                          onClick={() => updateHatchRows(hatchRows.concat({ tier: 'LV', amps: 1 }))}
+                        >
+                          ➕ 添加能源仓
+                        </button>
+                      </div>
+                      <div className={es['recipe-settings__multiblock-summary']} style={{ marginTop: 6 }}>
+                        <span>⚡ 总能量池: {totalEuPerTick} EU/t {highestTier !== 'N/A' ? `(${highestTier})` : ''}</span>
+                      </div>
+                    </div>
+                  )
+                }
+                return (
+                  <div className={es['recipe-settings__control']} key={traitKey}>
+                    <span>{traitDef.label}</span>
+                    <span style={{ color: 'var(--muted)', fontSize: 12 }}>{JSON.stringify(hardwareSpecs?.[traitKey] ?? traitDef.default)}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
           <div className={es['recipe-settings__modifier-pool']}>
-            <h5>Hardware Specs</h5>
-            {Object.entries(archetype.traits).map(([traitKey, traitDef]) => {
-              if (traitKey === 'energyHatches') {
-                const hatchRows = normalizeGtHatches({ energyHatches: hardwareSpecs?.energyHatches ?? traitDef.default })
-                const { totalEuPerTick, highestTier } = computePowerPool(hatchRows)
+            <h5>设施 IO</h5>
+            <ResourceDefinitionList<Resource & Record<string, unknown>>
+              items={utilityItems}
+              columns={UTILITY_COLUMNS}
+              emptyMessage="当前范式无固定公用设施"
+              addLabel="添加设施"
+              onUpdateItem={handleUpdateUtilityMerged}
+              onAddItem={handleAddUtilityInput}
+              onRemoveItem={handleRemoveUtilityMerged}
+              onToggleRoutingItem={handleToggleUtilityRoutingMerged}
+              onIoTToggleItem={handleToggleUtilityIO}
+              rateMap={inputRateMap}
+              categoryOptions={categoryOptions}
+              getCanDelete={(i) => !(utilityItems[i]?._uid?.startsWith('utility-'))}
+              getAmountLocked={(i) => !(utilityItems[i]?.amount_mutable)}
+              getRoutingLocked={(i) => utilityItems[i]?.routing_locked ?? false}
+              getCategoryLocked={(i) => utilityItems[i]?._uid?.startsWith('utility-') ?? false}
+              getIdLocked={(i) => utilityItems[i]?._uid?.startsWith('utility-') ?? false}
+              getTimeBaseLocked={(i) => utilityItems[i]?._uid?.startsWith('utility-') ?? false}
+              getProbabilityLocked={(i) => utilityItems[i]?._uid?.startsWith('utility-') ?? false}
+              getIoToggleLocked={(i) => utilityItems[i]?._uid?.startsWith('utility-') ?? false}
+            />
+          </div>
 
-                const updateHatchRows = (nextRows: GtEnergyHatch[]) => {
-                  setHardwareSpecsValue('energyHatches', nextRows)
+        </section>
+        <section className={es['recipe-settings__column']} aria-label="修饰器">
+          <h4>修饰器</h4>
+          <div className={es.modifierControls}>
+            <div className={es['recipe-settings__modifier-adder']}>
+              <button
+                className={`${es['recipe-editor__btn']} ${es['recipe-editor__btn--ghost']} ${es['recipe-editor__btn--full']}`}
+                type="button"
+                disabled={availableModifiers.length === 0}
+                onClick={() => setModifierPopoverOpen((prev) => !prev)}
+              >
+                ➕ 添加修饰器
+              </button>
+              {modifierPopoverOpen && availableModifiers.length > 0 && (
+                <div className={es['recipe-settings__modifier-popover']} ref={modifierPopoverRef}>
+                  {availableModifiers.map((modifier) => (
+                    <button
+                      key={modifier.id}
+                      className={es['recipe-settings__modifier-popover-item']}
+                      type="button"
+                      onClick={() => addModifier(modifier.id)}
+                    >
+                      {modifier.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {activeModifiers.length === 0 && !modifierPopoverOpen && <p className={es['recipe-editor__empty']}>当前未安装修饰器</p>}
+          </div>
+
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <SortableContext items={activeModifiers.map((m) => m.instance_id)} strategy={verticalListSortingStrategy}>
+              {activeModifiers.map((m) => {
+                const rawModifier = modifiers.find((mod) => mod.id === m.definition_id)
+                if (!rawModifier) return null
+                const modifier = rawModifier
+                const isFixedModifier = defaultModifierSet.has(m.definition_id)
+
+                const state = {
+                  ...createDefaultModifierState(m.definition_id),
+                  ...(m.uiState ?? {}),
                 }
 
                 return (
-                  <div key={traitKey}>
-                    <span className={es['recipe-settings__utility-label-text']}>{traitDef.label}</span>
-                    <div className={es['recipe-settings__hatch-table']} style={{ marginTop: 6 }}>
-                      {hatchRows.map((row, rowIndex) => (
-                        <div className={es['recipe-settings__hatch-row']} key={`hs-hatch-${rowIndex}`}>
-                          <select
-                            value={row.tier}
-                            onChange={(e) => {
-                              const nextRows = hatchRows.map((entry, idx) => (idx === rowIndex ? { ...entry, tier: e.target.value } : entry))
-                              updateHatchRows(nextRows)
-                            }}
-                          >
-                            {GT_VOLTAGE_TIERS.map((tier) => (
-                              <option key={tier.id} value={tier.id}>{tier.id} ({tier.euPerAmp} EU/A)</option>
-                            ))}
-                          </select>
-                          <div className={es['recipe-editor__input-wrap']}>
-                            <input
-                              type="number"
-                              min={0}
-                              step={1}
-                              value={row.amps}
-                              onChange={(e) => {
-                                const nextRows = hatchRows.map((entry, idx) => (idx === rowIndex ? { ...entry, amps: Number(e.target.value) || 0 } : entry))
-                                updateHatchRows(nextRows)
-                              }}
-                            />
-                            <span className={es['recipe-editor__input-suffix']}>A</span>
-                          </div>
-                          <button
-                            className={`${es['recipe-editor__icon-action']} ${es['recipe-editor__icon-action--danger']}`}
-                            type="button"
-                            onClick={() => {
-                              const nextRows = hatchRows.filter((_, idx) => idx !== rowIndex)
-                              updateHatchRows(nextRows.length > 0 ? nextRows : [{ tier: 'LV', amps: 1 }])
-                            }}
-                            title="删除能源仓"
-                            aria-label="删除能源仓"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        className={`${es['recipe-editor__btn']} ${es['recipe-editor__btn--ghost']}`}
-                        type="button"
-                        onClick={() => updateHatchRows(hatchRows.concat({ tier: 'LV', amps: 1 }))}
-                      >
-                        ➕ 添加能源仓
-                      </button>
-                    </div>
-                    <div className={es['recipe-settings__multiblock-summary']} style={{ marginTop: 6 }}>
-                      <span>⚡ 总能量池: {totalEuPerTick} EU/t {highestTier !== 'N/A' ? `(${highestTier})` : ''}</span>
-                    </div>
+                  <SortableModifierCard key={m.instance_id} id={m.instance_id}>
+                    <ModifierCardShell
+                      modifier={modifier}
+                      state={state}
+                      isFixedModifier={isFixedModifier}
+                      onRemove={() => removeModifier(m.instance_id)}
+                      onChange={(key, value) => setModifierValue(m.instance_id, key, value)}
+                      recipeInputs={baseInputs}
+                      recipeOutputs={baseOutputs}
+                      hardwareSpecs={hardwareSpecs}
+                    />
+                  </SortableModifierCard>
+                )
+              })}
+            </SortableContext>
+            <DragOverlay dropAnimation={null}>
+              {activeDragId && (() => {
+                const dragInstance = activeModifiers.find((m) => m.instance_id === activeDragId)
+                if (!dragInstance) return null
+                const overlayModifier = modifiers.find((mod) => mod.id === dragInstance.definition_id)
+                if (!overlayModifier) return null
+                const overlayState = {
+                  ...createDefaultModifierState(dragInstance.definition_id),
+                  ...(dragInstance.uiState ?? {}),
+                }
+                return (
+                  <div className={editorStyles.dragPreview}>
+                    <ModifierCardShell
+                      modifier={overlayModifier}
+                      state={overlayState}
+                      isFixedModifier={defaultModifierSet.has(dragInstance.definition_id)}
+                      onRemove={() => {}}
+                      onChange={() => {}}
+                      readOnly
+                      recipeInputs={baseInputs}
+                      recipeOutputs={baseOutputs}
+                      hardwareSpecs={hardwareSpecs}
+                    />
                   </div>
                 )
-              }
-              return (
-                <div className={es['recipe-settings__control']} key={traitKey}>
-                  <span>{traitDef.label}</span>
-                  <span style={{ color: 'var(--muted)', fontSize: 12 }}>{JSON.stringify(hardwareSpecs?.[traitKey] ?? traitDef.default)}</span>
-                </div>
-              )
-            })}
-          </div>
-        )}
+              })()}
+            </DragOverlay>
+          </DndContext>
+        </section>
 
-        <div className={es['recipe-settings__modifier-pool']}>
-          <h5>UTILITY I/O</h5>
-          <ResourceDefinitionList<Resource & Record<string, unknown>>
-            items={utilityItems}
-            columns={UTILITY_COLUMNS}
-            emptyMessage="当前范式无固定公用设施"
-            addLabel="添加设施"
-            onUpdateItem={handleUpdateUtilityMerged}
-            onAddItem={handleAddUtilityInput}
-            onRemoveItem={handleRemoveUtilityMerged}
-            onToggleRoutingItem={handleToggleUtilityRoutingMerged}
-            onIoTToggleItem={handleToggleUtilityIO}
-            rateMap={inputRateMap}
-            categoryOptions={categoryOptions}
-            getCanDelete={(i) => !(utilityItems[i]?._uid?.startsWith('utility-'))}
-            getAmountLocked={(i) => !(utilityItems[i]?.amount_mutable)}
-            getRoutingLocked={(i) => utilityItems[i]?.routing_locked ?? false}
-            getCategoryLocked={(i) => utilityItems[i]?._uid?.startsWith('utility-') ?? false}
-            getIdLocked={(i) => utilityItems[i]?._uid?.startsWith('utility-') ?? false}
-            getTimeBaseLocked={(i) => utilityItems[i]?._uid?.startsWith('utility-') ?? false}
-            getProbabilityLocked={(i) => utilityItems[i]?._uid?.startsWith('utility-') ?? false}
-            getIoToggleLocked={(i) => utilityItems[i]?._uid?.startsWith('utility-') ?? false}
-          />
-        </div>
-
-        <div className={es['recipe-settings__modifier-pool']}>
-          <h5>Modifier Slots</h5>
-          <div className={es['recipe-settings__modifier-adder']}>
-            <button
-              className={`${es['recipe-editor__btn']} ${es['recipe-editor__btn--ghost']} ${es['recipe-editor__btn--full']}`}
-              type="button"
-              disabled={availableModifiers.length === 0}
-              onClick={() => setModifierPopoverOpen((prev) => !prev)}
-            >
-              ➕ 添加修饰器
-            </button>
-            {modifierPopoverOpen && availableModifiers.length > 0 && (
-              <div className={es['recipe-settings__modifier-popover']} ref={modifierPopoverRef}>
-                {availableModifiers.map((modifier) => (
-                  <button
-                    key={modifier.id}
-                    className={es['recipe-settings__modifier-popover-item']}
-                    type="button"
-                    onClick={() => addModifier(modifier.id)}
-                  >
-                    {modifier.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          {activeModifiers.length === 0 && !modifierPopoverOpen && <p className={es['recipe-editor__empty']}>当前未安装修饰器</p>}
-        </div>
-
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <SortableContext items={activeModifiers.map((m) => m.instance_id)} strategy={verticalListSortingStrategy}>
-            {activeModifiers.map((m) => {
-              const rawModifier = modifiers.find((mod) => mod.id === m.definition_id)
-              if (!rawModifier) return null
-              const modifier = rawModifier
-              const isFixedModifier = defaultModifierSet.has(m.definition_id)
-
-              const state = {
-                ...createDefaultModifierState(m.definition_id),
-                ...(m.uiState ?? {}),
-              }
-
-              return (
-                <SortableModifierCard key={m.instance_id} id={m.instance_id}>
-                  <ModifierCardShell
-                    modifier={modifier}
-                    state={state}
-                    isFixedModifier={isFixedModifier}
-                    onRemove={() => removeModifier(m.instance_id)}
-                    onChange={(key, value) => setModifierValue(m.instance_id, key, value)}
-                    recipeInputs={baseInputs}
-                    recipeOutputs={baseOutputs}
-                    hardwareSpecs={hardwareSpecs}
-                  />
-                </SortableModifierCard>
-              )
-            })}
-          </SortableContext>
-          <DragOverlay dropAnimation={null}>
-            {activeDragId && (() => {
-              const dragInstance = activeModifiers.find((m) => m.instance_id === activeDragId)
-              if (!dragInstance) return null
-              const overlayModifier = modifiers.find((mod) => mod.id === dragInstance.definition_id)
-              if (!overlayModifier) return null
-              const overlayState = {
-                ...createDefaultModifierState(dragInstance.definition_id),
-                ...(dragInstance.uiState ?? {}),
-              }
-              return (
-                <div style={{ opacity: 0.92, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', cursor: 'grabbing' }}>
-                  <ModifierCardShell
-                    modifier={overlayModifier}
-                    state={overlayState}
-                    isFixedModifier={defaultModifierSet.has(dragInstance.definition_id)}
-                    onRemove={() => {}}
-                    onChange={() => {}}
-                    readOnly
-                    recipeInputs={baseInputs}
-                    recipeOutputs={baseOutputs}
-                    hardwareSpecs={hardwareSpecs}
-                  />
-                </div>
-              )
-            })()}
-          </DragOverlay>
-        </DndContext>
-      </section>
-
-      <section className={es['recipe-settings__column']}>
-        <ResourceDefinitionList<Resource>
-          items={baseOutputs}
-          columns={RECIPE_OUTPUT_COLUMNS}
-          emptyMessage="暂无输出资源"
-          addLabel="添加输出"
-          onUpdateItem={handleUpdateOutput}
-          onAddItem={handleAddOutput}
-          onRemoveItem={handleRemoveOutput}
-          onToggleRoutingItem={handleToggleOutputRouting}
-          rateMap={outputRateMap}
-          suggestions={resourceSuggestions}
-          categoryOptions={categoryOptions}
-          probabilityLabel="产出几率"
-        />
-      </section>
-
+      </div>
     </div>
   )
 }

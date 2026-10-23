@@ -1,7 +1,9 @@
+import type { UnitExpression } from '@/common/types/units'
+import { legacyUnit } from '@/common/units/defaults'
 import type { TimeBase } from '@/common/types/resource'
 import type { ResourceCategoryDef } from '@/common/types/registry'
-import { formatOpExRate, sanitizeFloat } from '@/common/utils/format'
-import { useSettingsStore } from '@/features/settings/settings.store'
+import { formatOpExRate } from '@/common/utils/format'
+import { UnitSystem } from '@/common/units/UnitSystem'
 
 /**
  * Format a per-second rate into a human-readable port amount string.
@@ -19,19 +21,24 @@ import { useSettingsStore } from '@/features/settings/settings.store'
  * @example
  * formatPortAmount(64, { base_unit: 'mb' })           // => "64 mb"
  * formatPortAmount(2, { base_unit: 'ingot' }, 'per_cycle', 3) // => "x6 ingot"
+ * @param units - Explicit unit system for the captured environment.
+ * @param expression - Structured unit factors.
  */
 export function formatPortAmount(
   ratePerSec: number,
   catDef: ResourceCategoryDef,
-  mMode?: TimeBase,
-  durationSeconds?: number
+  mMode: TimeBase | undefined,
+  durationSeconds: number,
+  units: UnitSystem,
+  expression?: UnitExpression
 ) {
-  const dur = typeof durationSeconds === 'number' && durationSeconds > 0 ? durationSeconds : 1
-  const total = sanitizeFloat(ratePerSec * dur)
-  if (mMode === 'per_cycle') {
-    return `x${formatOpExRate(total)} ${catDef.base_unit}`
+  const unit = expression ?? legacyUnit(catDef.base_unit)
+  const total = units.fromRate(ratePerSec, unit, mMode ?? 'rate_per_sec', durationSeconds)
+  const label = units.expression(unit).toString()
+  if (mMode === 'per_cycle' && !units.isNativeRate(unit)) {
+    return `x${formatOpExRate(total)} ${label}`
   }
-  return `${formatOpExRate(total)} ${catDef.base_unit}`
+  return `${formatOpExRate(total)} ${label}`
 }
 
 /**
@@ -49,10 +56,12 @@ export function formatPortAmount(
  * formatRateValue(32)        // => "32.00/s"
  * formatRateValue(32, 'rate_per_tick') // => "1.60/t"
  * formatRateValue(undefined) // => ""
+ * @param units - Explicit unit system for the captured environment.
+ * @param expression - Structured unit factors.
  */
-export function formatRateValue(value: number | undefined, mMode?: TimeBase): string {
+export function formatRateValue(value: number | undefined, mMode: TimeBase | undefined, units: UnitSystem, expression?: UnitExpression): string {
   if (typeof value !== 'number' || Number.isNaN(value)) return ''
-  const displayValue = mMode === 'rate_per_tick' ? value / useSettingsStore.getState().tps : value
+  const displayValue = expression ? units.fromRate(value, expression, mMode === 'rate_per_tick' ? mMode : 'rate_per_sec') : mMode === 'rate_per_tick' ? value * units.ticksToSeconds(1) : value
   const suffix = mMode === 'rate_per_tick' ? '/t' : '/s'
   return `${formatOpExRate(displayValue)}${suffix}`
 }

@@ -1,23 +1,11 @@
 import { createContext, useContext } from 'react'
-import type { EndpointRole } from '@/common/types/recipe'
-
-/**
- *
- */
-type HandleUpdate = {
-  role: EndpointRole
-  previousId: string
-  nextId: string
-}
-
 /**
  *
  */
 type NodeDataContextValue = {
   updateNodeData: (
     nodeId: string,
-    nextData: Record<string, unknown>,
-    handleUpdate?: HandleUpdate
+    nextData: Record<string, unknown>
   ) => void
 }
 

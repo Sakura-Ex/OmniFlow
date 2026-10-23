@@ -28,7 +28,7 @@ Use `npm run test:watch` while editing frontend tests. For a runtime-only backen
 - Recipe installation counts use `machines_actual`; `machines_exact` remains the continuous operating quantity. Missing or invalid installation counts fail BOM construction rather than falling back to fractional quantities. Source/Target throughput remains in `actual_amounts`.
 - The frontend displays structured failures, clears previous node results and BOM on reset/failure, and clears errors on success. HTTP errors are distinguished from network failures. Full success-response schema validation and request revision checks remain PR-07 work.
 
-No saved-file migration is needed. Clients submitting previously ignored invalid nodes or modes now receive errors. Deploy the corresponding frontend and backend changes together to expose all error details. The solver formulation, objective, automatic spill and system summary algorithm remain unchanged.
+PR-01 itself needs no saved-file migration. PR-02–04 now upgrade canvas documents to file version 4, described below. Clients submitting previously ignored invalid nodes or modes now receive errors. Deploy the corresponding frontend and backend changes together to expose all error details. The solver formulation, objective, automatic spill and system summary algorithm remain unchanged.
 
 ## Test ownership
 
@@ -57,3 +57,29 @@ These skips are unfinished acceptance cases, not successful v2 validation. PR-01
 - Browser smoke checks used a temporary fixture loader mounting the real App, stores, calculation hook and HTTP backend. It was removed after verification; no browser-test dependency was added. Observed 1.2 running equivalents with catalyst BOM 2, a node-located invalid-capacity error clearing previous results, and recovery to Source 0.25/s without the previous error.
 
 Screenshots: [BOM](validation/pr-01/bom.png), [invalid model](validation/pr-01/invalid-model.png), [fractional source after recovery](validation/pr-01/fractional-source.png). System input/output summary panels remain empty under the known pre-v2 algorithm and are not claimed fixed here.
+
+## PR-02–04 units, identity and modifier regression scope
+
+The current file format is **4** (independent of the technical design version), with `pluginApiVersion: 2`, a plain JSON unit/environment snapshot, a resource registry snapshot, and persistent node-local `portId` handles. Version 2 is migrated using explicit legacy unit mappings and a visible default-20-TPS warning. Version 3 is accepted with its saved environment. Ambiguous legacy edges retain their original handles and repair metadata; missing current port identities and unsupported file/plugin API versions fail validation. Read/migration completes before stores are changed.
+
+| Tests | Coverage |
+|---|---|
+| `src/common/units/UnitSystem.test.ts` | Prefixes, dimensions, derived relations, integer powers, affine rejection, TPS/cycle/numeric errors, JSON reconstruction, native rates without double time scaling |
+| `src/features/recipe/recipe.environment.test.ts` | TPS cache invalidation, custom-category units, endpoint unit capture, display-only changes reusing physical calculations |
+| `src/features/file-io/canvasDocument.test.ts` | v2/v4 migration, exact unknown-label preservation, ambiguous edge repair data, environment/schema errors, real browser-export fixture |
+| `src/features/calculation/ports.test.ts` | Independent processing/cooling water, gross input/output ports, deterministic net identities, reorder/copy/round-trip stability, dynamic ports and stale-edge failure |
+| `src/features/calculation/autoFillEndpoints.test.ts` | Separate endpoint identities and correct canonical-to-input-unit conversion for autofill |
+| `src/features/canvas/canvas.history.test.ts` | Authoritative recipe snapshots, port identity restoration for undo/redo and database graph migration |
+| `src/features/modifier/modifier.pipeline.test.ts` | Read-only Context → Effect, execution dependencies, deterministic final ports/traces, stopped eligibility, parallel/overclock order, occupancy scaling, custom-category preservation and versioned cache keys |
+
+Native rates such as W are explicitly declared with `nativeRate` in the registry. Explicit time denominators such as EU/tick also count as complete rate expressions. A physical dimension containing seconds (for example a derived joule definition) alone is not treated as evidence that an amount is already a rate.
+
+These steps retain the current backend formulation. T07/T08/T22 are covered here for **port and Net identity**, not for the future strict-conservation solver. Full T10 invariance of the optimized solution, T01–T06 boundary semantics and version-safe result writeback remain in their planned later steps. PR-05 now proves T09 at the independent solver boundary; its route-level acceptance remains skipped until PR-07. BOM occupancy is now a final-pipeline output; its full installation/startup interpretation remains PR-08.
+
+Detailed implementation, migration and UI evidence: [PR-01–04 validation](validation/pr-02-04/README.md).
+
+## PR-05 sparse LP contract and solver
+
+`backend/tests/test_sparse_solver.py` runs **89 tests** against the independent `backend.solver.solve_lp` function. `src/common/types/lp.test.ts` runs **66 tests** against the matching Zod request/response contract. Both consume `fixtures/lp/models.json` and `responses.json`; no second HTTP calculation route is introduced. Coverage includes true lexicographic priority, explicit bounds, sparse duplicate sums, normalization invariance, infeasible/unbounded outcomes, shared budgets, verified timeout incumbents, complete objective-lock residuals and non-finite/inconsistent response rejection. See [contract, migration and fixture instructions](solver-lp.md).
+
+The final integrated suite passes **147 frontend tests** and **156 backend tests**, with the four route-level future acceptance skips above. TypeScript, ESLint and the production build pass; the existing bundle-size warning remains. The shared CSS library also passes source colour scans and dark/light browser checks recorded in the validation document. Shared colour roles preserve existing typography and control styling. The recipe editor uses the user-requested four-block arrangement; persistent technical trace/eligibility texts are hidden while domain validation remains active.

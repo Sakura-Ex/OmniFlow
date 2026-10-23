@@ -1,7 +1,15 @@
+import { legacyUnit } from '@/common/units/defaults'
+import { useSettingsStore } from '@/features/settings/settings.store'
 import { create } from 'zustand'
 import type { ResourceCategoryDef, ResourceEntry, ResolvedResourceProps, UnitOverride, GlobalResourceTableState } from '@/common/types/registry'
 import { DEFAULT_RESOURCE_CATEGORIES, DEFAULT_OVERRIDES } from './registry.defaults'
 import { DEFAULT_RESOURCE_CATEGORY } from '@/common/utils/resourceId'
+
+const registerLabel = (label: string) => {
+  const state = useSettingsStore.getState()
+  const id = legacyUnit(label)[0].baseUnitId
+  if (!state.units.definitions.some((d) => d.id === id)) state.setEnvironment({ ...state.units, definitions: [...state.units.definitions, { id, symbol: label }] })
+}
 
 const cache = new Map<string, ResolvedResourceProps>()
 
@@ -19,6 +27,10 @@ const initialEntries: Record<string, ResourceEntry> = {}
  * categories, per-resource unit overrides, and tracked resource entries.
  */
 export const useGlobalResourceTable = create<GlobalResourceTableState>((set, get) => ({
+  restore: (snapshot) => {
+    cache.clear()
+    set(snapshot)
+  },
   categories: initialCategories,
   overrides: initialOverrides,
   entries: initialEntries,
@@ -28,11 +40,14 @@ export const useGlobalResourceTable = create<GlobalResourceTableState>((set, get
    * @param def - The category definition to add.
    * @returns The updated state.
    */
-  addCategory: (def) => set((state) => {
+  addCategory: (def) => {
+    registerLabel(def.base_unit)
+    return set((state) => {
     const next = { ...state.categories, [def.id]: def }
     cache.clear()
     return { categories: next }
-  }),
+    })
+  },
 
   /**
    * Partially update an existing resource category.
@@ -40,14 +55,16 @@ export const useGlobalResourceTable = create<GlobalResourceTableState>((set, get
    * @param patch - The partial category definition to merge.
    * @returns The updated state.
    */
-  updateCategory: (id, patch) => set((state) => {
+  updateCategory: (id, patch) => {
+    if (patch.base_unit) registerLabel(patch.base_unit)
+    return set((state) => {
     const next = { ...state.categories, [id]: { ...state.categories[id], ...patch } }
     cache.clear()
     return { categories: next }
-  }),
+    })
+  },
 
-  /**
-   * Remove a resource category by its ID.
+  /** Remove a resource category by its ID.
    * @param id - The category ID to remove.
    * @returns The updated state.
    */
@@ -64,11 +81,14 @@ export const useGlobalResourceTable = create<GlobalResourceTableState>((set, get
    * @param def - The override definition.
    * @returns The updated state.
    */
-  setOverride: (fullId, def) => set((state) => {
+  setOverride: (fullId, def) => {
+    if (def.unit_override) registerLabel(def.unit_override)
+    return set((state) => {
     const next = { ...state.overrides, [fullId]: def }
     cache.clear()
     return { overrides: next }
-  }),
+    })
+  },
 
   /**
    * Remove a unit override for a fully qualified resource ID.

@@ -3,6 +3,7 @@ import type { ValueOf } from '@/common/types/common'
 export const ResourceColumnId = {
   Id: 'id',
   Amount: 'amount',
+  Unit: 'unit',
   TimeBase: 'time_base',
   Category: 'category',
   Probability: 'probability',

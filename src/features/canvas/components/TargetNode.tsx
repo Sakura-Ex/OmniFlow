@@ -1,11 +1,15 @@
-import { useCallback, useState, type KeyboardEvent } from 'react'
+import { useSettingsStore } from '@/features/settings/settings.store'
+import { UnitSystem } from '@/common/units/UnitSystem'
+import { defaultResourceUnit } from '@/common/units/defaults'
+import { portIdentity } from '@/common/utils/ports'
+import { useCallback, useState, type CSSProperties, type KeyboardEvent } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
 import { useNodeData } from '@/features/canvas/contexts/NodeDataContext'
 import { useEndpointEditor } from '@/features/canvas/contexts/EndpointEditorContext'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 import { buildUnitSuffix } from '@/features/resource-registry/registry.units'
 import { normalizeEndpointPorts, resolveCategoryDef } from '@/features/recipe/recipe.endpointNorm'
-import { buildResourceId, DEFAULT_RESOURCE_CATEGORY } from '@/common/utils/resourceId'
+import { DEFAULT_RESOURCE_CATEGORY } from '@/common/utils/resourceId'
 import { formatOpExRate } from '@/common/utils/format'
 import type { TargetNodeData, TargetNodeMode } from '@/common/types/recipe'
 import styles from './TargetNode.module.css'
@@ -27,6 +31,8 @@ export function TargetNode({ id, data }: NodeProps<TargetNodeData>) {
   const { onEdit } = useEndpointEditor()
   const userCategories = useGlobalResourceTable((state) => state.categories)
   const userOverrides = useGlobalResourceTable((state) => state.overrides)
+  const environment = useSettingsStore((s) => s.units)
+  const units = new UnitSystem(environment)
   const ports = normalizeEndpointPorts(data)
   const mode: TargetNodeMode = data.mode ?? (data.is_virtual ?? true ? 'maximize' : 'demand')
   const isEditable = mode === 'demand'
@@ -106,17 +112,16 @@ export function TargetNode({ id, data }: NodeProps<TargetNodeData>) {
           {ports.map((port, index) => {
             const portCategory = port.category ?? DEFAULT_RESOURCE_CATEGORY
             const catDef = resolveCategoryDef(portCategory, userCategories, userOverrides)
-            const unit = buildUnitSuffix(catDef.base_unit, 'rate_per_sec')
+            const expression = (isEditable ? port.unit : port.displayUnit ?? port.unit) ?? defaultResourceUnit(portCategory, port.id)
+            const unit = buildUnitSuffix(expression, 'rate_per_sec', units)
             const hexColor = catDef.themeColor
-            const glowColor = hexColor.startsWith('#')
-              ? `${hexColor}${Math.round(0.38 * 255).toString(16).padStart(2, '0')}`
-              : hexColor.replace(')', ', 0.38)').replace('rgb', 'rgba')
-            const handleId = buildResourceId(portCategory, port.id)
+            const glowColor = `color-mix(in srgb, ${hexColor} 38%, transparent)`
+            const handleId = portIdentity(port)
             const actualAmt = data.actual_amounts?.[handleId]
             const draftAmount = draftAmounts[index]
             const inputValue = isEditable
               ? (draftAmount !== undefined ? draftAmount : String(port.amount ?? ''))
-              : (actualAmt !== undefined ? formatOpExRate(actualAmt) : '')
+              : (actualAmt !== undefined ? formatOpExRate(units.fromRate(actualAmt, expression, 'rate_per_sec')) : '')
 
             const isGlobal = port.routing_mode === 'global'
 
@@ -145,7 +150,7 @@ export function TargetNode({ id, data }: NodeProps<TargetNodeData>) {
                       style={{ left: '-6px', backgroundColor: hexColor, borderColor: hexColor, boxShadow: `0 0 0 4px ${glowColor}` }}
                     />
                   )}
-                  <span className={shared['recipe-node__port-type']} style={{ color: hexColor, borderColor: hexColor }}>
+                  <span className={shared['recipe-node__port-type']} style={{ '--resource-color': hexColor } as CSSProperties}>
                     {catDef.displayName}
                   </span>
                   <span className={`${shared['recipe-node__port-name']} ${shared['recipe-node__port-name--left']}`}>{port.id || '(未命名)'}</span>

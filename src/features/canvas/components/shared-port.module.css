@@ -74,10 +74,13 @@
 .recipe-node__port-type {
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--text-strong);
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--resource-color) var(--resource-ink-weight), var(--text-strong));
+  color: color-mix(in srgb, var(--resource-color) var(--resource-ink-weight), var(--text-strong));
+  font-family: var(--sans);
   font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -115,12 +118,13 @@
 }
 
 .endpoint-inline-input {
+  composes: control from '@/common/styles/primitives.module.css';
   width: 64px;
   padding: 2px 6px;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.22);
-  color: #fff;
+  background: var(--input-bg);
+  color: var(--text-strong);
   font-family: var(--mono);
   font-size: 12px;
   outline: none;
@@ -132,20 +136,20 @@
 }
 
 .endpoint-inline-input--readonly {
-  color: #94a3b8;
-  background: rgba(15, 23, 42, 0.62);
+  color: var(--muted);
+  background: var(--input-bg);
   border-style: dashed;
   cursor: default;
 }
 
 .endpoint-inline-input--readonly::placeholder {
-  color: rgba(148, 163, 184, 0.6);
+  color: var(--muted);
 }
 
 .endpoint-inline-unit {
   font-family: var(--mono);
   font-size: 11px;
-  color: rgba(203, 213, 225, 0.65);
+  color: var(--text-strong);
   white-space: nowrap;
 }
 

@@ -57,6 +57,7 @@ export interface ResolvedResourceProps {
  * per-resource overrides, entries, and property resolution.
  */
 export interface GlobalResourceTableState {
+  restore: (snapshot: Pick<GlobalResourceTableState, 'categories' | 'overrides' | 'entries'>) => void
   /** All registered resource categories, keyed by category ID. */
   categories: Record<string, ResourceCategoryDef>
   /** Per-resource unit overrides, keyed by fully qualified resource ID. */

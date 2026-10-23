@@ -1,3 +1,4 @@
+import { generateId } from '@/common/utils/id'
 import { useState, useCallback } from 'react'
 import type { RoutingMode } from '@/common/types/resource'
 import { toggleRouting } from '@/features/canvas/canvas.utils'
@@ -14,7 +15,7 @@ import { toggleRouting } from '@/features/canvas/canvas.utils'
  *  - `removeAtIndex` – remove an item at a given index.
  *  - `toggleRoutingAtIndex` – cycle the routing mode of an item (unless `routing_locked`).
  */
-export function useResourceList<T extends { _uid?: string; routing_mode?: RoutingMode }>(initial: T[]) {
+export function useResourceList<T extends { _uid?: string; portId?: string; routing_mode?: RoutingMode }>(initial: T[]) {
   const [items, setItems] = useState<T[]>(initial)
 
   const updateAtIndex = useCallback((index: number, patch: Partial<T>) => {
@@ -22,7 +23,7 @@ export function useResourceList<T extends { _uid?: string; routing_mode?: Routin
   }, [])
 
   const add = useCallback((factory: () => T) => {
-    setItems((prev) => [...prev, factory()])
+    setItems((prev) => [...prev, { ...factory(), portId: generateId() }])
   }, [])
 
   const removeAtIndex = useCallback((index: number) => {

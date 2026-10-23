@@ -1,3 +1,4 @@
+import { RESOURCE_COLOR_PALETTE } from '@/common/utils/resourcePalette'
 import { useState, useMemo } from 'react'
 import type { ValueOf } from '@/common/types/common'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
@@ -25,23 +26,16 @@ const ResourceRegistryTab = {
  */
 type ResourceRegistryTab = ValueOf<typeof ResourceRegistryTab>
 
-const COLOR_PALETTE = [
-  '#e5e7eb', '#4ddcff', '#f59e0b', '#c084fc', '#fb7185',
-  '#fbbf24', '#38bdf8', '#ef4444', '#22c55e', '#a78bfa',
-  '#f472b6', '#34d399', '#818cf8', '#fb923c', '#2dd4bf',
-  '#f87171', '#a3e635', '#cbd5e1', '#67e8f9', '#d4d4d8',
-]
-
 /**
  * Pick the first unused colour from the palette.
  * @param used - Set of already-used colour strings.
- * @returns An unused colour string.
+ * @returns An unused colour, or a reused palette colour when all are assigned.
  */
 function unusedColor(used: Set<string>): string {
-  for (const c of COLOR_PALETTE) {
+  for (const c of RESOURCE_COLOR_PALETTE) {
     if (!used.has(c)) return c
   }
-  return `#${Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0')}`
+  return RESOURCE_COLOR_PALETTE[used.size % RESOURCE_COLOR_PALETTE.length]
 }
 
 /** Draft override entry used within the registry editor before committing changes. */

@@ -1,8 +1,10 @@
+import { useRecipeStore } from '@/features/recipe/recipe.store'
+import { useSettingsStore } from '@/features/settings/settings.store'
 import { useCallback } from 'react'
 import type { MutableRefObject } from 'react'
 import type { Edge, Node } from 'reactflow'
 import type { RecipeNodeData } from '@/common/types/recipe'
-import { useCanvasStore, type HandleUpdate } from '@/features/canvas/canvas.store'
+import { useCanvasStore } from '@/features/canvas/canvas.store'
 import { computeAutoFillEndpoints } from '@/features/calculation/autoFillEndpoints'
 
 /** Parameters for the `useNodeOperations` hook. */
@@ -52,10 +54,9 @@ export function useNodeOperations({
   const updateNodeData = useCallback((
     nodeId: string,
     nextData: Record<string, unknown>,
-    handleUpdate?: HandleUpdate,
   ) => {
     takeSnapshot()
-    useCanvasStore.getState().updateNodeData(nodeId, nextData, handleUpdate)
+    useCanvasStore.getState().updateNodeData(nodeId, nextData)
   }, [takeSnapshot])
 
   const autoFillEndpoints = useCallback((nodeId: string) => {
@@ -64,7 +65,8 @@ export function useNodeOperations({
 
     const result = computeAutoFillEndpoints({
       nodeId,
-      recipeNodeData: recipeNode.data as RecipeNodeData,
+      recipeNodeData: useRecipeStore.getState().recipes[nodeId] ?? recipeNode.data as RecipeNodeData,
+      environment: useSettingsStore.getState().units,
       allNodes: nodesRef.current,
       allEdges: edgesRef.current,
       lastSystemInputs,

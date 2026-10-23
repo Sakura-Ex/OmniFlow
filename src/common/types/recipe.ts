@@ -1,3 +1,4 @@
+import type { UnitExpression } from '@/common/types/units'
 import type { ValueOf } from '@/common/types/common'
 import type { Resource, ComputedNodePayload, RoutingMode } from '@/common/types/resource'
 
@@ -24,6 +25,9 @@ export type EndpointRole = ValueOf<typeof EndpointRole>
  * A port definition on a source or target endpoint node.
  */
 export interface EndpointPort {
+  portId?: string
+  unit?: UnitExpression
+  displayUnit?: UnitExpression
   /** Resource identifier within the port's category. */
   id: string
   /** Amount of the resource flowing through this port. */

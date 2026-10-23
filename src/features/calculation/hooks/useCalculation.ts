@@ -1,3 +1,5 @@
+import { useSettingsStore } from '@/features/settings/settings.store'
+import type { CalculationPayload } from '../payloadBuilder'
 import { useCallback } from 'react'
 import { readCalculationResponse } from '../calculationClient'
 import { buildCalculationPayload } from '../payloadBuilder'
@@ -9,7 +11,7 @@ import { useCanvasStore } from '@/features/canvas/canvas.store'
  *
  * 1. Reads canvas nodes, edges and recipe store from Zustand.
  * 2. Calls {@link buildCalculationPayload} to assemble the backend payload.
- * 3. Validates that no recipe node has all-zero material outputs.
+ * 3. Validates final port identities, units and explicit recipe eligibility.
  * 4. POSTs the payload to the backend `/api/calculate` endpoint.
  * 5. Stores the {@link CalculateResponse} back into the canvas store.
  *
@@ -45,11 +47,10 @@ export function useCalculation() {
     const recipeStore = useRecipeStore.getState().recipes
     useCanvasStore.getState().resetCalculationState()
 
-    const result = buildCalculationPayload(nodes, edges, recipeStore)
-
-    if (result.zeroOutputNodeNames.length > 0) {
-      const names = result.zeroOutputNodeNames.join(' / ')
-      useCanvasStore.getState().setError(`Outputs of these recipe nodes are all zero:\n${names}\n(Set valid outputs or fix machine parameters.)`)
+    let result: CalculationPayload
+    try { result = buildCalculationPayload(nodes, edges, recipeStore, useSettingsStore.getState().units) }
+    catch (error) {
+      useCanvasStore.getState().setError(error instanceof Error ? error.message : String(error))
       return
     }
 

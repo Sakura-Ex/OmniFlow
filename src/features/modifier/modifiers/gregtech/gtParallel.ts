@@ -1,3 +1,4 @@
+import { gtEuPerTick } from './gtUnits'
 import type { IMachineModifier, PipelineContext } from '../../modifier.types'
 import type { Resource } from '@/common/types/resource'
 import { computePowerPool, toGtHatches, toFiniteNumber } from './gtOverclocker'
@@ -42,6 +43,8 @@ export function evaluateGtParallel(
  * energy pool can sustain. When insufficient energy is available, the machine is stopped.
  */
 export const gtParallelModifier: IMachineModifier = {
+  apiVersion: 2,
+  version: 2,
   id: 'gt_parallel',
   name: 'GT Parallel',
   compatible_archetypes: ['gt_electric'],
@@ -56,21 +59,21 @@ export const gtParallelModifier: IMachineModifier = {
   ],
   renderBody: ParallelCardBody,
   evaluate: (ctx: PipelineContext, uiState: Record<string, unknown>) => {
-    const baseEu = ctx.baseline.utilityInputs.find((r) => r.utility_type === 'energy:gt_eu')?.amount ?? 0
+    const baseEu = gtEuPerTick(ctx.baseline.utilityInputs, ctx.baseline.durationSeconds, ctx.units)
     const result = evaluateGtParallel({ ...uiState, energyHatches: ctx.hardwareSpecs.energyHatches }, baseEu)
 
     if (!result.canStart) {
-      return { ...ctx, machineStopped: true, recipeOutputs: ctx.recipeOutputs.map((r) => ({ ...r, amount: 0 })) }
+      return { machineStopped: true, reason: '供电不足，请提高能源仓电压或数量。' }
     }
 
-    if (result.actualParallel <= 1) return { ...ctx }
+    if (result.actualParallel <= 1) return { actualParallel: 1 }
 
     const p = result.actualParallel
     const mul = (r: Resource) =>
-      r.consumable === false || r.probability === 0 ? { ...r } : { ...r, amount: r.amount * p }
+      r.scaling === 'per_running_machine' || r.scaling === 'per_installed_machine' || (r.consumable === false && r.scaling !== 'per_parallel_slot') ? { ...r } : { ...r, amount: r.amount * p }
 
     return {
-      ...ctx,
+      actualParallel: p,
       recipeInputs: ctx.recipeInputs.map(mul),
       recipeOutputs: ctx.recipeOutputs.map(mul),
       utilityInputs: ctx.utilityInputs.map(mul),

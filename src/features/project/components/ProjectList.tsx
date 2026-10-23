@@ -1,3 +1,4 @@
+import { useProjectStore } from '../project.store'
 import { useProjects } from '../useProjects'
 
 /**
@@ -5,6 +6,7 @@ import { useProjects } from '../useProjects'
  * @returns Rendered JSX element for the project list.
  */
 export function ProjectList() {
+  const notice = useProjectStore((s) => s.environmentNotice)
   const { projectList, isLoading, currentProjectId, createProject, deleteProject, switchProject } = useProjects()
 
   if (isLoading) return <div>Loading...</div>
@@ -12,6 +14,7 @@ export function ProjectList() {
   return (
     <div>
       <h2>项目列表</h2>
+      {notice && <p role="status">{notice}</p>}
       <button onClick={() => createProject('新项目')}>+ 新建项目</button>
       <ul>
         {projectList.map(p => (

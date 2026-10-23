@@ -1,0 +1,93 @@
+/* Theme values live here. Components use semantic tokens, never palette values. */
+:root {
+  color-scheme: dark;
+  --bg: #0b1220;
+  --bg-elevated: #111c2e;
+  --panel: #162235;
+  --panel-soft: #121e30;
+  --surface: #1d2b40;
+  --surface-hover: #26374f;
+  --input-bg: #0f1b2d;
+  --border: #34445c;
+  --border-strong: #526680;
+  --text: #d0dbea;
+  --text-strong: #f3f6fc;
+  --resource-ink-weight: 100%;
+  --muted: #a1b1c7;
+  --accent: #72c7fa;
+  --accent-strong: #b5e2ff;
+  --success: #76d6a2;
+  --warning: #f8c676;
+  --danger: #ff9c9c;
+  --on-danger: #ffffff;
+  --danger-solid: #b42332;
+  --shadow-color: #02081580;
+  --overlay: #030914b8;
+  --canvas-dot: #53657d;
+  --edge-default: #8495ad;
+
+  --sans: Inter, 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  --font-xs: 11px;
+  --font-sm: 12px;
+  --font-md: 13px;
+  --font-base: 14px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --motion-fast: 150ms;
+  --motion-normal: 200ms;
+  --z-popover: 50;
+  --z-modal: 120;
+  --z-toast: 10000;
+}
+
+:root[data-theme='light'],
+.app-shell[data-theme='light'] {
+  color-scheme: light;
+  --bg: #eef3f9;
+  --bg-elevated: #ffffff;
+  --panel: #ffffff;
+  --panel-soft: #f5f8fc;
+  --surface: #eaf0f7;
+  --surface-hover: #dce6f2;
+  --input-bg: #f8fafc;
+  --border: #c4cfdd;
+  --border-strong: #8394ab;
+  --text: #33445b;
+  --text-strong: #17243a;
+  --resource-ink-weight: 35%;
+  --muted: #586c86;
+  --accent: #086da8;
+  --accent-strong: #075583;
+  --success: #187047;
+  --warning: #8c530b;
+  --danger: #b42332;
+  --shadow-color: #192e4a26;
+  --overlay: #192e4a59;
+  --canvas-dot: #bac8d9;
+  --edge-default: #596d87;
+  --shadow: 0 20px 48px var(--shadow-color), 0 6px 18px var(--shadow-color);
+}
+
+/* Derived roles inherit correctly when tokens are scoped to an app shell. */
+:root,
+.app-shell {
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-border: color-mix(in srgb, var(--accent) 45%, var(--border));
+  --success-soft: color-mix(in srgb, var(--success) 12%, transparent);
+  --warning-soft: color-mix(in srgb, var(--warning) 12%, transparent);
+  --danger-soft: color-mix(in srgb, var(--danger) 12%, transparent);
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+  --shadow-sm: 0 4px 12px var(--shadow-color);
+  --shadow: 0 24px 80px var(--shadow-color), 0 8px 24px var(--shadow-color);
+  --shadow-lg: 0 24px 60px var(--shadow-color);
+  --text-muted: var(--muted);
+}

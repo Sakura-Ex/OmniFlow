@@ -6,6 +6,7 @@ export const gtElectricArchetype: MachineArchetype = {
   fixed_utilities: {
     gt_energy: {
       type: 'energy:gt_eu',
+      metadata_key: 'eu_per_tick',
       resource_id: 'gt_eu',
       amount_mutable: true,
       routing_mode: 'global',

@@ -27,8 +27,8 @@
   width: 100%;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(3, 8, 16, 0.6);
+  border: 1px solid var(--border);
+  background: var(--input-bg);
   color: var(--text-strong);
   font-family: var(--mono);
   font-size: 13px;
@@ -49,11 +49,11 @@
 
 .ep-editor__port-table-header {
   font-size: 10px;
-  color: rgba(148, 163, 184, 0.5);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding-bottom: 6px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  border-bottom: 1px solid var(--border);
 }
 
 .ep-editor__port-row input,
@@ -61,8 +61,8 @@
   min-width: 0;
   padding: 8px 10px;
   border-radius: 8px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(3, 8, 16, 0.6);
+  border: 1px solid var(--border);
+  background: var(--input-bg);
   color: var(--text-strong);
   font-family: var(--mono);
   font-size: 12px;
@@ -75,9 +75,9 @@
 .ep-editor__port-remove-btn {
   width: 32px;
   height: 32px;
-  border: 1px solid rgba(248, 113, 113, 0.3);
-  background: rgba(248, 113, 113, 0.08);
-  color: #fca5a5;
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--border));
+  background: var(--danger-soft);
+  color: var(--danger);
   border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
@@ -95,7 +95,7 @@
   display: block;
   width: 100%;
   padding: 10px 0;
-  border: 2px dashed rgba(148, 163, 184, 0.18);
+  border: 2px dashed var(--border);
   background: transparent;
   color: var(--muted);
   border-radius: 10px;
@@ -116,10 +116,11 @@
   justify-content: flex-end;
   gap: 8px;
   padding: 14px 20px;
-  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  border-top: 1px solid var(--border);
 }
 
 .ep-editor__btn {
+  composes: button from '@/common/styles/primitives.module.css';
   padding: 8px 18px;
   border-radius: 10px;
   border: 1px solid transparent;
@@ -130,35 +131,35 @@
 }
 
 .ep-editor__btn--cancel {
-  background: rgba(148, 163, 184, 0.08);
-  border-color: rgba(148, 163, 184, 0.18);
+  background: var(--surface);
+  border-color: var(--border);
   color: var(--text);
 }
 
 .ep-editor__btn--cancel:hover {
-  background: rgba(148, 163, 184, 0.14);
+  background: var(--surface);
 }
 
 .ep-editor__btn--save {
-  background: rgba(104, 225, 253, 0.14);
-  border-color: rgba(104, 225, 253, 0.32);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
   color: var(--accent);
 }
 
 .ep-editor__btn--save:hover {
-  background: rgba(104, 225, 253, 0.22);
+  background: var(--accent-soft);
 }
 
 .app-shell[data-theme='light'] .ep-editor__field input,
 .app-shell[data-theme='light'] .ep-editor__port-row input,
 .app-shell[data-theme='light'] .ep-editor__port-row select {
-  background: #f8fafc;
-  color: #0f172a;
-  border-color: rgba(15, 23, 42, 0.18);
+  background: var(--input-bg);
+  color: var(--muted);
+  border-color: var(--border);
 }
 
 .app-shell[data-theme='light'] .ep-editor__btn--save {
-  background: rgba(2, 132, 199, 0.1);
-  border-color: rgba(2, 132, 199, 0.3);
-  color: #0369a1;
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--accent);
 }

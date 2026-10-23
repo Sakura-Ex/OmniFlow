@@ -1,9 +1,11 @@
+import { identifyPorts } from '@/common/utils/ports'
 import type { EndpointPort, SourceNodeData, TargetNodeData } from '@/common/types/recipe'
 import type { ResourceCategoryDef, UnitOverride } from '@/common/types/registry'
 import { FALLBACK_CATEGORY } from '@/features/resource-registry/registry.defaults'
 import { resolveResourceProps } from '@/features/resource-registry/registry.store'
 import { getCategory, DEFAULT_RESOURCE_CATEGORY } from '@/common/utils/resourceId'
 import { generateId } from '@/common/utils/id'
+import { legacyUnit } from '@/common/units/defaults'
 
 /** Resolve display properties (unit, colour, name) for a fully qualified resource ID. */
 export { resolveResourceProps }
@@ -38,16 +40,19 @@ export function resolveCategoryDef(
 }
 
 /**
- * Extract and filter valid endpoint ports from source/target node data.
- * Returns only ports that have both an `id` and a numeric `amount`.
+ * Assign stable identities without discarding invalid editable endpoint ports.
+ * Compilation validates the resource identity and finite amount.
  * @param data - Source or target node data.
- * @returns An array of valid endpoint ports.
+ * @returns Independent identified endpoint ports.
  */
 export function normalizeEndpointPorts(
   data: SourceNodeData | TargetNodeData
 ): EndpointPort[] {
   if (Array.isArray(data.ports) && data.ports.length > 0) {
-    return data.ports.filter((p) => p.id && typeof p.amount === 'number')
+    return identifyPorts(data.ports.map((port) => ({
+      ...port,
+      unit: port.unit ?? legacyUnit(resolveResourceProps(`${port.category}:${port.id}`).unit),
+    })), 'endpoint')
   }
   return []
 }
@@ -68,7 +73,7 @@ export function normalizeEndpointData<T extends SourceNodeData | TargetNodeData>
       ports: ports.length > 0 ? ports : [{ id: '', amount: 0, category: DEFAULT_RESOURCE_CATEGORY, _uid: generateId() }],
     }
   }
-  return data
+  return { ...data, ports: normalizeEndpointPorts(data) }
 }
 
 /**
@@ -84,5 +89,6 @@ export function emptyEndpointPort(category?: string): EndpointPort {
     routing_mode: 'wired',
     routing_locked: false,
     _uid: generateId(),
+    portId: generateId(),
   }
 }

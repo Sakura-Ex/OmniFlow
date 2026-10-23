@@ -15,7 +15,7 @@
   display: flex;
   gap: 0;
   padding: 0 20px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  border-bottom: 1px solid var(--border);
   flex: 0 0 auto;
 }
 
@@ -23,7 +23,7 @@
   border: none;
   border-bottom: 2px solid transparent;
   background: transparent;
-  color: rgba(148, 163, 184, 0.7);
+  color: var(--muted);
   padding: 10px 16px;
   cursor: pointer;
   font-size: 12px;
@@ -50,7 +50,7 @@
 .resource-registry__hint code {
   padding: 1px 5px;
   border-radius: 4px;
-  background: rgba(148, 163, 184, 0.12);
+  background: var(--surface);
   font-family: var(--mono);
   font-size: 11px;
 }
@@ -64,17 +64,17 @@
   flex-direction: column;
   gap: 20px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(104, 225, 253, 0.42) rgba(15, 23, 42, 0.35);
+  scrollbar-color: var(--border-strong) var(--panel-soft);
 }
 
 .resource-registry__body::-webkit-scrollbar { width: 8px; }
 .resource-registry__body::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.35);
+  background: var(--panel-soft);
   border-radius: 999px;
 }
 .resource-registry__body::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(104, 225, 253, 0.5), rgba(56, 189, 248, 0.34));
-  border: 2px solid rgba(15, 23, 42, 0.35);
+  background: linear-gradient(180deg, var(--accent-soft), var(--accent-soft));
+  border: 2px solid var(--border);
   border-radius: 999px;
 }
 
@@ -99,8 +99,8 @@
   min-width: 0;
   padding: 8px 10px;
   border-radius: 8px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(3, 8, 16, 0.6);
+  border: 1px solid var(--border);
+  background: var(--input-bg);
   color: var(--text-strong);
   font-family: var(--mono);
   font-size: 12px;
@@ -121,11 +121,11 @@
 
 .resource-registry__table-row--header {
   font-size: 10px;
-  color: rgba(148, 163, 184, 0.5);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding-bottom: 6px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  border-bottom: 1px solid var(--border);
 }
 
 .resource-registry__table--cats .resource-registry__table-row {
@@ -142,7 +142,7 @@
 
 .resource-registry__source-tag {
   font-size: 10px;
-  color: rgba(148, 163, 184, 0.6);
+  color: var(--muted);
   text-align: center;
 }
 
@@ -151,8 +151,8 @@
   min-width: 0;
   padding: 6px 8px;
   border-radius: 8px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(3, 8, 16, 0.6);
+  border: 1px solid var(--border);
+  background: var(--input-bg);
   color: var(--text-strong);
   font-size: 12px;
 }
@@ -164,7 +164,7 @@
 .resource-registry__mono {
   font-family: var(--mono);
   font-size: 12px;
-  color: rgba(226, 232, 240, 0.95);
+  color: var(--text-strong);
 }
 
 .resource-registry__color-input {
@@ -183,13 +183,14 @@
   justify-content: flex-end;
   gap: 12px;
   padding: 16px 20px 20px;
-  border-top: 1px solid rgba(148, 163, 184, 0.16);
+  border-top: 1px solid var(--border);
   flex: 0 0 auto;
 }
 
 .resource-registry__btn {
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(148, 163, 184, 0.08);
+  composes: button from '@/common/styles/primitives.module.css';
+  border: 1px solid var(--border);
+  background: var(--surface);
   color: var(--text-strong);
   padding: 8px 14px;
   border-radius: 10px;
@@ -199,13 +200,13 @@
 }
 
 .resource-registry__btn--primary {
-  background: rgba(104, 225, 253, 0.2);
-  border-color: rgba(104, 225, 253, 0.35);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
   color: var(--accent);
 }
 
 .resource-registry__btn--danger {
-  background: rgba(248, 113, 113, 0.15);
-  border-color: rgba(248, 113, 113, 0.4);
-  color: #fca5a5;
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+  color: var(--danger);
 }

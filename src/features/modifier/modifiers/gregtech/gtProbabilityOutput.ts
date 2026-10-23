@@ -1,3 +1,4 @@
+import { gtEuPerTick } from './gtUnits'
 import type { IMachineModifier, PipelineContext } from '../../modifier.types'
 import type { Resource } from '@/common/types/resource'
 import { GtProbabilityOutputCardBody } from './gtProbabilityOutputCard'
@@ -22,6 +23,8 @@ function tierIndex(tierId: string): number {
  * applies a configurable per-resource probability boost.
  */
 export const gtProbabilityOutputModifier: IMachineModifier = {
+  apiVersion: 2,
+  version: 2,
   id: 'gt_probability_output',
   name: 'GT Probability Output',
   compatible_archetypes: ['gt_electric'],
@@ -29,8 +32,8 @@ export const gtProbabilityOutputModifier: IMachineModifier = {
   ui_schema: [],
   renderBody: GtProbabilityOutputCardBody,
   evaluate: (ctx: PipelineContext, uiState: Record<string, unknown>) => {
-    const baseEu = ctx.baseline.utilityInputs.find((r) => r.utility_type === 'energy:gt_eu')?.amount ?? 0
-    if (baseEu <= 0) return { ...ctx }
+    const baseEu = gtEuPerTick(ctx.baseline.utilityInputs, ctx.baseline.durationSeconds, ctx.units)
+    if (baseEu <= 0) return {}
 
     const recipeTierEntry = GT_VOLTAGE_TIERS.find((t) => t.euPerAmp >= baseEu)
     const recipeTierIdx = recipeTierEntry ? tierIndex(recipeTierEntry.id) : -1
@@ -39,12 +42,12 @@ export const gtProbabilityOutputModifier: IMachineModifier = {
     const { highestTier } = computePowerPool(hatches)
     const machineTierIdx = tierIndex(highestTier)
 
-    if (recipeTierIdx < 0 || machineTierIdx < 0) return { ...ctx }
+    if (recipeTierIdx < 0 || machineTierIdx < 0) return {}
 
     const tierDiff = Math.max(0, machineTierIdx - recipeTierIdx)
-    if (tierDiff === 0) return { ...ctx }
+    if (tierDiff === 0) return {}
 
-    const applyBoost = (resources: Resource[]): Resource[] =>
+    const applyBoost = (resources: readonly Resource[]): Resource[] =>
       resources.map((r) => {
         const p = r.probability
         if (typeof p !== 'number' || p <= 0 || p >= 1) return { ...r }
@@ -58,7 +61,6 @@ export const gtProbabilityOutputModifier: IMachineModifier = {
       })
 
     return {
-      ...ctx,
       recipeOutputs: applyBoost(ctx.recipeOutputs),
       utilityOutputs: applyBoost(ctx.utilityOutputs),
     }

@@ -23,7 +23,7 @@ const success = {
   status: 'success' as const,
   node_results: {
     recipe: { machines_exact: 1.2, machines_actual: 2, utilization: 0.6 },
-    source__p0: { actual_amounts: { 'item:ore': 0.25 } },
+    'source__port:endpoint%3A0': { actual_amounts: { 'item:ore': 0.25 } },
   },
   system_inputs: {}, system_outputs: {},
 }
@@ -32,7 +32,7 @@ it('applies fractional throughput and clears old results on failure and old erro
   const store = useCanvasStore.getState()
   store.setCalculationResult(success)
   expect(useCanvasStore.getState().capexList).toEqual({ 'item:catalyst': 2 })
-  expect(useCanvasStore.getState().nodes[1].data.actual_amounts).toEqual({ 'item:ore': 0.25 })
+  expect(useCanvasStore.getState().nodes[1].data.actual_amounts).toEqual({ 'endpoint:0': 0.25 })
   store.setCalculationResult({ status: 'limit_reached', message: 'Iteration limit' })
   const failed = useCanvasStore.getState()
   expect(failed.capexList).toEqual({})

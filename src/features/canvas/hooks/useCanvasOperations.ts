@@ -1,3 +1,6 @@
+import { graphPorts, connectionIssue } from '@/features/calculation/graphPorts'
+import { useRecipeStore } from '@/features/recipe/recipe.store'
+import { useSettingsStore } from '@/features/settings/settings.store'
 import { useCallback } from 'react'
 import type { MouseEvent } from 'react'
 import { addEdge, type Connection, type Edge, type Node } from 'reactflow'
@@ -45,12 +48,14 @@ export function useCanvasOperations({
   getViewportCenter,
 }: UseCanvasOperationsParams) {
   const isValidConnection = useCallback((connection: Connection) => {
-    return connection.sourceHandle === connection.targetHandle
-      && typeof connection.sourceHandle === 'string'
-      && connection.sourceHandle.length > 0
+    try {
+      const state = useCanvasStore.getState()
+      return !connectionIssue(connection, graphPorts(state.nodes.filter((n) => n.id === connection.source || n.id === connection.target), useRecipeStore.getState().recipes, useSettingsStore.getState().units))
+    } catch { return false }
   }, [])
 
   const onConnect = useCallback((params: Connection) => {
+    if (!isValidConnection(params)) return
     takeSnapshot()
     const edge: Edge = {
       id: `e-${params.source}-${params.sourceHandle || ''}-${params.target}-${params.targetHandle || ''}-${Date.now()}`,
@@ -61,7 +66,7 @@ export function useCanvasOperations({
       type: 'default',
     }
     setEdges(addEdge(edge, useCanvasStore.getState().edges))
-  }, [setEdges, takeSnapshot])
+  }, [isValidConnection, setEdges, takeSnapshot])
 
   const onEdgeDoubleClick = useCallback((_: MouseEvent, edge: Edge) => {
     takeSnapshot()
@@ -76,7 +81,7 @@ export function useCanvasOperations({
       id,
       type: 'sourceNode',
       position: { x: center.x + (Math.random() - 0.5) * 100, y: center.y + (Math.random() - 0.5) * 100 },
-      data: { id: `item_${id.slice(-4)}`, label: `item_${id.slice(-4)}`, amount: 100, is_auto: true, category: DEFAULT_RESOURCE_CATEGORY },
+      data: { mode: 'infinite', ports: [{ id: `item_${id.slice(-4)}`, amount: 100, category: DEFAULT_RESOURCE_CATEGORY }] },
     }
     useCanvasStore.getState().addNode(newNode)
   }, [takeSnapshot, getViewportCenter])
@@ -114,7 +119,7 @@ export function useCanvasOperations({
       system: 'custom',
       inputs: [],
       outputs: [],
-      duration_seconds: 0,
+      duration_seconds: 1,
       mode: 'auto',
       metadata: {},
     }

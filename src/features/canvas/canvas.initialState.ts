@@ -1,3 +1,4 @@
+import { RESOURCE_COLORS } from '@/common/utils/resourcePalette'
 import type { Node, Edge } from 'reactflow'
 
 /** Pre-configured demo nodes for the canvas, including source, recipe, and target nodes. */
@@ -75,7 +76,7 @@ export const initialNodes: Node[] = [
       system: 'vanilla',
       inputs: [{ id: 'oak_planks', category: 'item', amount: 8 }],
       outputs: [{ id: 'chest', category: 'item', amount: 1 }],
-      duration_seconds: 0,
+      duration_seconds: 1,
       mode: 'auto',
       metadata: {},
     },
@@ -100,7 +101,7 @@ export const initialEdges: Edge[] = [
     targetHandle: 'fluid:water',
     type: 'default',
     className: 'custom-edge-fluid',
-    style: { stroke: '#4ddcff', strokeWidth: 2 },
+    style: { stroke: RESOURCE_COLORS.fluid, strokeWidth: 2 },
   },
   {
     id: 'e-node1-oxygen-node3-oxygen',
@@ -110,7 +111,7 @@ export const initialEdges: Edge[] = [
     targetHandle: 'fluid:oxygen',
     type: 'default',
     className: 'custom-edge-fluid',
-    style: { stroke: '#4ddcff', strokeWidth: 2 },
+    style: { stroke: RESOURCE_COLORS.fluid, strokeWidth: 2 },
   },
   {
     id: 'e-node2-iron-node3-iron',
@@ -120,7 +121,7 @@ export const initialEdges: Edge[] = [
     targetHandle: 'item:iron_dust',
     type: 'default',
     className: 'custom-edge-item',
-    style: { stroke: '#e5e7eb', strokeWidth: 2 },
+    style: { stroke: RESOURCE_COLORS.item, strokeWidth: 2 },
   },
   {
     id: 'e-node3-steel-target1-steel',
@@ -130,6 +131,6 @@ export const initialEdges: Edge[] = [
     targetHandle: 'item:steel_ingot',
     type: 'default',
     className: 'custom-edge-item',
-    style: { stroke: '#e5e7eb', strokeWidth: 2 },
+    style: { stroke: RESOURCE_COLORS.item, strokeWidth: 2 },
   },
 ]

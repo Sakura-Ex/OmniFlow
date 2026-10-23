@@ -3,7 +3,7 @@ import type { Resource, ResourceCategory, RoutingMode } from '@/common/types/res
 import { createDefaultModifierState } from './modifier.state'
 import { getModifierById } from './modifier.registry'
 import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArchetype } from '@/data/archetypes'
-import { generateId } from '@/common/utils/id'
+import { identifyPorts } from '@/common/utils/ports'
 
 /**
  * Normalise the duration from a recipe node, preferring `base_duration_seconds` and falling back to `duration_seconds`.
@@ -11,8 +11,8 @@ import { generateId } from '@/common/utils/id'
  * @returns A non-negative duration in seconds.
  */
 function normalizeDurationSeconds(data: RecipeNodeData): number {
-  if (typeof data.base_duration_seconds === 'number') return Math.max(0, data.base_duration_seconds)
-  if (typeof data.duration_seconds === 'number') return Math.max(0, data.duration_seconds)
+  if (typeof data.base_duration_seconds === 'number') return data.base_duration_seconds
+  if (typeof data.duration_seconds === 'number') return data.duration_seconds
   return 0
 }
 
@@ -27,13 +27,13 @@ function normalizeCategory(raw: unknown): ResourceCategory {
 }
 
 /**
- * Coerce a raw value into a finite number, defaulting to `0`.
+ * Preserve numeric input so invalid amounts fail compilation explicitly.
  * @param raw - The raw amount value.
- * @returns A finite number.
+ * @returns Numeric input, including invalid values for later validation.
  */
 function normalizeAmount(raw: unknown): number {
   const amount = Number(raw)
-  return Number.isFinite(amount) ? amount : 0
+  return amount
 }
 
 /**
@@ -49,6 +49,10 @@ export function toResource(port: Partial<RecipePort> | Partial<Resource>): Resou
   const routing_mode: RoutingMode = routingRaw === 'global' ? 'global' : 'wired'
 
   return {
+    portId: port.portId,
+    unit: port.unit,
+    displayUnit: port.displayUnit,
+    scaling: port.scaling,
     category: normalizeCategory((port as Partial<Resource>).category),
     id: String((port as Partial<Resource>).id ?? ''),
     amount: normalizeAmount((port as Partial<Resource>).amount),
@@ -72,51 +76,34 @@ export function toResource(port: Partial<RecipePort> | Partial<Resource>): Resou
  * - Applies the machine archetype to derive utility inputs/outputs.
  * - Upgrades legacy modifier arrays to the `ActiveModifier[]` shape.
  * - Injects default modifiers from the archetype.
- * - Filters modifiers by compatibility and enforces `max_placements`.
+ * - Rejects unknown, incompatible or excessive modifier placements.
  * - Resolves hardware specs from archetype traits and user overrides.
  *
  * @param data - The raw recipe node data, possibly with legacy or missing fields.
  * @returns A fully-normalized {@link RecipeNodeData} ready for the modifier pipeline.
  */
 export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
-  const baseInputsRaw = (data.base_inputs?.length ? data.base_inputs : data.inputs) ?? []
-  const baseOutputsRaw = (data.base_outputs?.length ? data.base_outputs : data.outputs) ?? []
+  const baseInputsRaw = (data.base_inputs ?? data.inputs) ?? []
+  const baseOutputsRaw = (data.base_outputs ?? data.outputs) ?? []
   const archetype_id = data.archetype_id ?? getDefaultArchetypeIdForSystem(data.system)
 
   const rawInputs = baseInputsRaw.map(toResource)
   const { materials, utilityInputs, utilityOutputs } = applyArchetypeToInputs(rawInputs, archetype_id, data.metadata ?? {})
   const base_inputs = materials
 
-  const existingUtilityMap = new Map<string, Resource>()
-  for (const u of (data.base_utility_inputs ?? [])) {
-    if (u.id) existingUtilityMap.set(`${u.category}:${u.id}`, u)
-  }
-  for (const u of (data.base_utility_outputs ?? [])) {
-    if (u.id) existingUtilityMap.set(`${u.category}:${u.id}`, u)
-  }
-
-  const mergeWithExisting = (archetypeItems: Resource[]): Resource[] =>
-    archetypeItems.map((u) => {
-      const key = `${u.category}:${u.id}`
-      const existing = existingUtilityMap.get(key)
-      if (!existing) return u
-      return {
-        ...u,
-        amount: existing.amount,
-        time_base: existing.time_base ?? u.time_base,
-        routing_mode: existing.routing_mode,
-        _uid: existing._uid ?? u._uid,
-      }
+  const mergeUtilities = (defaults: Resource[], existing: Resource[]): Resource[] => {
+    const consumed = new Set<Resource>()
+    const merged = defaults.map((utility) => {
+      const match = existing.find((port) => port._uid === utility._uid && !consumed.has(port))
+        ?? existing.find((port) => port.utility_type === utility.utility_type && !consumed.has(port))
+      if (!match) return utility
+      consumed.add(match)
+      return { ...utility, ...match }
     })
-
-  const base_utility_inputs = [
-    ...mergeWithExisting(utilityInputs),
-    ...(data.base_utility_inputs ?? []).filter((u) => u.id && !utilityInputs.some((a) => `${a.category}:${a.id}` === `${u.category}:${u.id}`)),
-  ]
-  const base_utility_outputs = [
-    ...mergeWithExisting(utilityOutputs),
-    ...(data.base_utility_outputs ?? []).filter((u) => u.id && !utilityOutputs.some((a) => `${a.category}:${a.id}` === `${u.category}:${u.id}`)),
-  ]
+    return [...merged, ...existing.filter((port) => !consumed.has(port))]
+  }
+  const base_utility_inputs = mergeUtilities(utilityInputs, data.base_utility_inputs ?? [])
+  const base_utility_outputs = mergeUtilities(utilityOutputs, data.base_utility_outputs ?? [])
   const base_outputs = baseOutputsRaw.map(toResource).map((entry) => ({
     ...entry,
     routing_mode: (entry.routing_mode === 'global' ? 'global' : 'wired') as RoutingMode,
@@ -133,7 +120,7 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
     const oldStates = data.modifier_states ?? {}
     return (raw as unknown as string[]).map((defId, idx) => {
       const state = oldStates[String(idx)] ?? oldStates[defId] ?? createDefaultModifierState(defId)
-      return { instance_id: generateId(), definition_id: defId, uiState: state }
+      return { instance_id: `legacy:${defId}:${idx}`, definition_id: defId, uiState: state }
     })
   })()
 
@@ -141,7 +128,7 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
   const missingDefaults = (archetype.default_modifiers ?? [])
     .filter((d) => !userDefIds.has(d))
     .map((d) => ({
-      instance_id: generateId(),
+      instance_id: `default:${d}`,
       definition_id: d,
       uiState: createDefaultModifierState(d),
     }))
@@ -149,10 +136,11 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
 
   active_modifiers = active_modifiers.filter((m) => {
     const modifier = getModifierById(m.definition_id)
-    if (!modifier) return false
+    if (!modifier) throw new Error(`Unknown modifier: ${m.definition_id}`)
     const allowed = modifier.compatible_archetypes
     if (!allowed || allowed.length === 0) return true
-    return allowed.includes(archetype_id)
+    if (!allowed.includes(archetype_id)) throw new Error(`Incompatible modifier: ${m.definition_id}`)
+    return true
   })
 
   const occurrenceCount = new Map<string, number>()
@@ -161,22 +149,24 @@ export function ensureRecipeDataShape(data: RecipeNodeData): RecipeNodeData {
     const maxP = modifier?.max_placements ?? 1
     const count = occurrenceCount.get(m.definition_id) ?? 0
     occurrenceCount.set(m.definition_id, count + 1)
-    return count < maxP
+    if (count >= maxP) throw new Error(`Too many modifier placements: ${m.definition_id}`)
+    return true
   })
 
   const traits = archetype.traits ?? {}
-  const hardware_specs: Record<string, unknown> = {}
+  const hardware_specs: Record<string, unknown> = { ...data.hardware_specs }
   for (const [traitKey, traitDef] of Object.entries(traits)) {
     hardware_specs[traitKey] = data.hardware_specs?.[traitKey] ?? traitDef.default
   }
 
+  const used = new Set<string>()
   return {
     ...data,
     archetype_id,
-    base_inputs,
-    base_outputs,
-    base_utility_inputs,
-    base_utility_outputs,
+    base_inputs: identifyPorts(base_inputs, 'input', used),
+    base_outputs: identifyPorts(base_outputs, 'output', used),
+    base_utility_inputs: identifyPorts(base_utility_inputs, 'utility-input', used),
+    base_utility_outputs: identifyPorts(base_utility_outputs, 'utility-output', used),
     base_duration_seconds,
     duration_seconds: base_duration_seconds,
     active_modifiers,

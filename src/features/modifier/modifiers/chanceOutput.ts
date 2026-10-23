@@ -8,6 +8,8 @@ import type { IMachineModifier, PipelineContext } from '../modifier.types'
  * Can be placed up to 4 times for targeting different outputs.
  */
 export const chanceOutputModifier: IMachineModifier = {
+  apiVersion: 2,
+  version: 2,
   id: 'chance_output',
   name: 'Chance Output',
   max_placements: 4,
@@ -38,7 +40,6 @@ export const chanceOutputModifier: IMachineModifier = {
       })
 
     return {
-      ...ctx,
       recipeOutputs: scaleOutputs(ctx.recipeOutputs),
       utilityOutputs: scaleOutputs(ctx.utilityOutputs),
     }

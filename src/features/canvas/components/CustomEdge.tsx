@@ -1,8 +1,13 @@
+import { useCanvasStore } from '@/features/canvas/canvas.store'
+import { useRecipeStore } from '@/features/recipe/recipe.store'
+import { normalizeEndpointPorts } from '@/features/recipe/recipe.endpointNorm'
+import { buildResourceId } from '@/common/utils/resourceId'
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from 'reactflow'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 import { FALLBACK_CATEGORY } from '@/features/resource-registry/registry.defaults'
 import type { ResourceCategoryDef } from '@/common/types/registry'
 import { getCategory } from '@/common/utils/resourceId'
+import styles from './CustomEdge.module.css'
 
 /**
  * Resolve the edge colour based on the resource category of the connected handle.
@@ -58,8 +63,14 @@ export function CustomEdge({
   markerEnd,
 }: EdgeProps) {
   const categories = useGlobalResourceTable((state) => state.categories)
-  const handleId = sourceHandleId ?? targetHandleId ?? ''
-  const color = resolveEdgeColor(categories, handleId)
+  const edge = useCanvasStore((s) => s.edges.find((e) => e.id === id))
+  const source = useCanvasStore((s) => s.nodes.find((n) => n.id === edge?.source))
+  const recipe = useRecipeStore((s) => s.recipes[edge?.source ?? ''])
+  const port = source?.type === 'recipeNode'
+    ? recipe?._computed?.final_ports.find((p) => p.direction === 'output' && p.port.portId === sourceHandleId)?.port
+    : source ? normalizeEndpointPorts(source.data).find((p) => p.portId === sourceHandleId) : undefined
+  const handleId = port ? buildResourceId(port.category, port.id) : `待修复端口 ${sourceHandleId ?? targetHandleId ?? ''}`
+  const color = `color-mix(in srgb, ${resolveEdgeColor(categories, handleId)} var(--resource-ink-weight), var(--text-strong))`
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -76,18 +87,10 @@ export function CustomEdge({
       <EdgeLabelRenderer>
         <div
           style={{
-            position: 'absolute',
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-            fontSize: 9,
-            fontFamily: 'var(--mono)',
             color,
-            background: 'rgba(3, 8, 16, 0.85)',
-            padding: '2px 6px',
-            borderRadius: 4,
-            pointerEvents: 'all',
-            whiteSpace: 'nowrap',
           }}
-          className="nodrag nopan"
+          className={`${styles.label} nodrag nopan`}
         >
           {handleId || '?'}
         </div>

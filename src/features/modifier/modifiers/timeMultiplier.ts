@@ -7,6 +7,8 @@ import type { IMachineModifier, PipelineContext } from '../modifier.types'
  * Can be placed an effectively unlimited number of times.
  */
 export const timeMultiplierModifier: IMachineModifier = {
+  apiVersion: 2,
+  version: 2,
   id: 'time_multiplier',
   name: 'Time Multiplier',
   max_placements: Number.MAX_SAFE_INTEGER,
@@ -22,6 +24,6 @@ export const timeMultiplierModifier: IMachineModifier = {
   ],
   evaluate: (ctx: PipelineContext, uiState: Record<string, unknown>) => {
     const m = Number(uiState.multiplier) || 1.0
-    return { ...ctx, durationSeconds: ctx.durationSeconds * m }
+    return { durationSeconds: ctx.durationSeconds * m }
   },
 }

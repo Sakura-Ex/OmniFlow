@@ -106,7 +106,7 @@ export function ResourceDefinitionList<T extends Record<string, unknown> & { _ui
   )
 
   return (
-    <div>
+    <div className={styles.tableViewport}>
       <div
         className={`${styles.row} ${styles['row--resource-route-header']}`}
         style={{ gridTemplateColumns: gridTemplate }}
@@ -130,7 +130,7 @@ export function ResourceDefinitionList<T extends Record<string, unknown> & { _ui
           onToggleRouting: onToggleRoutingItem,
           onIoTToggle: onIoTToggleItem,
           rateText: rateMap
-            ? formatRate(rateMap.get(`${item.category ?? ''}:${item.id ?? ''}`))
+            ? formatRate(rateMap.get(String(item.portId ?? '')))
             : undefined,
           suggestions,
           categoryOptions,

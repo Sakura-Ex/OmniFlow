@@ -1,3 +1,4 @@
+import type { UnitSnapshot } from '@/common/types/units'
 import type { Node, Edge } from 'reactflow'
 import type { Resource } from '@/common/types/resource'
 import type { ValueOf } from '@/common/types/common'
@@ -22,7 +23,7 @@ export interface Project {
   /** Tags attached to the project. */
   tags: string[]
   /** Project-level settings (ticks-per-second, default archetype, etc.). */
-  settings: { tps: number; defaultSystem?: string; defaultArchetype?: string }
+  settings: { units?: UnitSnapshot; tps: number; defaultSystem?: string; defaultArchetype?: string }
   /** Free-form resource-registry overrides scoped to this project. */
   resourceRegistry: Record<string, unknown>
   /** ISO-8601 creation timestamp. */

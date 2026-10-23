@@ -4,15 +4,15 @@
   gap: 3px;
   padding: 3px;
   border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(8, 15, 28, 0.82);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  background: var(--panel-soft);
+  box-shadow: inset 0 1px 0 var(--shadow-color);
 }
 
 .segmented-control__item {
   border: 0;
   background: transparent;
-  color: rgba(148, 163, 184, 0.72);
+  color: var(--muted);
   font-family: var(--mono);
   font-size: 11px;
   line-height: 1;
@@ -25,11 +25,11 @@
 }
 
 .segmented-control__item:hover {
-  color: #cbd5e1;
+  color: var(--text-strong);
 }
 
 .segmented-control__item--active {
-  color: #e2e8f0;
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 1px 4px rgba(0, 0, 0, 0.4);
+  color: var(--text-strong);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--shadow-color), 0 1px 4px var(--shadow-color);
 }

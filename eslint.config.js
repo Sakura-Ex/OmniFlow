@@ -8,7 +8,7 @@ import jsdoc from 'eslint-plugin-jsdoc'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', '.pytest_cache/**', '.venv/**']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -39,8 +39,8 @@ export default defineConfig([
     files: ['src/**/*.{ts,tsx}'],
     plugins: { boundaries, jsdoc },
     settings: {
-      boundaries: {
-        elements: [
+      'boundaries/elements': [
+          { pattern: 'src/common/units/**', mode: 'full', type: 'common-units' },
           { pattern: 'src/common/types/**', mode: 'full', type: 'common-types' },
           { pattern: 'src/common/utils/**', mode: 'full', type: 'common-utils' },
           { pattern: 'src/common/db/**', mode: 'full', type: 'common-db' },
@@ -57,7 +57,6 @@ export default defineConfig([
           { pattern: 'src/features/endpoint/**', mode: 'full', type: 'feature-endpoint' },
           { pattern: 'src/hooks/**', mode: 'full', type: 'global-hooks' },
         ],
-      },
       jsdoc: {
         tagNamePreference: {
           param: 'param',
@@ -74,21 +73,22 @@ export default defineConfig([
       'boundaries/element-types': ['error', {
         default: 'disallow',
         rules: [
+          { from: 'common-units', allow: ['common-types', 'common-units'] },
           { from: 'common-types', allow: ['common-types'] },
-          { from: 'common-utils', allow: ['common-types', 'common-utils'] },
+          { from: 'common-utils', allow: ['common-units', 'common-types', 'common-utils'] },
           { from: 'common-db', allow: ['common-types', 'common-schemas', 'common-db'] },
           { from: 'common-schemas', allow: ['common-types', 'common-schemas'] },
           { from: 'data', allow: ['common-types', 'data'] },
-          { from: 'global-hooks', allow: ['common-types', 'common-utils', 'global-hooks'] },
-          { from: 'feature-modifier', allow: ['common-types', 'common-utils', 'data', 'feature-modifier'] },
-          { from: 'feature-calculation', allow: ['common-types', 'common-utils', 'feature-modifier', 'feature-settings', 'feature-calculation'] },
-          { from: 'feature-recipe', allow: ['common-types', 'common-utils', 'feature-modifier', 'feature-recipe'] },
-          { from: 'feature-resource-registry', allow: ['common-types', 'common-utils', 'feature-resource-registry'] },
-          { from: 'feature-settings', allow: ['common-types', 'feature-settings'] },
-          { from: 'feature-endpoint', allow: ['common-types', 'common-utils', 'feature-endpoint'] },
-          { from: 'feature-canvas', allow: ['common-types', 'common-utils', 'common-db', 'feature-calculation', 'feature-recipe', 'feature-modifier', 'feature-resource-registry', 'feature-settings', 'feature-endpoint', 'feature-canvas'] },
-          { from: 'feature-project', allow: ['common-types', 'common-utils', 'common-db', 'common-schemas', 'feature-canvas', 'feature-project'] },
-          { from: 'feature-file-io', allow: ['common-types', 'common-utils', 'common-schemas', 'feature-recipe', 'feature-canvas', 'feature-modifier', 'feature-file-io'] },
+          { from: 'global-hooks', allow: ['common-units', 'common-types', 'common-utils', 'global-hooks'] },
+          { from: 'feature-modifier', allow: ['common-units', 'common-types', 'common-utils', 'data', 'feature-modifier'] },
+          { from: 'feature-calculation', allow: ['common-units', 'common-types', 'common-utils', 'feature-modifier', 'feature-settings', 'feature-calculation'] },
+          { from: 'feature-recipe', allow: ['common-units', 'common-types', 'common-utils', 'feature-modifier', 'feature-settings', 'feature-recipe'] },
+          { from: 'feature-resource-registry', allow: ['common-units', 'common-types', 'common-utils', 'feature-settings', 'feature-resource-registry'] },
+          { from: 'feature-settings', allow: ['common-units', 'common-types', 'feature-settings'] },
+          { from: 'feature-endpoint', allow: ['common-units', 'common-types', 'common-utils', 'feature-endpoint'] },
+          { from: 'feature-canvas', allow: ['common-units', 'common-types', 'common-utils', 'common-db', 'feature-calculation', 'feature-recipe', 'feature-modifier', 'feature-resource-registry', 'feature-settings', 'feature-endpoint', 'feature-canvas'] },
+          { from: 'feature-project', allow: ['common-units', 'common-types', 'common-utils', 'common-db', 'common-schemas', 'feature-canvas', 'feature-project'] },
+          { from: 'feature-file-io', allow: ['common-units', 'common-types', 'common-utils', 'common-schemas', 'feature-recipe', 'feature-canvas', 'feature-modifier', 'feature-settings', 'feature-resource-registry', 'feature-calculation', 'feature-file-io'] },
         ],
       }],
       'jsdoc/require-jsdoc': ['warn', {

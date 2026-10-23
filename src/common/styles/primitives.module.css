@@ -1,0 +1,36 @@
+/* Colour roles only: feature modules preserve their existing typography and geometry. */
+.control {
+  border-color: var(--border);
+  background: var(--input-bg);
+  color: var(--text-strong);
+  accent-color: var(--accent);
+}
+
+.button {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text-strong);
+}
+
+.button:where(:hover:not(:disabled)) {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+
+.primary {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.danger {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.panel {
+  border-color: var(--border);
+  background: var(--panel);
+  color: var(--text);
+}

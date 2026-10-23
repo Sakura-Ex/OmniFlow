@@ -1,0 +1,29 @@
+.panel {
+  position: absolute;
+  left: 16px;
+  bottom: 48px;
+  z-index: 12;
+  width: min(460px, 70vw);
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--warning);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--warning);
+  padding: 12px;
+  font-size: 12px;
+}
+
+.panel p { margin: 6px 0; }
+
+.issue {
+  display: block;
+  width: 100%;
+  text-align: left;
+  overflow-wrap: anywhere;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  padding: 6px 0;
+  cursor: pointer;
+}

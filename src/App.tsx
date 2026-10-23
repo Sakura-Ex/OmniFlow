@@ -1,3 +1,4 @@
+import { GraphIssuesPanel } from '@/features/canvas/components/GraphIssuesPanel'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactFlow, {
   Background,
@@ -38,7 +39,7 @@ import './App.css'
 
 const defaultEdgeOptions = {
   type: 'default',
-  style: { stroke: 'rgba(255, 255, 255, 0.3)', strokeWidth: 2 },
+  style: { stroke: 'var(--edge-default)', strokeWidth: 2 },
   interactionWidth: 20,
 }
 const fitViewOptions = { padding: 0.2 }
@@ -165,7 +166,7 @@ export default function App() {
     getViewportCenter,
   })
 
-  const backgroundDotColor = theme === 'light' ? 'rgba(71, 85, 105, 0.22)' : 'rgba(148, 163, 184, 0.24)'
+  const backgroundDotColor = 'var(--canvas-dot)'
 
   const { handleCopy, handlePaste, handleCut, handleDuplicate } = useClipboard({
     nodesRef,
@@ -272,6 +273,7 @@ export default function App() {
           </div>
         )}
 
+        <GraphIssuesPanel />
         <SystemHUD
           systemInputs={systemInputs}
           systemOutputs={systemOutputs}
@@ -337,7 +339,7 @@ export default function App() {
               onPaneClick={handleCloseMenus}
               onNodeClick={handleCloseMenus}
               defaultEdgeOptions={defaultEdgeOptions}
-              connectionLineStyle={{ stroke: 'rgba(148, 163, 184, 0.6)', strokeWidth: 2 }}
+              connectionLineStyle={{ stroke: 'var(--edge-default)', strokeWidth: 2 }}
               nodeTypes={nodeTypes}
               edgeTypes={edgeTypes}
               onInit={(instance) => {

@@ -1,16 +1,11 @@
+import { readCanvasDocument, type CanvasDocument } from '../canvasDocument'
+import { useSettingsStore } from '@/features/settings/settings.store'
+import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 import { useCallback } from 'react'
 import type { ChangeEvent, MutableRefObject } from 'react'
 import type { Edge, Node } from 'reactflow'
-import type { RecipeNodeData } from '@/common/types/recipe'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { stripState } from '@/features/canvas/canvas.utils'
-
-/** Serialisable canvas payload format for save/export. */
-type CanvasPayloadV2 = {
-  version: 2
-  ui: { nodes: Node[]; edges: Edge[] }
-  domain: { recipes: Record<string, RecipeNodeData> }
-}
 
 /** Parameters for the `useFileIO` hook. */
 type UseFileIOParams = {
@@ -53,11 +48,22 @@ export function useFileIO({
   normalizeCanvasNode,
   resetSystemStats,
 }: UseFileIOParams) {
-  const serializeGraph = useCallback((): CanvasPayloadV2 => {
+  const serializeGraph = useCallback((): CanvasDocument => {
     return {
-      version: 2,
+      version: 4,
+      pluginApiVersion: 2,
+      environment: useSettingsStore.getState().units,
+      registry: (() => { const { categories, overrides, entries } = useGlobalResourceTable.getState(); return { categories, overrides, entries } })(),
       ui: {
-        nodes: stripState(JSON.parse(JSON.stringify(nodesRef.current))),
+        nodes: stripState(nodesRef.current.map((node) => {
+          const data = { ...node.data }
+          delete data._computed
+          delete data.machines_exact
+          delete data.machines_actual
+          delete data.utilization
+          delete data.actual_amounts
+          return { ...node, data: node.type === 'recipeNode' ? { label: useRecipeStore.getState().recipes[node.id]?.machine_name } : data }
+        })),
         edges: stripState(JSON.parse(JSON.stringify(edgesRef.current))),
       },
       domain: {
@@ -67,29 +73,20 @@ export function useFileIO({
   }, [edgesRef, nodesRef])
 
   const loadGraph = useCallback((payload: unknown) => {
-    const raw = payload as Record<string, unknown>
+    const { document, warnings } = readCanvasDocument(payload)
+    takeSnapshot()
+    useSettingsStore.getState().setEnvironment(document.environment)
+    useGlobalResourceTable.getState().restore(document.registry)
+    useRecipeStore.setState({ recipes: {} })
+    useRecipeStore.getState().loadAll(document.domain.recipes)
+    const normalizedNodes = document.ui.nodes.map(normalizeCanvasNode)
+    setNodes(normalizedNodes)
+    setEdges(document.ui.edges)
+    resetSystemStats()
+    nodesRef.current = normalizedNodes
+    edgesRef.current = document.ui.edges
+    if (warnings.length) alert(warnings.join('\n'))
 
-    if (raw.version === 2 && raw.ui && raw.domain) {
-      const v2 = payload as CanvasPayloadV2
-
-      if (!Array.isArray(v2.ui.nodes) || !Array.isArray(v2.ui.edges)) {
-        alert('画布数据格式不正确')
-        return
-      }
-
-      useRecipeStore.getState().loadAll(v2.domain.recipes)
-
-      const normalizedNodes = v2.ui.nodes.map((node) => normalizeCanvasNode(node))
-      takeSnapshot()
-      setNodes(normalizedNodes)
-      setEdges(v2.ui.edges)
-      resetSystemStats()
-      nodesRef.current = normalizedNodes
-      edgesRef.current = v2.ui.edges
-      return
-    }
-
-    alert('画布数据格式不正确')
   }, [edgesRef, nodesRef, normalizeCanvasNode, resetSystemStats, setEdges, setNodes, takeSnapshot])
 
   const handleSaveCanvas = useCallback(() => {

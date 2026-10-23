@@ -36,7 +36,7 @@ export function TpsSettingsPanel({ onClose }: { onClose: () => void }) {
               max={1200}
               step={1}
               value={tps}
-              onChange={(e) => setTps(Number(e.target.value) || 1)}
+              onChange={(e) => { const value = Number(e.target.value); if (Number.isFinite(value) && value > 0) setTps(value) }}
             />
           </div>
         </div>

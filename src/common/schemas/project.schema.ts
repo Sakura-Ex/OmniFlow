@@ -1,8 +1,10 @@
+import { UnitSnapshotSchema } from './units.schema'
 import { z } from 'zod'
 
 /** Zod schema for project-level settings such as ticks-per-second and default system/archetype. */
 export const ProjectSettingsSchema = z.object({
-  tps: z.number(),
+  tps: z.number().finite().positive(),
+  units: UnitSnapshotSchema.optional(),
   default_system: z.string().optional(),
   default_archetype: z.string().optional(),
 })

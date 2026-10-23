@@ -1,5 +1,6 @@
+import { normalizeEndpointData } from '@/features/recipe/recipe.endpointNorm'
 import type { Node } from 'reactflow'
-import type { RecipeNodeData } from '@/common/types/recipe'
+import type { RecipeNodeData, SourceNodeData, TargetNodeData } from '@/common/types/recipe'
 import { ensureRecipeDataShape } from '@/features/modifier/modifier.normalize'
 
 /**
@@ -16,7 +17,7 @@ export function normalizeCanvasNode(node: Node): Node {
 
    if (node.type === 'sourceNode') {
     const mode = isMode(raw.mode) ? raw.mode : 'infinite'
-    return { ...node, data: { ...raw, mode } }
+    return { ...node, data: normalizeEndpointData({ ...raw, mode } as SourceNodeData) }
   }
 
   if (node.type === 'recipeNode') {
@@ -27,7 +28,7 @@ export function normalizeCanvasNode(node: Node): Node {
 
   if (node.type === 'targetNode') {
     const mode = isMode(raw.mode) ? raw.mode : 'maximize'
-    return { ...node, data: { ...raw, mode } }
+    return { ...node, data: normalizeEndpointData({ ...raw, mode } as TargetNodeData) }
   }
 
   return node

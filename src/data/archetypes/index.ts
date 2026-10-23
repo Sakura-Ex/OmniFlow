@@ -77,7 +77,8 @@ export function applyArchetypeToInputs(
     const resourceId = def.resource_id ?? (def.type.includes(':') ? getId(def.type) : utilityId)
     const key = def.type.includes(':') ? def.type : `${def.type}:${resourceId}`
     const existing = existingByCategoryId.get(key)
-    const defaultAmount = deriveUtilityAmount(def.type, metadata, existing?.amount ?? 0)
+    const metadataAmount = def.metadata_key ? metadata[def.metadata_key] : undefined
+    const defaultAmount = typeof metadataAmount === 'number' ? metadataAmount : deriveUtilityAmount(def.type, metadata, existing?.amount ?? 0)
     const routingMode: RoutingMode = existing?.routing_mode ?? def.routing_mode
 
     const resource: Resource = {

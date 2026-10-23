@@ -1,10 +1,12 @@
+import { UnitSystem } from '@/common/units/UnitSystem'
+import { useSettingsStore } from '@/features/settings/settings.store'
 import { useMemo, useEffect } from 'react'
 import { useForm, useFieldArray, FormProvider, useWatch } from 'react-hook-form'
 import type { RecipeNodeData, ActiveModifier } from '@/common/types/recipe'
 import type { Resource } from '@/common/types/resource'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { SettingsUI } from '@/features/canvas/components/SettingsUI'
-import { runModifierPipeline } from '@/features/modifier/modifier.pipeline'
+import { previewModifierPipeline } from '@/features/modifier/modifier.pipeline'
 import { ensureRecipeDataShape } from '@/features/modifier/modifier.normalize'
 import { generateId } from '@/common/utils/id'
 import { createDefaultModifierState } from '@/features/modifier/modifier.state'
@@ -156,7 +158,7 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
 
   const liveData = useMemo(() => {
     if (!node) return null
-    return ensureRecipeDataShape({
+    return {
       ...node.data,
       machine_name: (watchedMachineName || '').trim() || 'Custom Machine',
       archetype_id: watchedArchetypeId,
@@ -169,7 +171,7 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
       duration_seconds: Number(watchedBaseDuration) || 0,
       active_modifiers: watchedActiveModifiers,
       hardware_specs: watchedHardwareSpecs,
-    })
+    }
   }, [
     node,
     watchedArchetypeId,
@@ -184,10 +186,11 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
     metadata,
   ])
 
+  const environment = useSettingsStore((s) => s.units)
   const livePayload = useMemo(() => {
     if (!liveData) return null
-    return runModifierPipeline(liveData)
-  }, [liveData])
+    return previewModifierPipeline(liveData, environment)
+  }, [liveData, environment])
 
   const allInputRates = useMemo(
     () => livePayload ? ([...livePayload.recipe_inputs, ...livePayload.utility_inputs] as Resource[]) : [],
@@ -208,8 +211,8 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
       }
     }
 
-    return resolveRecipePowerProfile(liveData, livePayload ? [...livePayload.recipe_inputs, ...livePayload.utility_inputs] as Resource[] : undefined)
-  }, [liveData, livePayload])
+    return resolveRecipePowerProfile(liveData, livePayload ? [...livePayload.recipe_inputs, ...livePayload.utility_inputs] as Resource[] : undefined, new UnitSystem(environment))
+  }, [liveData, livePayload, environment])
 
   const onSubmit = (formData: RecipeFormData) => {
     if (!node) return
@@ -229,25 +232,9 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
       hardware_specs: formData.hardware_specs,
     })
 
-    useRecipeStore.getState().setRecipe(node.id, assembled)
-
-    const payload = runModifierPipeline(assembled)
-    const assembledInputRates = payload ? ([...payload.recipe_inputs, ...payload.utility_inputs] as Resource[]) : []
-    const assembledOutputRates = payload ? ([...payload.recipe_outputs, ...payload.utility_outputs] as Resource[]) : []
-
-    onSave(node.id, {
-      ...assembled,
-      metadata: {
-        ...assembled.metadata,
-        _calculated_preview: payload
-          ? {
-              duration: payload.duration_seconds,
-              inputs: assembledInputRates,
-              outputs: assembledOutputRates,
-            }
-          : undefined,
-      },
-    })
+    const preview = previewModifierPipeline(assembled, environment)
+    if (!preview.trace.length && !preview.eligibility.eligible) { alert(preview.eligibility.reasons.join('；')); return }
+    onSave(node.id, assembled)
   }
 
   if (!isOpen) return null

@@ -1,3 +1,5 @@
+import type { ComputationDetails } from '@/common/types/computation'
+import type { UnitExpression } from '@/common/types/units'
 import type { ValueOf } from '@/common/types/common'
 
 /**
@@ -51,6 +53,10 @@ export type ResourceIo = ValueOf<typeof ResourceIo>
  */
 export interface Resource {
   /** Resource category (e.g. "item", "fluid"). */
+  portId?: string
+  unit?: UnitExpression
+  displayUnit?: UnitExpression
+  scaling?: 'per_cycle' | 'per_parallel_slot' | 'per_running_machine' | 'per_installed_machine'
   category: ResourceCategory
   /** Unique identifier for the resource within its category. */
   id: string
@@ -85,6 +91,10 @@ export interface Resource {
  */
 export interface NormalizedResource {
   /** Resource category (e.g. "item", "fluid"). */
+  portId?: string
+  unit?: UnitExpression
+  displayUnit?: UnitExpression
+  scaling?: 'per_cycle' | 'per_parallel_slot' | 'per_running_machine' | 'per_installed_machine'
   category: ResourceCategory
   /** Unique identifier for the resource within its category. */
   id: string
@@ -114,7 +124,7 @@ export interface NormalizedResource {
  * The computed payload attached to a recipe node after solver execution.
  * Resources are split into recipe vs. utility groups for both inputs and outputs.
  */
-export interface ComputedNodePayload {
+export interface ComputedNodePayload extends ComputationDetails {
   /** Non-utility resource inputs required by the recipe. */
   recipe_inputs: NormalizedResource[]
   /** Non-utility resource outputs produced by the recipe. */
@@ -131,6 +141,8 @@ export interface ComputedNodePayload {
  * Defines a utility resource type that a machine archetype can produce or consume.
  */
 export interface UtilityDef {
+  /** Explicit legacy metadata field used to seed a utility port. */
+  metadata_key?: string
   /** discriminator for the utility (e.g. "energy", "steam"). */
   type: string
   /** Optional resource ID to map this utility to a known resource. */

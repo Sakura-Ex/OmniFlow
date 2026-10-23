@@ -1,7 +1,9 @@
+import { legacyUnit } from '@/common/units/defaults'
+import { useSettingsStore } from '@/features/settings/settings.store'
 import { create } from 'zustand'
 import type { RecipeNodeData } from '@/common/types/recipe'
 import type { ComputedNodePayload } from '@/common/types/resource'
-import { ensureRecipeDataShape, runModifierPipeline } from '@/features/modifier/modifier.pipeline'
+import { ensureRecipeDataShape, previewModifierPipeline, computationKey } from '@/features/modifier/modifier.pipeline'
 import { applyArchetypeToInputs } from '@/data/archetypes/index'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 import { buildResourceId } from '@/common/utils/resourceId'
@@ -34,7 +36,21 @@ export type RecipeStore = {
  */
 function shapeAndCompute(data: RecipeNodeData): RecipeNodeData {
   const shaped = ensureRecipeDataShape(data)
-  const computed = runModifierPipeline(shaped)
+  const table = useGlobalResourceTable.getState()
+  for (const group of ['base_inputs', 'base_outputs', 'base_utility_inputs', 'base_utility_outputs'] as const) {
+    shaped[group] = shaped[group]?.map((port) => ({ ...port, unit: port.unit ?? legacyUnit(table.resolve(buildResourceId(port.category, port.id)).unit) }))
+  }
+  const environment = useSettingsStore.getState().units
+  const cached = data._computed
+  const displayPorts = new Map(flattenRecipeResources(shaped).map((p) => [p.portId, p.displayUnit]))
+  const withDisplay = (port: ComputedNodePayload['recipe_inputs'][number]) => ({ ...port, displayUnit: displayPorts.get(port.portId) })
+  const computed = cached?.cache_key === computationKey(shaped, environment)
+    ? { ...cached,
+      recipe_inputs: cached.recipe_inputs.map(withDisplay), recipe_outputs: cached.recipe_outputs.map(withDisplay),
+      utility_inputs: cached.utility_inputs.map(withDisplay), utility_outputs: cached.utility_outputs.map(withDisplay),
+      final_ports: cached.final_ports.map((p) => ({ ...p, port: withDisplay(p.port) })),
+    }
+    : previewModifierPipeline(shaped, environment)
   return { ...shaped, _computed: computed }
 }
 
@@ -62,7 +78,9 @@ function ensureAllResourceEntries(data: RecipeNodeData) {
 function stripComputed(recipe: RecipeNodeData): RecipeNodeData {
   const { _computed, ...rest } = recipe as RecipeNodeData & { _computed?: unknown }
   void _computed
-  return rest as RecipeNodeData
+  const metadata = { ...rest.metadata }
+  delete metadata._calculated_preview
+  return { ...rest, metadata, inputs: rest.base_inputs ?? rest.inputs, outputs: rest.base_outputs ?? rest.outputs } as RecipeNodeData
 }
 
 /**
@@ -154,3 +172,11 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
     return all
   },
 }))
+
+// Environment changes invalidate all computed rates and update subscribed previews.
+useSettingsStore.subscribe((state, previous) => {
+  if (state.units !== previous.units) {
+    const recipes = useRecipeStore.getState().dumpAll()
+    useRecipeStore.getState().loadAll(recipes)
+  }
+})

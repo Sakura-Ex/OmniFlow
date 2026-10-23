@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useSettingsStore } from '@/features/settings/settings.store'
+import { UnitSystem } from '@/common/units/UnitSystem'
+import { portIdentity } from '@/common/utils/ports'
+import { useState, type CSSProperties } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
 import type { RecipeNodeData, RecipeNodeMode } from '@/common/types/recipe'
 import { useRecipeEditor } from '@/features/recipe/contexts/RecipeEditorContext'
 import { useNodeData } from '@/features/canvas/contexts/NodeDataContext'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
-import { runModifierPipeline } from '@/features/modifier/modifier.pipeline'
+import { previewModifierPipeline } from '@/features/modifier/modifier.pipeline'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 import { resolveCategoryDef } from '@/features/recipe/recipe.endpointNorm'
 import { formatPortAmount, formatRateValue } from '@/common/utils/rateFormat'
@@ -46,10 +49,11 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   const machineName = recipe?.machine_name ?? data.machine_name
   const isImplemented = recipe?.is_implemented ?? false
 
-  const payload: ComputedNodePayload = storedPayload ?? runModifierPipeline(data)
+  const environment = useSettingsStore((s) => s.units)
+  const units = new UnitSystem(environment)
+  const payload: ComputedNodePayload = storedPayload ?? previewModifierPipeline(data, environment)
   const hasZeroOutput =
-    payload.recipe_outputs.length === 0 ||
-    payload.recipe_outputs.every((r) => r.amount === 0)
+    !payload.eligibility.eligible
   const mode: RecipeNodeMode =
     data.mode ?? 'auto'
   const isLimit = mode === 'limit'
@@ -97,16 +101,12 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
       const isUnknown = catDef.id === '_fallback'
       const mMode: TimeBase | undefined = res.time_base
       const hexColor = catDef.themeColor
-      const glowColor = hexColor.startsWith('#')
-        ? `${hexColor}${Math.round(0.38 * 255)
-            .toString(16)
-            .padStart(2, '0')}`
-        : hexColor.replace(')', ', 0.38)').replace('rgb', 'rgba')
+      const glowColor = `color-mix(in srgb, ${hexColor} 38%, transparent)`
 
       const portRate = payload.duration_seconds === 0
         ? 'Instant'
-        : formatRateValue(res.amount, mMode)
-      const handleId = `${res.category}:${res.id || res._uid || `${side}-${index}`}`
+        : formatRateValue(res.amount, mMode, units, res.displayUnit ?? res.unit)
+      const handleId = portIdentity(res)
       const isLeft = side === 'input'
 
       return (
@@ -147,17 +147,17 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
                 )}
                 <span
                   className={shared['recipe-node__port-type']}
-                  style={{ color: hexColor, borderColor: hexColor }}
+                  style={{ '--resource-color': hexColor } as CSSProperties}
                 >
                   {catDef.displayName}
                 </span>
-                {isUnknown && <span className={styles['recipe-node__port-warn']} title="未知量纲，已从矩阵排除">⚠️</span>}
+                {isUnknown && <span className={styles['recipe-node__port-warn']} title="未登记类别，请在资源字典中定义单位">⚠️</span>}
                 <span className={`${shared['recipe-node__port-name']} ${shared['recipe-node__port-name--left']}`}>
                   {res.id}
                 </span>
                 <div className={`${styles['recipe-node__port-stats']} ${styles['recipe-node__port-stats--right']}`}>
                   <span className={styles['recipe-node__port-amount']}>
-                    {formatPortAmount(res.amount, catDef, mMode, payload.duration_seconds)}
+                    {formatPortAmount(res.amount, catDef, mMode, payload.duration_seconds, units, res.unit)}
                   </span>
                   <span className={styles['recipe-node__port-rate']}>{portRate}</span>
                 </div>
@@ -166,7 +166,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
               <>
                 <div className={`${styles['recipe-node__port-stats']} ${styles['recipe-node__port-stats--left']}`}>
                   <span className={styles['recipe-node__port-amount']}>
-                    {formatPortAmount(res.amount, catDef, mMode, payload.duration_seconds)}
+                    {formatPortAmount(res.amount, catDef, mMode, payload.duration_seconds, units, res.unit)}
                   </span>
                   <span className={styles['recipe-node__port-rate']}>{portRate}</span>
                 </div>
@@ -175,11 +175,11 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
                 </span>
                 <span
                   className={shared['recipe-node__port-type']}
-                  style={{ color: hexColor, borderColor: hexColor }}
+                  style={{ '--resource-color': hexColor } as CSSProperties}
                 >
                   {catDef.displayName}
                 </span>
-                {isUnknown && <span className={styles['recipe-node__port-warn']} title="未知量纲，已从矩阵排除">⚠️</span>}
+                {isUnknown && <span className={styles['recipe-node__port-warn']} title="未登记类别，请在资源字典中定义单位">⚠️</span>}
                 {res.routing_mode === 'global' ? (
                   <svg
                     className={`${shared['recipe-node__global-icon']} ${shared['recipe-node__global-icon--right']}`}
@@ -276,7 +276,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
           </ul>
         </section>
 
-        <section className={`${shared['recipe-node__ports']} ${styles['recipe-node__ports--outputs']}`}>
+        <section className={shared['recipe-node__ports']}>
           <p className={`${styles['recipe-node__section-label']} ${styles['recipe-node__section-label--right']}`}>
             Outputs
           </p>
@@ -296,7 +296,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
               </ul>
             </section>
 
-            <section className={`${shared['recipe-node__ports']} ${styles['recipe-node__ports--outputs']} ${styles['recipe-node__ports--utility']}`}>
+            <section className={`${shared['recipe-node__ports']} ${styles['recipe-node__ports--utility']}`}>
               <p className={`${styles['recipe-node__section-label']} ${styles['recipe-node__section-label--right']} ${styles['recipe-node__section-label--utility']}`} />
               <ul className={`${shared['recipe-node__port-list']} ${shared['recipe-node__port-list--right']}`}>
                 {renderResourceRows(payload.utility_outputs, 'output')}

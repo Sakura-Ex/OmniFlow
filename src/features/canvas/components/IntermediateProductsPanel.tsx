@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, type CSSProperties } from 'react'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 import { resolveCategoryDef } from '@/features/recipe/recipe.endpointNorm'
 import { formatSimpleRate } from '@/common/utils/rateFormat'
@@ -43,7 +43,7 @@ function HUDResourceRow({ item, value, isGlobal }: { item: string; value: number
   return (
     <div className={`${styles['system-hud__row']}${isGlobal ? ` ${styles['system-hud__row--global']}` : ''}`}>
       <span className={styles['system-hud__item']}>
-        <span className={styles['system-hud__badge']} style={{ color: hexColor, borderColor: hexColor }}>
+        <span className={styles['system-hud__badge']} style={{ '--resource-color': hexColor } as CSSProperties}>
           {catDef.displayName}
         </span>
         <span className={styles['system-hud__name']}>{name}</span>
@@ -126,6 +126,7 @@ export function IntermediateProductsPanel({
           className={`${styles['system-hud__toggle']}${collapsed ? ` ${styles['system-hud__toggle--collapsed']}` : ''}`}
           type="button"
           onClick={() => setCollapsed((prev) => !prev)}
+          aria-expanded={!collapsed}
           aria-label="Toggle intermediate panel"
         >
           ▾

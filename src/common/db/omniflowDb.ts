@@ -1,3 +1,4 @@
+import type { UnitSnapshot } from '@/common/types/units'
 import Dexie, { type Table } from 'dexie'
 import type { Node, Edge } from 'reactflow'
 import type { Resource } from '@/common/types/resource'
@@ -12,6 +13,7 @@ interface Project {
   description: string
   tags: string[]
   settings: {
+    units?: UnitSnapshot
     tps: number
     default_system?: string
     default_archetype?: string

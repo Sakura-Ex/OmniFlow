@@ -30,6 +30,7 @@ export function useTheme(storageKey: string = DEFAULT_STORAGE_KEY) {
   })
 
   useEffect(() => {
+    document.documentElement.dataset.theme = theme
     window.localStorage.setItem(storageKey, theme)
   }, [storageKey, theme])
 

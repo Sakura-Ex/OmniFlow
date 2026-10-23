@@ -191,15 +191,15 @@
   z-index: 10000;
   max-width: 600px;
   padding: 14px 24px 14px 48px;
-  background: rgba(220, 38, 38, 0.92);
-  color: #fff;
+  background: var(--danger-soft);
+  color: var(--text-strong);
   border-radius: 10px;
   font-size: 14px;
   line-height: 1.5;
   white-space: pre-line;
   cursor: pointer;
   backdrop-filter: blur(8px);
-  box-shadow: 0 4px 24px rgba(220, 38, 38, 0.32);
+  box-shadow: 0 4px 24px color-mix(in srgb, var(--danger) 25%, transparent);
   animation: toast-in 0.25s ease-out;
 }
 

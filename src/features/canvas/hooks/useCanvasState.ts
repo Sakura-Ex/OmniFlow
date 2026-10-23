@@ -1,3 +1,5 @@
+import { normalizeGraph } from '@/features/canvas/graphDocument'
+import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { useLayoutEffect, useRef, useCallback } from 'react'
 import { applyNodeChanges, applyEdgeChanges, type Edge, type Node, type NodeChange, type EdgeChange } from 'reactflow'
 import { useCanvasStore } from '@/features/canvas/canvas.store'
@@ -28,10 +30,12 @@ export function useCanvasState(initialNodes: Node[], initialEdges: Edge[]) {
   const initRef = useRef(false)
   useLayoutEffect(() => {
     if (initRef.current) return
-    setNodes(initialNodes)
-    setEdges(initialEdges)
-    nodesRef.current = initialNodes
-    edgesRef.current = initialEdges
+    const graph = normalizeGraph(initialNodes, initialEdges, {}, true)
+    useRecipeStore.getState().loadAll(graph.recipes)
+    setNodes(graph.nodes)
+    setEdges(graph.edges)
+    nodesRef.current = graph.nodes
+    edgesRef.current = graph.edges
     initRef.current = true
   }, [initialNodes, initialEdges, setNodes, setEdges])
 

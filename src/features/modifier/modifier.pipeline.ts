@@ -1,156 +1,166 @@
 import type { RecipeNodeData } from '@/common/types/recipe'
 import type { Resource, ComputedNodePayload, NormalizedResource } from '@/common/types/resource'
+import type { UnitSnapshot } from '@/common/types/units'
+import type { ModifierTrace } from '@/common/types/computation'
+import type { PipelineContext } from './modifier.types'
 import { ensureRecipeDataShape } from './modifier.normalize'
-import { getModifierById } from './modifier.registry'
+import { getModifierById, modifierRegistry } from './modifier.registry'
+import { UnitSystem, positive, finite } from '@/common/units/UnitSystem'
+import { DEFAULT_UNIT_SNAPSHOT, defaultResourceUnit } from '@/common/units/defaults'
+import { portIdentity } from '@/common/utils/ports'
 export { ensureRecipeDataShape }
 
-import type { PipelineContext } from './modifier.types'
-import { getCategory } from '@/common/utils/resourceId'
-import { DEFAULT_RESOURCE_CATEGORIES } from '@/features/resource-registry/registry.defaults'
-import { useSettingsStore } from '@/features/settings/settings.store'
-
-const MAX_INSTANT_RATE = 1e9
-
 /**
- * Create a shallow clone of a resource array (each element is copied by spread).
- * @param resources - The resource array to clone.
- * @returns A new array of shallow-cloned resources.
+ * Freeze snapshots so plugins cannot change their input or shared configuration.
+ * @returns The recursively frozen input value.
+ * @param value - Input snapshot or configuration to freeze.
  */
-function deepCloneResources(resources: Resource[]): Resource[] {
-  return resources.map((res) => ({ ...res }))
+function freeze<T>(value: T): T {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.values(value).forEach(freeze)
+    Object.freeze(value)
+  }
+  return value
 }
 
 /**
- * Normalize a resource's amount into a per-second rate given the recipe duration.
- *
- * Handles three time-base modes:
- * - `per_cycle`: amount / duration (or a large constant for instant recipes)
- * - `rate_per_tick`: amount * TPS
- * - `rate_per_sec`: amount as-is
- *
- * @param res - The resource whose rate is being computed.
- * @param dur - The recipe duration in seconds.
- * @returns The effective per-second rate, factoring in probability. Returns 0 for non-consumable resources or zero-probability outputs.
+ * Complete cache identity includes recipe, environment, definitions and plugin versions.
+ * @returns Cache identity for physical inputs, environment and plugin versions.
+ * @param data - Editable recipe snapshot.
+ * @param environment - Serializable environment, definitions and prefixes.
  */
-export function normalizeRate(res: Resource, dur: number): number {
-  const probability = res.probability ?? 1
-  if (res.consumable === false || probability === 0) return 0
-  const mMode = res.time_base ?? 'per_cycle'
-  const baseRate = mMode === 'rate_per_tick'
-    ? res.amount * useSettingsStore.getState().tps
-    : mMode === 'rate_per_sec'
-      ? res.amount
-      : dur > 0 ? res.amount / dur : MAX_INSTANT_RATE
-  return baseRate * probability
+export function computationKey(data: RecipeNodeData, environment: UnitSnapshot): string {
+  const { _computed, ...recipe } = data
+  void _computed
+  return JSON.stringify([recipe, environment, Object.values(modifierRegistry).map((m) => [m.id, m.apiVersion, m.version])], (key, value) => key === 'displayUnit' ? undefined : value)
 }
 
 /**
- * Execute the full modifier pipeline for a recipe node.
- *
- * 1. Normalizes the raw recipe data via {@link ensureRecipeDataShape}.
- * 2. Deep-clones inputs/outputs/duration into a baseline snapshot.
- * 3. Iterates over active modifiers in order, calling each modifier's `evaluate` to mutate the pipeline context.
- * 4. Converts the final context into a {@link ComputedNodePayload} with per-second rates.
- *
- * @param rawData - Raw recipe node data from the graph model.
- * @returns The computed node payload containing normalized rates and final duration.
+ * Convert editing intent once and apply production probability separately.
+ * @returns Canonical per-second rate with production probability applied once.
+ * @param res - Resource amount, production probability and input unit.
+ * @param duration - Finite positive cycle duration in seconds.
+ * @param units - Explicit unit system for the captured environment.
  */
-export function runModifierPipeline(rawData: RecipeNodeData): ComputedNodePayload {
+export function normalizeRate(res: Resource, duration: number, units = new UnitSystem(DEFAULT_UNIT_SNAPSHOT)): number {
+  positive(duration)
+  finite(res.amount)
+  const probability = finite(res.probability ?? 1)
+  if (res.amount < 0 || probability < 0 || probability > 1) throw new Error('Invalid resource amount/probability')
+  const rate = units.toRate(res.amount, res.unit ?? defaultResourceUnit(res.category, res.id), res.time_base ?? 'per_cycle', duration)
+  return res.consumable === false ? 0 : finite(rate * probability)
+}
+
+/**
+ * Compile final ports, eligibility, occupancy and trace using one explicit environment.
+ * @returns Deterministic final ports, eligibility, occupancy and step trace.
+ * @param rawData - Editable recipe snapshot before shaping.
+ * @param environment - Serializable environment, definitions and prefixes.
+ */
+export function runModifierPipeline(rawData: RecipeNodeData, environment: UnitSnapshot = DEFAULT_UNIT_SNAPSHOT): ComputedNodePayload {
+  const units = new UnitSystem(environment)
   const normalized = ensureRecipeDataShape(rawData)
-  const recipeInputs = deepCloneResources(normalized.base_inputs ?? [])
-  const recipeOutputs = deepCloneResources(normalized.base_outputs ?? [])
-  const utilityInputs = deepCloneResources(normalized.base_utility_inputs ?? [])
-  const utilityOutputs = deepCloneResources(normalized.base_utility_outputs ?? [])
-  const durationSeconds = normalized.base_duration_seconds ?? 0
-
   const baseline = {
-    recipeInputs: deepCloneResources(recipeInputs),
-    recipeOutputs: deepCloneResources(recipeOutputs),
-    utilityInputs: deepCloneResources(utilityInputs),
-    utilityOutputs: deepCloneResources(utilityOutputs),
-    durationSeconds,
+    recipeInputs: structuredClone(normalized.base_inputs ?? []),
+    recipeOutputs: structuredClone(normalized.base_outputs ?? []),
+    utilityInputs: structuredClone(normalized.base_utility_inputs ?? []),
+    utilityOutputs: structuredClone(normalized.base_utility_outputs ?? []),
+    durationSeconds: positive(normalized.base_duration_seconds ?? normalized.duration_seconds),
   }
-
-  let ctx: PipelineContext = {
-    recipeInputs,
-    recipeOutputs,
-    utilityInputs,
-    utilityOutputs,
-    durationSeconds,
-    machineStopped: false,
-    hardwareSpecs: normalized.hardware_specs ?? {},
-    baseline,
+  let ctx: PipelineContext = { ...baseline, baseline, units, instanceId: '', actualParallel: 1, machineStopped: false, hardwareSpecs: structuredClone(normalized.hardware_specs ?? {}) }
+  const reasons: string[] = []
+  const trace: ModifierTrace[] = []
+  const instances = normalized.active_modifiers ?? []
+  if (new Set(instances.map((i) => i.instance_id)).size !== instances.length) throw new Error('Duplicate modifier instance identity')
+  const positions = new Map(instances.map((inst, i) => [inst.definition_id, i]))
+  const ports = (context: PipelineContext) => [...context.recipeInputs, ...context.recipeOutputs, ...context.utilityInputs, ...context.utilityOutputs]
+  const validate = (context: PipelineContext) => {
+    positive(context.durationSeconds)
+    if (!Number.isSafeInteger(context.actualParallel) || context.actualParallel < 1) throw new Error('Invalid parallel count')
+    const seen = new Set<string>()
+    for (const port of ports(context)) {
+      const id = portIdentity(port)
+      if (seen.has(id)) throw new Error(`Duplicate final port: ${id}`)
+      seen.add(id)
+      normalizeRate(port, context.durationSeconds, units)
+    }
   }
-
-  for (const inst of normalized.active_modifiers ?? []) {
+  validate(ctx)
+  for (const [index, inst] of instances.entries()) {
     const modifier = getModifierById(inst.definition_id)
-    if (!modifier) continue
-
-    ctx = modifier.evaluate(ctx, inst.uiState)
+    if (!modifier || modifier.apiVersion !== 2 || !Number.isSafeInteger(modifier.version) || modifier.version < 1) throw new Error(`Unsupported modifier: ${inst.definition_id}`)
+    for (const dependency of modifier.requires ?? []) {
+      if (!positions.has(dependency)) throw new Error(`${modifier.id} requires ${dependency}`)
+    }
+    for (const dependency of [...modifier.after ?? [], ...modifier.requires ?? []]) {
+      if (!getModifierById(dependency)) throw new Error(`Unknown modifier dependency: ${dependency}`)
+      const position = positions.get(dependency)
+      if (position !== undefined && position >= index) throw new Error(`${modifier.id} must run after ${dependency}`)
+    }
+    const before = ctx
+    const beforeIds = ports(before).map(portIdentity)
+    const effect = modifier.evaluate(freeze({ ...ctx, instanceId: inst.instance_id }), freeze(structuredClone(inst.uiState)))
+    const allowed = new Set(['recipeInputs', 'recipeOutputs', 'utilityInputs', 'utilityOutputs', 'durationSeconds', 'actualParallel', 'machineStopped', 'reason'])
+    if (Object.keys(effect).some((key) => !allowed.has(key))) throw new Error(`Invalid effect from ${modifier.id}`)
+    const { reason, ...changes } = effect
+    ctx = { ...ctx, ...changes, machineStopped: ctx.machineStopped || Boolean(effect.machineStopped) }
+    validate(ctx)
+    const originalIds = ports({ ...ctx, ...baseline }).map(portIdentity)
+    for (const port of ports(ctx)) {
+      const id = portIdentity(port)
+      if (!beforeIds.includes(id) && !originalIds.includes(id) && !id.startsWith(`dynamic:${inst.instance_id}:`)) {
+        throw new Error(`New port ${id} must use dynamic:${inst.instance_id}:<stable-local-key>`)
+      }
+    }
+    if (effect.machineStopped) reasons.push(reason ?? `${modifier.id}: machine stopped`)
+    const afterIds = ports(ctx).map(portIdentity)
+    trace.push({ instanceId: inst.instance_id, definitionId: modifier.id, version: modifier.version, durationBefore: before.durationSeconds, durationAfter: ctx.durationSeconds, addedPorts: afterIds.filter((id) => !beforeIds.includes(id)), removedPorts: beforeIds.filter((id) => !afterIds.includes(id)), reason })
   }
-
-  const dur = rawData.system === 'gregtech' ? Math.max(0.05, ctx.durationSeconds) : ctx.durationSeconds
-
-  const toNormalized = (resources: Resource[]): NormalizedResource[] =>
-    resources.map((res) => ({
-      category: res.category,
-      id: res.id,
-      amount: normalizeRate(res, dur),
-      time_base: res.time_base ?? 'per_cycle',
-      consumable: res.consumable,
-      probability: res.probability,
-      routing_mode: res.routing_mode,
-      routing_locked: res.routing_locked,
-      is_utility: Boolean(res.is_utility),
-      utility_type: res.utility_type,
-      amount_mutable: res.amount_mutable,
-      _uid: res._uid,
-    }))
-
+  const dur = positive(ctx.durationSeconds)
+  const toNormalized = (resources: readonly Resource[]): NormalizedResource[] => resources.map((res) => ({ ...res, amount: normalizeRate(res, dur, units), time_base: res.time_base ?? 'per_cycle', is_utility: Boolean(res.is_utility) }))
+  const recipe_inputs = toNormalized(ctx.recipeInputs)
+  const recipe_outputs = toNormalized(ctx.recipeOutputs)
+  const utility_inputs = toNormalized(ctx.utilityInputs)
+  const utility_outputs = toNormalized(ctx.utilityOutputs)
   return {
-    recipe_inputs: toNormalized(ctx.recipeInputs),
-    recipe_outputs: toNormalized(ctx.recipeOutputs),
-    utility_inputs: toNormalized(ctx.utilityInputs),
-    utility_outputs: toNormalized(ctx.utilityOutputs),
-    duration_seconds: dur,
+    recipe_inputs, recipe_outputs, utility_inputs, utility_outputs, duration_seconds: dur,
+    final_ports: [
+      ...[...recipe_inputs, ...utility_inputs].map((port) => ({ port, direction: 'input' as const })),
+      ...[...recipe_outputs, ...utility_outputs].map((port) => ({ port, direction: 'output' as const })),
+    ],
+    eligibility: { eligible: !ctx.machineStopped, reasons },
+    actual_parallel: ctx.actualParallel,
+    bom_occupancy: [...ctx.recipeInputs, ...ctx.utilityInputs].filter((r) => r.consumable === false || r.probability === 0).map((resource) => ({ resource, basis: resource.scaling === 'per_parallel_slot' ? 'per_parallel_slot' : resource.scaling === 'per_installed_machine' ? 'per_installed_machine' : 'per_running_machine', amount: resource.amount })),
+    trace, cache_key: computationKey(rawData, environment),
   }
 }
 
 /**
- * Flatten a computed node payload into flat input/output maps keyed by `"category:id"`.
- *
- * Skips non-consumable resources, zero-probability outputs, and resources whose category
- * is not recognised by the default resource registry.
- *
- * @param payload - The computed node payload from the modifier pipeline.
- * @returns An object with `inputs` and `outputs` records mapping resource keys to total amounts.
+ * Resource summary only; routing must resolve each final port before aggregation.
+ * @returns Resource-level summaries without routing information.
+ * @param payload - Final compiled port and rate payload.
  */
-export function flattenForBackend(payload: ComputedNodePayload): {
-  inputs: Record<string, number>
-  outputs: Record<string, number>
-} {
+export function flattenForBackend(payload: ComputedNodePayload): { inputs: Record<string, number>; outputs: Record<string, number> } {
   const inputs: Record<string, number> = {}
   const outputs: Record<string, number> = {}
-
-  const knownCategories = new Set(DEFAULT_RESOURCE_CATEGORIES.map((c) => c.id))
-
-  const isUnknownResource = (category: string): boolean => {
-    const dimensionId = category.includes(':') ? getCategory(category) : category
-    return !knownCategories.has(dimensionId)
+  for (const { port, direction } of payload.final_ports) {
+    const target = direction === 'input' ? inputs : outputs
+    const key = `${port.category}:${port.id}`
+    target[key] = (target[key] ?? 0) + port.amount
   }
-
-  for (const r of [...payload.recipe_inputs, ...payload.utility_inputs]) {
-    if (r.consumable === false || r.probability === 0) continue
-    if (isUnknownResource(r.category)) continue
-    const key = `${r.category}:${r.id}`
-    inputs[key] = (inputs[key] ?? 0) + r.amount
-  }
-  for (const r of [...payload.recipe_outputs, ...payload.utility_outputs]) {
-    if (r.probability === 0) continue
-    if (isUnknownResource(r.category)) continue
-    const key = `${r.category}:${r.id}`
-    outputs[key] = (outputs[key] ?? 0) + r.amount
-  }
-
   return { inputs, outputs }
+}
+
+/**
+ * Preview invalid drafts without presenting them as runnable calculation inputs.
+ * @returns Compiled preview, or an explicitly ineligible invalid draft.
+ * @param data - Editable recipe snapshot.
+ * @param environment - Serializable environment, definitions and prefixes.
+ */
+export function previewModifierPipeline(data: RecipeNodeData, environment: UnitSnapshot): ComputedNodePayload {
+  try { return runModifierPipeline(data, environment) }
+  catch (error) {
+    const reasons = [error instanceof Error ? error.message : String(error)]
+    return { recipe_inputs: [], recipe_outputs: [], utility_inputs: [], utility_outputs: [], duration_seconds: data.duration_seconds, final_ports: [], eligibility: { eligible: false, reasons }, actual_parallel: 1, bom_occupancy: [], trace: [], cache_key: computationKey(data, environment) }
+  }
 }

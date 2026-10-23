@@ -1,10 +1,13 @@
+import { normalizeGraph } from './graphDocument'
+import { normalizeCanvasNode } from './canvas.validators'
+import { endpointSubNodeId } from '@/features/calculation/payloadBuilder'
 import { create } from 'zustand'
 import type { Edge, Node } from 'reactflow'
-import type { RecipeNodeData, EndpointPort, EndpointRole } from '@/common/types/recipe'
+import type { RecipeNodeData } from '@/common/types/recipe'
 import type { CalculateResponse } from '@/common/types/api'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { normalizeEndpointPorts } from '@/features/recipe/recipe.endpointNorm'
-import { buildResourceId, normalizeResourceKey, DEFAULT_RESOURCE_CATEGORY } from '@/common/utils/resourceId'
+import { normalizeResourceKey } from '@/common/utils/resourceId'
 import { computeCapexList } from '@/features/calculation/capEx'
 import { formatCalculationError } from '@/features/calculation/calculationClient'
 
@@ -38,19 +41,6 @@ function extractActualAmounts(
     result[normalizeResourceKey(key)] = value
   }
   return result
-}
-
-/**
- * Describes a handle (port) reconnection event on a node.
- * Used when a user drags an edge from one port to another.
- */
-export type HandleUpdate = {
-  /** Whether the handle belongs to a source or target role. */
-  role: EndpointRole
-  /** The ID of the port being disconnected. */
-  previousId: string
-  /** The ID of the port being connected. */
-  nextId: string
 }
 
 /** Root state and actions for the canvas Zustand store. */
@@ -107,7 +97,7 @@ export type CanvasStore = {
   /** Mark the canvas as having unsaved changes. */
   markDirty: () => void
   /** Load a canvas from the database, replacing all state and clearing the dirty flag. */
-  loadFromDB: (canvasId: string, projectId: string, nodes: Node[], edges: Edge[], viewport: { x: number; y: number; zoom: number }) => void
+  loadFromDB: (canvasId: string, projectId: string, nodes: Node[], edges: Edge[], viewport: { x: number; y: number; zoom: number }, recipes?: Record<string, RecipeNodeData>) => void
   /** Reset the canvas to its initial empty state (clears nodes, edges, and metadata). */
   resetCanvas: () => void
 
@@ -126,7 +116,7 @@ export type CanvasStore = {
   clearAll: () => void
 
   /** Merge partial data into a node and update its edges if a handle reconnection occurred. */
-  updateNodeData: (nodeId: string, nextData: Record<string, unknown>, handleUpdate?: HandleUpdate) => void
+  updateNodeData: (nodeId: string, nextData: Record<string, unknown>) => void
   /** Apply a calculation result to the canvas, updating node data, system balances, and CAPEX. */
   setCalculationResult: (result: CalculateResponse) => void
 }
@@ -159,7 +149,12 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
   setCapexList: (v) => set({ capexList: v }),
   setError: (v) => set({ error: v }),
   markDirty: () => set({ isDirty: true }),
-  loadFromDB: (canvasId, projectId, nodes, edges, viewport) => set({ canvasId, projectId, nodes, edges, viewport, isDirty: false }),
+  loadFromDB: (canvasId, projectId, nodes, edges, viewport, recipes = {}) => {
+    const graph = normalizeGraph(nodes, edges, recipes, true)
+    useRecipeStore.setState({ recipes: {} })
+    useRecipeStore.getState().loadAll(graph.recipes)
+    set({ canvasId, projectId, nodes: graph.nodes, edges: graph.edges, viewport, isDirty: false })
+  },
   resetCanvas: () => set({ nodes: [], edges: [], canvasId: null, projectId: null, isDirty: false, systemInputs: {}, systemOutputs: {}, lastSystemInputs: {}, lastSystemOutputs: {}, globalInputIds: [], globalOutputIds: [], capexList: {}, error: null }),
 
   resetCalculationState: () => set((state) => ({
@@ -175,12 +170,12 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
   })),
 
   addNode: (node) => {
-    set((state) => ({ nodes: [...state.nodes, node] }))
+    set((state) => ({ nodes: [...state.nodes, normalizeCanvasNode(node)] }))
   },
 
   addRecipeNode: (id, nodeData, newNode) => {
     useRecipeStore.getState().setRecipe(id, nodeData)
-    set((state) => ({ nodes: [...state.nodes, newNode] }))
+    set((state) => ({ nodes: [...state.nodes, { ...newNode, data: useRecipeStore.getState().recipes[id] }] }))
   },
 
   deleteSelected: () => {
@@ -220,13 +215,14 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
     })
   },
 
-  updateNodeData: (nodeId, nextData, handleUpdate) => {
+  updateNodeData: (nodeId, nextData) => {
     set((state) => {
       const currentNode = state.nodes.find((n) => n.id === nodeId)
       if (!currentNode) return state
 
       const currentData = (currentNode.data ?? {}) as Record<string, unknown>
-      const mergedData = { ...currentData, ...nextData }
+      const merged = { ...currentData, ...nextData }
+      const mergedData = currentNode.type === 'recipeNode' ? merged : normalizeCanvasNode({ ...currentNode, data: merged }).data
 
       if (currentNode.type === 'recipeNode') {
         useRecipeStore.getState().updateRecipe(nodeId, nextData)
@@ -235,44 +231,13 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
       const dataChanged = Object.keys(mergedData).some(
         (key) => currentData[key] !== mergedData[key]
       )
-      const handleChanged = !!(
-        handleUpdate && handleUpdate.previousId !== handleUpdate.nextId
-      )
-
-      if (!dataChanged && !handleChanged) return state
+      if (!dataChanged) return state
 
       const nextNodes = state.nodes.map((node) =>
         node.id === nodeId ? { ...node, data: mergedData } : node
       )
 
-      let nextEdges = state.edges
-      if (handleChanged && handleUpdate) {
-        const currentNodeData = currentNode.data as Record<string, unknown>
-        const nodeCategory: string = (currentNodeData.category as string) ?? DEFAULT_RESOURCE_CATEGORY
-        const ports: EndpointPort[] = (currentNodeData.ports as EndpointPort[]) ?? []
-        const oldPort = ports.find((p) => p.id === handleUpdate.previousId)
-        const portCategory = oldPort?.category ?? nodeCategory
-        const prevHandle = buildResourceId(portCategory, handleUpdate.previousId)
-        const nextHandle = buildResourceId(portCategory, handleUpdate.nextId)
-        nextEdges = state.edges.map((edge) => {
-          if (
-            handleUpdate.role === 'source' &&
-            edge.source === nodeId &&
-            edge.sourceHandle === prevHandle
-          ) {
-            return { ...edge, sourceHandle: nextHandle }
-          }
-          if (
-            handleUpdate.role === 'target' &&
-            edge.target === nodeId &&
-            edge.targetHandle === prevHandle
-          ) {
-            return { ...edge, targetHandle: nextHandle }
-          }
-          return edge
-        })
-      }
-
+      const nextEdges = state.edges
       return { nodes: nextNodes, edges: nextEdges }
     })
   },
@@ -318,9 +283,10 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
           const ports = normalizeEndpointPorts(node.data)
           const actualAmounts: Record<string, number> = {}
           for (let pi = 0; pi < ports.length; pi++) {
-            const subNodeId = `${node.id}__p${pi}`
+            const subNodeId = endpointSubNodeId(node.id, ports[pi].portId!)
             const subResult = nodeResults[subNodeId]
-            Object.assign(actualAmounts, extractActualAmounts(subResult))
+            const values = Object.values(extractActualAmounts(subResult))
+            actualAmounts[ports[pi].portId!] = values.reduce((sum, value) => sum + value, 0)
           }
           nextData = {
             ...nextData,

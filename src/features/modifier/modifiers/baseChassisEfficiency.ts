@@ -8,6 +8,8 @@ import type { Resource } from '@/common/types/resource'
  * efficiency multiplier. Can be placed up to 4 times for compounding effects.
  */
 export const baseChassisEfficiencyModifier: IMachineModifier = {
+  apiVersion: 2,
+  version: 2,
   id: 'base_chassis_efficiency',
   name: 'Base Chassis Efficiency',
   max_placements: 4,
@@ -25,7 +27,6 @@ export const baseChassisEfficiencyModifier: IMachineModifier = {
     const m = Number(uiState.efficiency) || 1.0
     const mul = (r: Resource) => ({ ...r, amount: r.amount * m })
     return {
-      ...ctx,
       recipeInputs: ctx.recipeInputs.map(mul),
       recipeOutputs: ctx.recipeOutputs.map(mul),
       utilityInputs: ctx.utilityInputs.map(mul),

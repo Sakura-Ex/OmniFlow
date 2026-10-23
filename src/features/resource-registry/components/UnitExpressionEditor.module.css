@@ -1,0 +1,77 @@
+.editor { min-width: 0; font-size: 12px; }
+
+.trigger {
+  composes: control from '@/common/styles/primitives.module.css';
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  width: 100%;
+  height: 32px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.panel {
+  display: none;
+  position: fixed;
+  inset: auto;
+  left: var(--unit-popover-left);
+  top: var(--unit-popover-top);
+  width: min(340px, calc(100vw - 24px));
+  max-height: calc(100dvh - var(--unit-popover-top) - 12px);
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 8px 24px var(--shadow-color);
+  font-family: var(--sans);
+  font-size: 12px;
+}
+
+.panel:popover-open { display: grid; gap: 10px; }
+.header { display: flex; align-items: center; justify-content: space-between; color: var(--text-strong); }
+.modes { display: flex; gap: 6px; }
+.modes .button { flex: 1; }
+
+.control {
+  composes: control from '@/common/styles/primitives.module.css';
+}
+
+.panel .control {
+  min-width: 0;
+  width: 100%;
+  height: 32px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.button {
+  composes: button from '@/common/styles/primitives.module.css';
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.active { composes: primary from '@/common/styles/primitives.module.css'; }
+.close { border: 0; padding: 0 4px; background: transparent; color: var(--muted); cursor: pointer; }
+.advanced { padding-top: 8px; border-top: 1px solid var(--border); }
+.advanced summary { color: var(--muted); cursor: pointer; }
+.factor { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 48px 28px; gap: 6px; margin: 8px 0; }
+.factor .button { padding: 0; }
+.error { margin: 0; color: var(--danger); overflow-wrap: anywhere; }

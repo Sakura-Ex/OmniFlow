@@ -1,6 +1,8 @@
+import { gtEuPerTick } from './gtUnits'
 import type { IMachineModifier, PipelineContext } from '../../modifier.types'
 import { OverclockerCardBody } from './gtOverclockerCard'
-import { secondsToTicks, ticksToSeconds } from '@/common/utils/time'
+import { UnitSystem } from '@/common/units/UnitSystem'
+import { DEFAULT_UNIT_SNAPSHOT } from '@/common/units/defaults'
 
 /** Represents a single GregTech voltage tier with its EU-per-amp rating. */
 export type GtVoltageTier = {
@@ -172,22 +174,24 @@ type GtOverclockResult = {
  * @param workingEuPerTick - The current EU-per-tick after prior modifiers.
  * @param baseDurationSeconds - The recipe's baseline duration in seconds.
  * @returns A {@link GtOverclockResult} describing whether the machine can start, the overclock count, and the final values.
+ * @param units - Explicit unit system for the captured environment.
  */
 export function evaluateGtOverclock(
   uiState: Record<string, unknown>,
   baseEuPerTick: number,
   workingEuPerTick: number,
-  baseDurationSeconds: number
+  baseDurationSeconds: number,
+  units: UnitSystem = new UnitSystem(DEFAULT_UNIT_SNAPSHOT)
 ): GtOverclockResult {
   const hatches = toGtHatches(uiState.energyHatches)
   const { totalEuPerTick, highestTier } = computePowerPool(hatches)
 
-  const baseTicks = Math.max(1, Math.floor(secondsToTicks(baseDurationSeconds)))
+  const baseTicks = Math.max(1, Math.floor(units.secondsToTicks(baseDurationSeconds)))
 
   const noop = (eu: number): GtOverclockResult => ({
     canStart: false, actualOverclockCount: 0,
     finalEuPerTick: eu, finalDurationScale: 1,
-    finalTicks: baseTicks, finalDurationSeconds: ticksToSeconds(baseTicks),
+    finalTicks: baseTicks, finalDurationSeconds: units.ticksToSeconds(baseTicks),
     totalEuPerTick, highestTier,
   })
 
@@ -219,7 +223,7 @@ export function evaluateGtOverclock(
   return {
     canStart: true, actualOverclockCount: oc,
     finalEuPerTick: eu, finalDurationScale: oc === 0 ? 1 : 1 / Math.pow(timeDivisor, oc),
-    finalTicks: ticks, finalDurationSeconds: ticksToSeconds(ticks),
+    finalTicks: ticks, finalDurationSeconds: units.ticksToSeconds(ticks),
     totalEuPerTick, highestTier,
   }
 }
@@ -229,10 +233,13 @@ export function evaluateGtOverclock(
  *
  * Evaluates the overclocking pipeline: if the machine's energy pool is sufficient,
  * it quadruples EU/t and reduces duration accordingly. When the machine cannot start,
- * all recipe outputs are zeroed and `machineStopped` is set to `true`.
+ * `machineStopped` is set while final port evidence remains available.
  */
 export const gtOverclockerModifier: IMachineModifier = {
+  apiVersion: 2,
+  version: 2,
   id: 'gt_overclocker',
+  after: ['gt_parallel'],
   name: 'GT Overclocker',
   compatible_archetypes: ['gt_electric'],
   ui_schema: [
@@ -245,28 +252,27 @@ export const gtOverclockerModifier: IMachineModifier = {
   ],
   renderBody: OverclockerCardBody,
   evaluate: (ctx: PipelineContext, uiState: Record<string, unknown>) => {
-    const baseEu = ctx.baseline.utilityInputs.find((r) => r.utility_type === 'energy:gt_eu')?.amount ?? 0
-    const workingEu = ctx.utilityInputs.find((r) => r.utility_type === 'energy:gt_eu')?.amount ?? 0
-    if (baseEu <= 0) return { ...ctx }
+    const baseEu = gtEuPerTick(ctx.baseline.utilityInputs, ctx.baseline.durationSeconds, ctx.units)
+    const workingEu = gtEuPerTick(ctx.utilityInputs, ctx.durationSeconds, ctx.units)
+    if (baseEu <= 0) return {}
 
     const result = evaluateGtOverclock(
       { ...uiState, energyHatches: ctx.hardwareSpecs.energyHatches },
       baseEu,
       workingEu,
-      ctx.durationSeconds
+      ctx.durationSeconds,
+      ctx.units
     )
 
     if (!result.canStart) {
-      return { ...ctx, machineStopped: true, recipeOutputs: ctx.recipeOutputs.map((r) => ({ ...r, amount: 0 })) }
+      return { machineStopped: true, reason: '供电不足，请提高能源仓电压或数量。' }
     }
 
     if (result.actualOverclockCount === 0) return {
-      ...ctx,
       durationSeconds: result.finalDurationSeconds,
     }
 
     return {
-      ...ctx,
       durationSeconds: result.finalDurationSeconds,
       utilityInputs: ctx.utilityInputs.map((r) =>
         r.utility_type === 'energy:gt_eu'

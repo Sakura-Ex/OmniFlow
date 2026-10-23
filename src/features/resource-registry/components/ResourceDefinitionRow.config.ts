@@ -10,9 +10,10 @@ export interface ColumnDef {
 
 /** Column definitions for the recipe inputs table. */
 export const RECIPE_INPUT_COLUMNS: ColumnDef[] = [
-  { id: 'category', header: '类别', width: '1fr' },
-  { id: 'id', header: 'ID', width: '1fr' },
-  { id: 'amount', header: '数量', width: '1fr' },
+  { id: 'category', header: '类别', width: 'minmax(60px, 1fr)' },
+  { id: 'id', header: 'ID', width: 'minmax(96px, 1fr)' },
+  { id: 'unit', header: '单位', width: 'minmax(44px, 70px)' },
+  { id: 'amount', header: '数量', width: 'minmax(80px, 1fr)' },
   { id: 'time_base', header: '基准', width: 'minmax(0, 56px)' },
   { id: 'probability', header: '消耗几率', width: 'minmax(0, 56px)' },
   { id: 'routing', header: '', width: 'minmax(0, 34px)' },
@@ -21,9 +22,10 @@ export const RECIPE_INPUT_COLUMNS: ColumnDef[] = [
 ]
 
 export const RECIPE_OUTPUT_COLUMNS: ColumnDef[] = [
-  { id: 'category', header: '类别', width: '1fr' },
-  { id: 'id', header: 'ID', width: '1fr' },
-  { id: 'amount', header: '数量', width: '1fr' },
+  { id: 'category', header: '类别', width: 'minmax(60px, 1fr)' },
+  { id: 'id', header: 'ID', width: 'minmax(96px, 1fr)' },
+  { id: 'unit', header: '单位', width: 'minmax(44px, 70px)' },
+  { id: 'amount', header: '数量', width: 'minmax(80px, 1fr)' },
   { id: 'time_base', header: '基准', width: 'minmax(0, 56px)' },
   { id: 'probability', header: '产出几率', width: 'minmax(0, 56px)' },
   { id: 'routing', header: '', width: 'minmax(0, 34px)' },
@@ -33,9 +35,10 @@ export const RECIPE_OUTPUT_COLUMNS: ColumnDef[] = [
 
 export const UTILITY_COLUMNS: ColumnDef[] = [
   { id: 'io_toggle', header: 'I/O', width: 'minmax(0, 34px)' },
-  { id: 'category', header: '类别', width: '1fr' },
-  { id: 'id', header: 'ID', width: '1fr' },
-  { id: 'amount', header: '数量', width: '1fr' },
+  { id: 'category', header: '类别', width: 'minmax(60px, 1fr)' },
+  { id: 'id', header: 'ID', width: 'minmax(96px, 1fr)' },
+  { id: 'unit', header: '单位', width: 'minmax(44px, 70px)' },
+  { id: 'amount', header: '数量', width: 'minmax(80px, 1fr)' },
   { id: 'time_base', header: '基准', width: 'minmax(0, 56px)' },
   { id: 'probability', header: '消耗几率', width: 'minmax(0, 56px)' },
   { id: 'routing', header: '', width: 'minmax(0, 34px)' },
@@ -45,7 +48,8 @@ export const UTILITY_COLUMNS: ColumnDef[] = [
 
 export const MACHINE_UTILITY_COLUMNS: ColumnDef[] = [
   { id: 'label', header: '设施', width: 'auto' },
-  { id: 'amount', header: '用量', width: '1fr' },
+  { id: 'unit', header: '单位', width: 'minmax(44px, 70px)' },
+  { id: 'amount', header: '用量', width: 'minmax(80px, 1fr)' },
   { id: 'spacer', header: '', width: 'auto' },
   { id: 'routing', header: '', width: '34px' },
   { id: 'delete', header: '', width: '34px' },
@@ -53,8 +57,10 @@ export const MACHINE_UTILITY_COLUMNS: ColumnDef[] = [
 ]
 
 export const ENDPOINT_COLUMNS: ColumnDef[] = [
-  { id: 'category', header: '类别', width: '1fr' },
-  { id: 'id', header: '资源 ID', width: '3fr' },
+  { id: 'category', header: '类别', width: 'minmax(60px, 1fr)' },
+  { id: 'id', header: '资源 ID', width: 'minmax(96px, 2fr)' },
+  { id: 'amount', header: '数量/秒', width: 'minmax(80px, 1fr)' },
+  { id: 'unit', header: '单位', width: '70px' },
   { id: 'routing', header: '', width: 'minmax(0, 34px)' },
   { id: 'delete', header: '', width: 'minmax(0, 34px)' },
 ]

@@ -1,3 +1,4 @@
+import { cloneSubgraph } from '@/features/canvas/cloneSubgraph'
 import { useCallback, useRef } from 'react'
 import type { MutableRefObject } from 'react'
 import type { Edge, Node } from 'reactflow'
@@ -19,14 +20,6 @@ type UseClipboardParams = {
   setEdges: (edges: Edge[]) => void
   takeSnapshot: () => void
   onDeleteSelected: () => void
-}
-
-/**
- * Generate a unique node identifier.
- * @returns A unique node ID string.
- */
-function makeId() {
-  return `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
 }
 
 /**
@@ -67,7 +60,7 @@ export function useClipboard({
     const { selectedNodes, selectedEdges } = collectSelection()
     if (selectedNodes.length === 0) return null
 
-    const recipes = useRecipeStore.getState().recipes
+    const recipes = useRecipeStore.getState().dumpAll()
     const enrichedNodes = selectedNodes.map((node) => {
       if (node.type === 'recipeNode' && recipes[node.id]) {
         return { ...node, data: recipes[node.id] }
@@ -96,33 +89,7 @@ export function useClipboard({
   const pastePayload = useCallback((payload: ClipboardPayload, offset: number) => {
     if (!payload.nodes.length) return
 
-    const idMap = new Map<string, string>()
-    const nextNodes = payload.nodes.map((node) => {
-      const nextId = makeId()
-      idMap.set(node.id, nextId)
-      const nextData =
-        node.type === 'recipeNode' && node.data?.recipe_id
-          ? { ...node.data, recipe_id: `${node.data.recipe_id}_${nextId.slice(-6)}` }
-          : node.data
-      return {
-        ...node,
-        id: nextId,
-        data: nextData,
-        position: {
-          x: node.position.x + offset,
-          y: node.position.y + offset,
-        },
-        selected: true,
-      }
-    })
-
-    const nextEdges = payload.edges.map((edge) => ({
-      ...edge,
-      id: `e-${makeId()}`,
-      source: idMap.get(edge.source) ?? edge.source,
-      target: idMap.get(edge.target) ?? edge.target,
-      selected: true,
-    }))
+    const { nodes: nextNodes, edges: nextEdges } = cloneSubgraph(payload.nodes, payload.edges, offset)
 
     const clearedNodes = nodesRef.current.map((node) => ({ ...node, selected: false }))
     const clearedEdges = edgesRef.current.map((edge) => ({ ...edge, selected: false }))

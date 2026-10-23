@@ -7,6 +7,8 @@ import type { IMachineModifier, PipelineContext } from '../modifier.types'
  * `utility_type === 'energy:gt_eu'`. Can be placed up to 4 times.
  */
 export const energyMultiplierModifier: IMachineModifier = {
+  apiVersion: 2,
+  version: 2,
   id: 'energy_multiplier',
   name: 'Energy Multiplier',
   max_placements: 4,
@@ -24,7 +26,6 @@ export const energyMultiplierModifier: IMachineModifier = {
   evaluate: (ctx: PipelineContext, uiState: Record<string, unknown>) => {
     const multiplier = Number(uiState.multiplier) || 1.0
     return {
-      ...ctx,
       utilityInputs: ctx.utilityInputs.map((r) =>
         r.utility_type === 'energy:gt_eu'
           ? { ...r, amount: r.amount * multiplier }

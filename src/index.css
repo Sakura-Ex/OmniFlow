@@ -1,28 +1,13 @@
+@import './common/styles/tokens.css';
+
 :root {
-  --bg: #07111f;
-  --bg-elevated: rgba(8, 16, 28, 0.78);
-  --panel: rgba(12, 22, 38, 0.88);
-  --panel-soft: rgba(16, 28, 48, 0.72);
-  --surface: rgba(255, 255, 255, 0.04);
-  --border: rgba(148, 163, 184, 0.18);
-  --border-strong: rgba(148, 163, 184, 0.32);
-  --text: #cbd5e1;
-  --text-strong: #f8fafc;
-  --muted: #8ca0b8;
-  --accent: #68e1fd;
-  --accent-soft: rgba(104, 225, 253, 0.14);
-  --accent-strong: #a5b4fc;
-  --shadow:
-    0 24px 80px rgba(2, 6, 23, 0.5), 0 8px 24px rgba(15, 23, 42, 0.35);
-  --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-  --sans: Inter, 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 
   color-scheme: dark;
   color: var(--text);
   background:
-    radial-gradient(circle at top, rgba(104, 225, 253, 0.16), transparent 28%),
-    radial-gradient(circle at 80% 15%, rgba(165, 180, 252, 0.14), transparent 24%),
-    linear-gradient(180deg, #06101d 0%, #091423 52%, #050b14 100%);
+    radial-gradient(circle at top, var(--accent-soft), transparent 28%),
+    radial-gradient(circle at 80% 15%, var(--accent-soft), transparent 24%),
+    linear-gradient(180deg, var(--panel-soft) 0%, var(--panel-soft) 52%, var(--panel-soft) 100%);
   font-family: var(--sans);
   font-size: 16px;
   line-height: 1.5;
@@ -67,31 +52,17 @@ select {
   overflow: hidden;
   color-scheme: dark;
   background:
-    radial-gradient(circle at top, rgba(104, 225, 253, 0.16), transparent 28%),
-    radial-gradient(circle at 80% 15%, rgba(165, 180, 252, 0.14), transparent 24%),
-    linear-gradient(180deg, #06101d 0%, #091423 52%, #050b14 100%);
+    radial-gradient(circle at top, var(--accent-soft), transparent 28%),
+    radial-gradient(circle at 80% 15%, var(--accent-soft), transparent 24%),
+    linear-gradient(180deg, var(--panel-soft) 0%, var(--panel-soft) 52%, var(--panel-soft) 100%);
 }
 
 .app-shell[data-theme='light'] {
-  --bg: #f6f9fc;
-  --bg-elevated: rgba(255, 255, 255, 0.88);
-  --panel: rgba(255, 255, 255, 0.94);
-  --panel-soft: rgba(243, 247, 252, 0.92);
-  --surface: rgba(255, 255, 255, 0.92);
-  --border: rgba(15, 23, 42, 0.12);
-  --border-strong: rgba(15, 23, 42, 0.22);
-  --text: #334155;
-  --text-strong: #0f172a;
-  --muted: #64748b;
-  --accent: #0284c7;
-  --accent-soft: rgba(2, 132, 199, 0.12);
-  --accent-strong: #0369a1;
-  --shadow: 0 20px 48px rgba(15, 23, 42, 0.14), 0 6px 18px rgba(15, 23, 42, 0.08);
   color-scheme: light;
   background:
-    radial-gradient(circle at top, rgba(56, 189, 248, 0.16), transparent 30%),
-    radial-gradient(circle at 82% 16%, rgba(14, 165, 233, 0.1), transparent 26%),
-    linear-gradient(180deg, #f9fcff 0%, #f2f7fd 54%, #eef4fb 100%);
+    radial-gradient(circle at top, var(--accent-soft), transparent 30%),
+    radial-gradient(circle at 82% 16%, var(--accent-soft), transparent 26%),
+    linear-gradient(180deg, var(--surface) 0%, var(--surface) 54%, var(--surface) 100%);
 }
 
 .app-shell::before,
@@ -110,7 +81,7 @@ select {
   height: 28rem;
   top: -10rem;
   left: -6rem;
-  background: rgba(104, 225, 253, 0.08);
+  background: var(--accent-soft);
 }
 
 .app-shell::after {
@@ -118,7 +89,7 @@ select {
   height: 24rem;
   right: -8rem;
   bottom: -7rem;
-  background: rgba(165, 180, 252, 0.08);
+  background: var(--accent-soft);
 }
 
 .app-hud {
@@ -130,7 +101,7 @@ select {
   padding: 20px 22px;
   border: 1px solid var(--border);
   border-radius: 20px;
-  background: linear-gradient(180deg, rgba(10, 18, 31, 0.92), rgba(10, 18, 31, 0.72));
+  background: linear-gradient(180deg, var(--panel-soft), var(--panel-soft));
   box-shadow: var(--shadow);
   backdrop-filter: blur(18px);
 }
@@ -164,8 +135,8 @@ select {
 
 .canvas-shell .react-flow {
   background:
-    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.04), transparent 36%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0.01));
+    radial-gradient(circle at 50% 0%, var(--surface), transparent 36%),
+    linear-gradient(180deg, var(--surface), var(--surface));
 }
 
 .canvas-shell .react-flow__renderer {
@@ -182,13 +153,13 @@ select {
 .canvas-shell .react-flow__controls-button {
   width: 36px;
   height: 36px;
-  background: rgba(10, 18, 31, 0.9);
+  background: var(--panel-soft);
   border-bottom: 1px solid var(--border);
   color: var(--text-strong);
 }
 
 .canvas-shell .react-flow__controls-button:hover {
-  background: rgba(18, 28, 46, 0.95);
+  background: var(--panel-soft);
 }
 
 .canvas-shell .react-flow__controls-button svg {
@@ -198,9 +169,9 @@ select {
 .canvas-shell .react-flow__handle {
   width: 12px;
   height: 12px;
-  border: 2px solid rgba(8, 16, 28, 0.95);
+  border: 2px solid var(--border);
   background: var(--accent);
-  box-shadow: 0 0 0 4px rgba(104, 225, 253, 0.18);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .canvas-shell .react-flow__handle-right {
@@ -226,10 +197,10 @@ select {
   gap: 12px;
   padding: 8px 12px;
   border-radius: 14px;
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--panel-soft);
   backdrop-filter: blur(12px) saturate(140%);
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 32px var(--shadow-color);
 }
 
 .menu-bar {
@@ -243,10 +214,10 @@ select {
   gap: 10px;
   padding: 8px 12px;
   border-radius: 14px;
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--panel-soft);
   backdrop-filter: blur(12px) saturate(140%);
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 32px var(--shadow-color);
 }
 
 .menu-group--theme {
@@ -254,8 +225,8 @@ select {
 }
 
 .menu-button--theme {
-  border-color: rgba(148, 163, 184, 0.26);
-  background: rgba(148, 163, 184, 0.1);
+  border-color: var(--border);
+  background: var(--surface);
 }
 
 .menu-group {
@@ -280,20 +251,20 @@ select {
 }
 
 .menu-button:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface);
   color: var(--text-strong);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--border);
 }
 
 .menu-button--primary {
-  background: rgba(104, 225, 253, 0.15);
+  background: var(--accent-soft);
   color: var(--accent);
-  border-color: rgba(104, 225, 253, 0.3);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
 .menu-button--primary:hover {
-  background: rgba(104, 225, 253, 0.25);
-  box-shadow: 0 0 12px rgba(104, 225, 253, 0.2);
+  background: var(--accent-soft);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .menu-caret {
@@ -308,9 +279,9 @@ select {
   min-width: 190px;
   padding: 8px;
   border-radius: 12px;
-  background: rgba(12, 18, 31, 0.96);
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.48);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 40px var(--shadow-color);
   display: grid;
   gap: 4px;
 }
@@ -332,14 +303,14 @@ select {
 }
 
 .menu-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface);
   color: var(--text-strong);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--border);
 }
 
 .menu-divider {
   height: 1px;
-  background: rgba(148, 163, 184, 0.16);
+  background: var(--surface);
   margin: 4px 0;
 }
 
@@ -367,197 +338,197 @@ select {
   min-width: 190px;
   padding: 8px;
   border-radius: 12px;
-  background: rgba(12, 18, 31, 0.98);
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.48);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 40px var(--shadow-color);
   display: none;
   gap: 4px;
 }
 
 .app-shell[data-theme='light'] .canvas-shell .react-flow {
-  background: linear-gradient(160deg, #f7faff 0%, #eef4fb 100%);
+  background: linear-gradient(160deg, var(--surface) 0%, var(--surface) 100%);
 }
 
 .app-shell[data-theme='light'] .canvas-shell .react-flow__controls {
-  border-color: rgba(15, 23, 42, 0.16);
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.14);
+  border-color: var(--border);
+  box-shadow: 0 10px 26px var(--shadow-color);
 }
 
 .app-shell[data-theme='light'] .canvas-shell .react-flow__controls-button {
-  background: rgba(255, 255, 255, 0.95);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.1);
-  color: #0f172a;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
 }
 
 .app-shell[data-theme='light'] .canvas-shell .react-flow__controls-button:hover {
-  background: rgba(241, 245, 249, 0.98);
+  background: var(--surface);
 }
 
 .app-shell[data-theme='light'] .menu-bar {
-  background: rgba(255, 255, 255, 0.8);
-  border-color: rgba(15, 23, 42, 0.14);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: 0 12px 30px var(--shadow-color);
 }
 
 .app-shell[data-theme='light'] .menu-button:hover {
-  background: rgba(15, 23, 42, 0.06);
-  border-color: rgba(15, 23, 42, 0.14);
+  background: var(--surface);
+  border-color: var(--border);
 }
 
 .app-shell[data-theme='light'] .menu-button--primary {
-  background: rgba(2, 132, 199, 0.12);
-  color: #0369a1;
-  border-color: rgba(2, 132, 199, 0.3);
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
 .app-shell[data-theme='light'] .menu-dropdown,
 .app-shell[data-theme='light'] .menu-submenu-dropdown {
-  background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(15, 23, 42, 0.12);
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.16);
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: 0 16px 36px var(--shadow-color);
 }
 
 .app-shell[data-theme='light'] .menu-item:hover {
-  background: rgba(15, 23, 42, 0.06);
-  border-color: rgba(15, 23, 42, 0.12);
+  background: var(--surface);
+  border-color: var(--border);
 }
 
 .app-shell[data-theme='light'] .system-hud__panel {
-  background: rgba(255, 255, 255, 0.86);
+  background: var(--surface);
   border: none;
-  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.14);
+  box-shadow: 0 14px 32px var(--shadow-color);
 }
 
 .app-shell[data-theme='light'] .system-hud__panel--inputs {
-  border-left: 2px solid rgba(34, 211, 238, 0.8);
+  border-left: 2px solid color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
 .app-shell[data-theme='light'] .system-hud__panel--outputs {
-  border-right: 2px solid rgba(251, 146, 60, 0.8);
+  border-right: 2px solid color-mix(in srgb, var(--warning) 45%, var(--border));
 }
 
 .app-shell[data-theme='light'] .system-hud__toggle {
-  background: rgba(241, 245, 249, 0.85);
-  border-color: rgba(15, 23, 42, 0.16);
+  background: var(--surface);
+  border-color: var(--border);
 }
 
 .app-shell[data-theme='light'] .source-node,
 .app-shell[data-theme='light'] .target-node,
 .app-shell[data-theme='light'] .recipe-node {
-  color: #0f172a;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05), 0 8px 24px rgba(15, 23, 42, 0.07);
+  color: var(--muted);
+  box-shadow: 0 2px 6px var(--shadow-color), 0 8px 24px var(--shadow-color);
 }
 
 /* ── Source node (teal) ── */
 .app-shell[data-theme='light'] .source-node {
-  background: linear-gradient(180deg, #ffffff, #f0fdfa);
-  border-color: rgba(20, 184, 166, 0.4);
+  background: linear-gradient(180deg, var(--surface), var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
 .app-shell[data-theme='light'] .source-node--auto {
-  background: linear-gradient(180deg, #f0fdfa, #e0faf5);
-  border-color: rgba(20, 184, 166, 0.48);
+  background: linear-gradient(180deg, var(--surface), var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
 .app-shell[data-theme='light'] .react-flow__node.selected .source-node {
-  border-color: #14b8a6;
-  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2), 0 8px 24px rgba(15, 23, 42, 0.08);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent), 0 8px 24px var(--shadow-color);
 }
 
 .app-shell[data-theme='light'] .source-node__header {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.0));
-  border-bottom-color: rgba(20, 184, 166, 0.2);
+  background: linear-gradient(180deg, var(--surface), transparent);
+  border-bottom-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
 .app-shell[data-theme='light'] .source-node__kicker {
-  color: #0d9488;
+  color: var(--accent);
 }
 
 .app-shell[data-theme='light'] .source-node__auto-btn {
-  border-color: rgba(20, 184, 166, 0.3);
-  background: rgba(20, 184, 166, 0.06);
-  color: #94a3b8;
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: var(--accent-soft);
+  color: var(--muted);
 }
 
 .app-shell[data-theme='light'] .source-node__auto-btn:hover {
-  color: #0d9488;
-  border-color: rgba(20, 184, 166, 0.5);
-  background: rgba(20, 184, 166, 0.1);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: var(--accent-soft);
 }
 
 .app-shell[data-theme='light'] .source-node__auto-btn.is-active {
-  background: rgba(20, 184, 166, 0.12);
-  border-color: rgba(20, 184, 166, 0.45);
-  color: #0d9488;
-  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.1);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .app-shell[data-theme='light'] .source-node__row-label--auto {
-  color: #0d9488;
+  color: var(--accent);
 }
 
 /* ── Target node (orange) ── */
 .app-shell[data-theme='light'] .target-node {
-  background: linear-gradient(180deg, #ffffff, #fff7ed);
-  border-color: rgba(249, 115, 22, 0.38);
+  background: linear-gradient(180deg, var(--surface), var(--surface));
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
 }
 
 .app-shell[data-theme='light'] .target-node--auto {
-  background: linear-gradient(180deg, #fff7ed, #ffeedd);
-  border-color: rgba(249, 115, 22, 0.45);
+  background: linear-gradient(180deg, var(--surface), var(--surface));
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
 }
 
 .app-shell[data-theme='light'] .react-flow__node.selected .target-node {
-  border-color: #f97316;
-  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2), 0 8px 24px rgba(15, 23, 42, 0.08);
+  border-color: var(--warning);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--warning) 25%, transparent), 0 8px 24px var(--shadow-color);
 }
 
 .app-shell[data-theme='light'] .target-node__header {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.0));
-  border-bottom-color: rgba(249, 115, 22, 0.2);
+  background: linear-gradient(180deg, var(--surface), transparent);
+  border-bottom-color: color-mix(in srgb, var(--warning) 45%, var(--border));
 }
 
 .app-shell[data-theme='light'] .target-node__kicker {
-  color: #ea6c0f;
+  color: var(--warning);
 }
 
 .app-shell[data-theme='light'] .target-node__auto-btn {
-  border-color: rgba(249, 115, 22, 0.3);
-  background: rgba(249, 115, 22, 0.06);
-  color: #94a3b8;
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
+  background: var(--warning-soft);
+  color: var(--muted);
 }
 
 .app-shell[data-theme='light'] .target-node__auto-btn:hover {
-  color: #f97316;
-  border-color: rgba(249, 115, 22, 0.5);
-  background: rgba(249, 115, 22, 0.1);
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
+  background: var(--warning-soft);
 }
 
 .app-shell[data-theme='light'] .target-node__auto-btn.is-active {
-  background: rgba(249, 115, 22, 0.12);
-  border-color: rgba(249, 115, 22, 0.45);
-  color: #f97316;
-  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.1);
+  background: var(--warning-soft);
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
+  color: var(--warning);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--warning) 25%, transparent);
 }
 
 .app-shell[data-theme='light'] .target-node__row-label--auto {
-  color: #ea6c0f;
+  color: var(--warning);
 }
 
 /* ── Recipe node ── */
 .app-shell[data-theme='light'] .recipe-node {
-  background: linear-gradient(180deg, #ffffff, #f8fafc);
-  border-color: rgba(100, 116, 139, 0.2);
+  background: linear-gradient(180deg, var(--surface), var(--surface));
+  border-color: var(--border);
 }
 
 .app-shell[data-theme='light'] .recipe-node--auto {
-  background: linear-gradient(180deg, #f8fafc, #eef2f8);
-  border-color: rgba(100, 116, 139, 0.35);
+  background: linear-gradient(180deg, var(--surface), var(--surface));
+  border-color: var(--border);
 }
 
 .app-shell[data-theme='light'] .recipe-node__header {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.0));
-  border-bottom-color: rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, var(--surface), transparent);
+  border-bottom-color: var(--border);
 }
 
 .app-shell[data-theme='light'] .source-node__input,
@@ -566,83 +537,83 @@ select {
 .app-shell[data-theme='light'] .recipe-editor__field input,
 .app-shell[data-theme='light'] .recipe-editor__row input,
 .app-shell[data-theme='light'] .recipe-editor__row select {
-  background: #f8fafc;
-  color: #0f172a;
-  border-color: rgba(15, 23, 42, 0.18);
+  background: var(--input-bg);
+  color: var(--muted);
+  border-color: var(--border);
 }
 
 .app-shell[data-theme='light'] .source-node__input {
-  background: rgba(255, 255, 255, 0.72);
-  border-color: rgba(20, 184, 166, 0.35);
+  background: var(--input-bg);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
 .app-shell[data-theme='light'] .target-node__input {
-  background: rgba(255, 255, 255, 0.72);
-  border-color: rgba(249, 115, 22, 0.35);
+  background: var(--input-bg);
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
 }
 
 .app-shell[data-theme='light'] .source-node__input--auto,
 .app-shell[data-theme='light'] .target-node__input--auto,
 .app-shell[data-theme='light'] .recipe-node__machine-input--auto {
-  background: rgba(241, 245, 249, 0.96);
-  color: #64748b;
+  background: var(--input-bg);
+  color: var(--muted);
 }
 
 .app-shell[data-theme='light'] .recipe-node__port-amount,
 .app-shell[data-theme='light'] .recipe-node__port-rate,
 .app-shell[data-theme='light'] .system-hud__value {
-  color: #334155;
+  color: var(--muted);
 }
 
 .app-shell[data-theme='light'] .recipe-node__select {
-  background: rgba(255, 255, 255, 0.96);
-  color: #0f172a;
-  border-color: rgba(15, 23, 42, 0.24);
+  background: var(--input-bg);
+  color: var(--muted);
+  border-color: var(--border);
 }
 
 .app-shell[data-theme='light'] .recipe-node__select option {
-  background-color: #ffffff;
-  color: #0f172a;
+  background-color: var(--input-bg);
+  color: var(--muted);
 }
 
 .app-shell[data-theme='light'] .react-flow__edge.custom-edge-item .react-flow__edge-path {
-  stroke: #94a3b8 !important;
+  stroke: var(--edge-default) !important;
 }
 
 .app-shell[data-theme='light'] .react-flow__edge.custom-edge-fluid .react-flow__edge-path {
-  stroke: #4ddcff !important;
+  stroke: var(--accent) !important;
 }
 
 .app-shell[data-theme='light'] .recipe-node__handle--item {
-  background-color: #94a3b8 !important;
-  border-color: #94a3b8 !important;
-  box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.24) !important;
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 0 0 4px var(--shadow-color) !important;
 }
 
 .app-shell[data-theme='light'] .recipe-node__handle--fluid {
-  background-color: #4ddcff !important;
-  border-color: #4ddcff !important;
-  box-shadow: 0 0 0 4px rgba(77, 220, 255, 0.26) !important;
+  background-color: var(--accent-soft) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent) !important;
 }
 
 .app-shell[data-theme='light'] .recipe-node__controls {
-  background: linear-gradient(180deg, rgba(245, 249, 255, 0.98), rgba(238, 245, 255, 0.98));
-  border-top-color: rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, var(--surface), var(--surface));
+  border-top-color: var(--border);
 }
 
 .app-shell[data-theme='light'] .recipe-node__footer {
-  background: linear-gradient(180deg, rgba(247, 250, 255, 0.99), rgba(241, 246, 255, 0.99));
-  border-top-color: rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, var(--surface), var(--surface));
+  border-top-color: var(--border);
 }
 
 .app-shell[data-theme='light'] .recipe-editor__overlay {
-  background: rgba(241, 245, 249, 0.72);
+  background: var(--overlay);
 }
 
 .app-shell[data-theme='light'] .recipe-editor__modal {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(244, 248, 255, 0.99));
-  border-color: rgba(15, 23, 42, 0.16);
-  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.18);
+  background: linear-gradient(180deg, var(--surface), var(--surface));
+  border-color: var(--border);
+  box-shadow: 0 24px 56px var(--shadow-color);
 }
 
 .toolbar-group {
@@ -654,7 +625,7 @@ select {
 .toolbar-divider {
   width: 1px;
   height: 24px;
-  background: rgba(148, 163, 184, 0.2);
+  background: var(--surface);
 }
 
 .toolbar-btn {
@@ -675,21 +646,21 @@ select {
 }
 
 .toolbar-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface);
   color: var(--text-strong);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--border);
 }
 
 .toolbar-btn--primary {
-  background: rgba(104, 225, 253, 0.15);
+  background: var(--accent-soft);
   color: var(--accent);
-  border-color: rgba(104, 225, 253, 0.3);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
   font-weight: 600;
 }
 
 .toolbar-btn--primary:hover {
-  background: rgba(104, 225, 253, 0.25);
-  box-shadow: 0 0 12px rgba(104, 225, 253, 0.2);
+  background: var(--accent-soft);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .canvas-shell .react-flow__edge-path {
@@ -699,19 +670,19 @@ select {
 .react-flow__edge.custom-edge-item:hover .react-flow__edge-path,
 .react-flow__edge.custom-edge-item.selected .react-flow__edge-path {
   stroke-width: 4 !important;
-  filter: drop-shadow(0 0 6px rgba(229, 231, 235, 0.8));
+  filter: drop-shadow(0 0 6px var(--shadow-color));
 }
 
 .react-flow__edge.custom-edge-fluid:hover .react-flow__edge-path,
 .react-flow__edge.custom-edge-fluid.selected .react-flow__edge-path {
   stroke-width: 4 !important;
-  filter: drop-shadow(0 0 6px rgba(77, 220, 255, 0.8));
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 25%, transparent));
 }
 
 .ft-btn {
   color: var(--text-strong);
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(148,163,184,0.06);
+  background: var(--surface);
+  border: 1px solid var(--border);
   padding: 8px 12px;
   border-radius: 10px;
   cursor: pointer;
@@ -719,8 +690,8 @@ select {
 }
 
 .ft-btn:hover {
-  background: rgba(104,225,253,0.06);
-  border-color: rgba(104,225,253,0.14);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
 @media (max-width: 768px) {

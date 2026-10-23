@@ -1,3 +1,8 @@
+import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
+import { legacyUnit } from '@/common/units/defaults'
+import type { UnitExpression } from '@/common/types/units'
+import { defaultResourceUnit } from '@/common/units/defaults'
+import { UnitExpressionEditor } from './UnitExpressionEditor'
 import { useState, useRef } from 'react'
 import type { TimeBase } from '@/common/types/resource'
 import type { ColumnDef } from './ResourceDefinitionRow.config'
@@ -10,6 +15,8 @@ import styles from './ResourceDefinitionRow.module.css'
  *
  */
 type RowItem = {
+  unit?: UnitExpression
+  displayUnit?: UnitExpression
   category?: string
   id?: string
   amount?: number
@@ -104,6 +111,10 @@ export function ResourceDefinitionRow({
   probabilityLocked,
   ioToggleLocked,
 }: ResourceDefinitionRowProps) {
+  const categoryDefinitions = useGlobalResourceTable((s) => s.categories)
+  const unitOverrides = useGlobalResourceTable((s) => s.overrides)
+  const declaredLabel = unitOverrides[`${item.category}:${item.id}`]?.unit_override ?? categoryDefinitions[item.category ?? 'item']?.base_unit
+  const expression = item.unit ?? (declaredLabel ? legacyUnit(declaredLabel) : defaultResourceUnit(item.category ?? 'item', item.id ?? ''))
   const [showSuggestions, setShowSuggestions] = useState(false)
   const idInputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -135,20 +146,7 @@ export function ResourceDefinitionRow({
                 />
                 {showSuggestions && filteredSuggestions.length > 0 && (
                   <div
-                    style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      marginTop: 2,
-                      minWidth: '100%',
-                      width: 280,
-                      backgroundColor: 'rgba(3, 8, 16, 1)',
-                      border: '1px solid rgba(148, 163, 184, 0.3)',
-                      borderRadius: 8,
-                      maxHeight: 160,
-                      overflowY: 'auto',
-                      zIndex: 20,
-                    }}
+                    className={styles.suggestions}
                   >
                     {filteredSuggestions.map((s) => (
                       <div
@@ -161,12 +159,7 @@ export function ResourceDefinitionRow({
                           onUpdate(index, { id: name, category: cat })
                           setShowSuggestions(false)
                         }}
-                        style={{
-                          padding: '6px 10px',
-                          cursor: 'pointer',
-                          fontSize: 12,
-                          borderBottom: '1px solid rgba(148, 163, 184, 0.1)',
-                        }}
+                        className={styles.suggestion}
                       >
                         {s}
                       </div>
@@ -176,9 +169,12 @@ export function ResourceDefinitionRow({
               </div>
             )
 
+          case 'unit':
+            return <UnitExpressionEditor key={col.id} expression={expression} amount={item.amount ?? 0} displayExpression={item.displayUnit} onDisplayChange={(displayUnit) => onUpdate(index, { displayUnit })} onChange={(unit, amount) => onUpdate(index, { unit, amount })} />
+
           case 'amount':
             return (
-              <div className={styles['input-wrap']} key={col.id}>
+              <div className={styles['input-wrap']} data-has-suffix={!!unitSuffix} key={col.id}>
                 <input
                   type="number"
                   min={0}

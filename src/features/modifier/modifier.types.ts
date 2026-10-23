@@ -1,3 +1,4 @@
+import type { UnitSystem } from '@/common/units/UnitSystem'
 import type { Resource } from '@/common/types/resource'
 import type { ValueOf } from '@/common/types/common'
 import type { ReactNode, FC } from 'react'
@@ -33,30 +34,32 @@ export interface ModifierUIConfig {
   step?: number
 }
 
-/** Mutable context object threaded through the modifier evaluation pipeline.
-Each modifier reads and mutates this context to apply its effects. */
+/** Read-only snapshot. Plugins return effects; only the pipeline applies changes. */
 export interface PipelineContext {
+  readonly instanceId: string
+  readonly units: UnitSystem
+  readonly actualParallel: number
   /** Recipe material inputs (ingredients) after modifier transformations. */
-  recipeInputs: Resource[]
+  readonly recipeInputs: readonly Readonly<Resource>[]
   /** Recipe product outputs after modifier transformations. */
-  recipeOutputs: Resource[]
+  readonly recipeOutputs: readonly Readonly<Resource>[]
   /** Utility inputs (e.g. energy, fluids) after modifier transformations. */
-  utilityInputs: Resource[]
+  readonly utilityInputs: readonly Readonly<Resource>[]
   /** Utility outputs (e.g. byproduct energy, waste) after modifier transformations. */
-  utilityOutputs: Resource[]
+  readonly utilityOutputs: readonly Readonly<Resource>[]
   /** Current duration in seconds after modifier transformations. */
-  durationSeconds: number
-  /** Whether the machine should be considered stopped (outputs zeroed). */
-  machineStopped: boolean
+  readonly durationSeconds: number
+  /** Explicit eligibility state; port evidence remains available when stopped. */
+  readonly machineStopped: boolean
   /** Machine hardware specifications (e.g. energy hatches, tier data). */
-  hardwareSpecs: Record<string, unknown>
+  readonly hardwareSpecs: Readonly<Record<string, unknown>>
   /** Snapshot of the context before any modifiers were applied (untransformed baseline). */
-  baseline: {
-    recipeInputs: Resource[]
-    recipeOutputs: Resource[]
-    utilityInputs: Resource[]
-    utilityOutputs: Resource[]
-    durationSeconds: number
+  readonly baseline: {
+    readonly recipeInputs: readonly Readonly<Resource>[]
+    readonly recipeOutputs: readonly Readonly<Resource>[]
+    readonly utilityInputs: readonly Readonly<Resource>[]
+    readonly utilityOutputs: readonly Readonly<Resource>[]
+    readonly durationSeconds: number
   }
 }
 
@@ -90,6 +93,10 @@ export interface ModifierCardRenderProps {
 export interface IMachineModifier {
   /** Unique identifier for this modifier (e.g. `gt_overclocker`). */
   id: string
+  apiVersion: 2
+  version: number
+  after?: string[]
+  requires?: string[]
   /** Human-readable display name. */
   name: string
   /** UI schema describing the controls shown in the modifier card. */
@@ -101,8 +108,20 @@ export interface IMachineModifier {
   /** Core evaluation function that transforms the pipeline context given the current UI state. */
   evaluate: (
     ctx: PipelineContext,
-    uiState: Record<string, unknown>
-  ) => PipelineContext
+    uiState: Readonly<Record<string, unknown>>
+  ) => ModifierEffect
   /** Optional custom card body renderer for complex modifier UIs. Falls back to auto-generated controls when omitted. */
   renderBody?: (props: ModifierCardRenderProps) => ReactNode
+}
+
+/** Declarative replacement effects; only the pipeline applies them. */
+export interface ModifierEffect {
+  recipeInputs?: readonly Readonly<Resource>[]
+  recipeOutputs?: readonly Readonly<Resource>[]
+  utilityInputs?: readonly Readonly<Resource>[]
+  utilityOutputs?: readonly Readonly<Resource>[]
+  durationSeconds?: number
+  actualParallel?: number
+  machineStopped?: boolean
+  reason?: string
 }
