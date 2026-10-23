@@ -1,3 +1,5 @@
+import { t, useTranslation } from '@/common/i18n'
+import { Icon } from '@/common/components/Icon'
 import { useState, useMemo } from 'react'
 import type { SourceNodeData, TargetNodeData, EndpointPort } from '@/common/types/recipe'
 import type { EndpointEditorTarget } from '@/features/canvas/contexts/EndpointEditorContext'
@@ -31,6 +33,7 @@ type Props = {
  * @returns Rendered JSX element for the endpoint editor modal, or null if no node is provided.
  */
 export function EndpointEditorModal({ node, onClose, onSave }: Props) {
+  useTranslation()
   const resourceIndex = useGlobalResourceTable((state) => state.entries)
   const registryCategories = useGlobalResourceTable((state) => state.categories)
   const categoryOptions = useMemo(
@@ -85,18 +88,18 @@ export function EndpointEditorModal({ node, onClose, onSave }: Props) {
       <div className={`${modalStyles.panel} ${styles['ep-editor__modal']}`}>
         <header className={modalStyles.header}>
           <div>
-            <p className={modalStyles.eyebrow}>{isSource ? 'INPUT SOURCE' : 'OUTPUT DEMAND'}</p>
-            <h3 className={styles['ep-editor__title']}>端点设置</h3>
+            <p className={modalStyles.eyebrow}>{isSource ? t('canvas.supply_resources') : t('canvas.demand_resources')}</p>
+            <h3 className={styles['ep-editor__title']}>{t('canvas.edit_resources')}</h3>
           </div>
-          <button className={modalStyles.closeBtn} onClick={onClose} title="关闭">✕</button>
+          <button className={modalStyles.closeBtn} onClick={onClose} title={t('canvas.close')}><Icon name="close" /></button>
         </header>
 
         <div className={styles['ep-editor__body']}>
           <ResourceDefinitionList<EndpointPort>
             items={ports}
             columns={ENDPOINT_COLUMNS}
-            emptyMessage="暂无资源"
-            addLabel="添加资源"
+            emptyMessage={t('canvas.no_resources')}
+            addLabel={t('canvas.add_resource')}
             onUpdateItem={handleUpdatePort}
             onAddItem={handleAddPort}
             onRemoveItem={handleRemovePort}
@@ -109,8 +112,8 @@ export function EndpointEditorModal({ node, onClose, onSave }: Props) {
         </div>
 
         <footer className={styles['ep-editor__footer']}>
-          <button className={`${styles['ep-editor__btn']} ${styles['ep-editor__btn--cancel']}`} onClick={onClose}>取消</button>
-          <button className={`${styles['ep-editor__btn']} ${styles['ep-editor__btn--save']}`} onClick={handleSave}>保存</button>
+          <button className={`${styles['ep-editor__btn']} ${styles['ep-editor__btn--cancel']}`} onClick={onClose}>{t('canvas.cancel')}</button>
+          <button className={`${styles['ep-editor__btn']} ${styles['ep-editor__btn--save']}`} onClick={handleSave}>{t('canvas.save')}</button>
         </footer>
       </div>
     </div>

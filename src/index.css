@@ -31,7 +31,7 @@ body,
 
 body {
   min-height: 100svh;
-  overflow: hidden;
+  overflow: clip;
 }
 
 button,
@@ -49,7 +49,7 @@ select {
   position: relative;
   width: 100%;
   height: 100svh;
-  overflow: hidden;
+  overflow: clip;
   color-scheme: dark;
   background:
     radial-gradient(circle at top, var(--accent-soft), transparent 28%),
@@ -129,11 +129,14 @@ select {
 }
 
 .canvas-shell {
+  position: relative;
   width: 100%;
   height: 100%;
 }
 
 .canvas-shell .react-flow {
+  /* Canvas panning owns the viewport; focused nodes must not scroll its container. */
+  overflow: clip !important;
   background:
     radial-gradient(circle at 50% 0%, var(--surface), transparent 36%),
     linear-gradient(180deg, var(--surface), var(--surface));
@@ -203,148 +206,6 @@ select {
   box-shadow: 0 8px 32px var(--shadow-color);
 }
 
-.menu-bar {
-  position: absolute;
-  z-index: 50;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-radius: 14px;
-  background: var(--panel-soft);
-  backdrop-filter: blur(12px) saturate(140%);
-  border: 1px solid var(--border);
-  box-shadow: 0 8px 32px var(--shadow-color);
-}
-
-.menu-group--theme {
-  margin-left: 6px;
-}
-
-.menu-button--theme {
-  border-color: var(--border);
-  background: var(--surface);
-}
-
-.menu-group {
-  position: relative;
-}
-
-.menu-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  font-size: 13px;
-  font-weight: 600;
-  outline: none;
-}
-
-.menu-button:hover {
-  background: var(--surface);
-  color: var(--text-strong);
-  border-color: var(--border);
-}
-
-.menu-button--primary {
-  background: var(--accent-soft);
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-}
-
-.menu-button--primary:hover {
-  background: var(--accent-soft);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 25%, transparent);
-}
-
-.menu-caret {
-  font-size: 11px;
-  opacity: 0.7;
-}
-
-.menu-dropdown {
-  position: absolute;
-  top: calc(100% + 10px);
-  left: 0;
-  min-width: 190px;
-  padding: 8px;
-  border-radius: 12px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  box-shadow: 0 18px 40px var(--shadow-color);
-  display: grid;
-  gap: 4px;
-}
-
-.menu-item {
-  width: 100%;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text);
-  border-radius: 8px;
-  padding: 8px 10px;
-  text-align: left;
-  font-size: 13px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.menu-item:hover {
-  background: var(--surface);
-  color: var(--text-strong);
-  border-color: var(--border);
-}
-
-.menu-divider {
-  height: 1px;
-  background: var(--surface);
-  margin: 4px 0;
-}
-
-.menu-submenu {
-  position: relative;
-}
-
-.menu-submenu::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: -10px;
-  width: 10px;
-  height: 100%;
-}
-
-.menu-submenu:hover > .menu-submenu-dropdown {
-  display: grid;
-}
-
-.menu-submenu-dropdown {
-  position: absolute;
-  top: 0;
-  left: calc(100% + 8px);
-  min-width: 190px;
-  padding: 8px;
-  border-radius: 12px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  box-shadow: 0 18px 40px var(--shadow-color);
-  display: none;
-  gap: 4px;
-}
-
 .app-shell[data-theme='light'] .canvas-shell .react-flow {
   background: linear-gradient(160deg, var(--surface) 0%, var(--surface) 100%);
 }
@@ -362,35 +223,6 @@ select {
 
 .app-shell[data-theme='light'] .canvas-shell .react-flow__controls-button:hover {
   background: var(--surface);
-}
-
-.app-shell[data-theme='light'] .menu-bar {
-  background: var(--surface);
-  border-color: var(--border);
-  box-shadow: 0 12px 30px var(--shadow-color);
-}
-
-.app-shell[data-theme='light'] .menu-button:hover {
-  background: var(--surface);
-  border-color: var(--border);
-}
-
-.app-shell[data-theme='light'] .menu-button--primary {
-  background: var(--accent-soft);
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-}
-
-.app-shell[data-theme='light'] .menu-dropdown,
-.app-shell[data-theme='light'] .menu-submenu-dropdown {
-  background: var(--surface);
-  border-color: var(--border);
-  box-shadow: 0 16px 36px var(--shadow-color);
-}
-
-.app-shell[data-theme='light'] .menu-item:hover {
-  background: var(--surface);
-  border-color: var(--border);
 }
 
 .app-shell[data-theme='light'] .system-hud__panel {

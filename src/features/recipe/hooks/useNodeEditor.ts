@@ -1,3 +1,5 @@
+import { configureEndpointPorts } from '@/features/calculation/endpointConfiguration'
+import { useSettingsStore } from '@/features/settings/settings.store'
 import { useCallback, useState } from 'react'
 import type { Node } from 'reactflow'
 import type { EndpointRole, RecipeNodeData, SourceNodeData, TargetNodeData } from '@/common/types/recipe'
@@ -6,6 +8,7 @@ import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { useCanvasStore } from '@/features/canvas/canvas.store'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 import { buildResourceId, DEFAULT_RESOURCE_CATEGORY } from '@/common/utils/resourceId'
+import { disconnectNewGlobalPorts, editableRoutingPorts } from '../routingTransitions'
 
 /**
  *
@@ -47,7 +50,12 @@ export function useNodeEditor({ setNodes, takeSnapshot, updateNodeInternals }: U
 
   const handleSaveEditor = useCallback((id: string, data: RecipeNodeData) => {
     takeSnapshot()
+    const previous = useRecipeStore.getState().recipes[id]
     useRecipeStore.getState().setRecipe(id, data)
+    const saved = useRecipeStore.getState().recipes[id]
+    const canvas = useCanvasStore.getState()
+    const nextEdges = disconnectNewGlobalPorts(id, previous ? editableRoutingPorts('recipeNode', previous) : [], editableRoutingPorts('recipeNode', saved), canvas.edges)
+    if (nextEdges !== canvas.edges) canvas.setEdges(nextEdges)
     const prev = useCanvasStore.getState().nodes
     setNodes(prev.map((node) =>
       node.id === id ? { ...node, data: { ...node.data, label: data.machine_name } } : node
@@ -66,6 +74,7 @@ export function useNodeEditor({ setNodes, takeSnapshot, updateNodeInternals }: U
 
   const handleSaveEndpoint = useCallback((id: string, patch: Partial<SourceNodeData & TargetNodeData>) => {
     takeSnapshot()
+    const previous = useCanvasStore.getState().nodes.find(node => node.id === id)
     const ports = patch.ports
     const grt = useGlobalResourceTable.getState()
     if (Array.isArray(ports)) {
@@ -79,6 +88,13 @@ export function useNodeEditor({ setNodes, takeSnapshot, updateNodeInternals }: U
     setNodes(prev.map((node) =>
       node.id !== id ? node : { ...node, data: { ...node.data, ...patch } }
     ))
+    const canvas = useCanvasStore.getState()
+    const edited = canvas.nodes.find(node => node.id === id)
+    if (previous && edited && (edited.type === 'sourceNode' || edited.type === 'targetNode')) {
+      const nextEdges = disconnectNewGlobalPorts(id, editableRoutingPorts(edited.type, previous.data), editableRoutingPorts(edited.type, edited.data), canvas.edges)
+      if (nextEdges !== canvas.edges) canvas.setEdges(nextEdges)
+    }
+    if (edited) canvas.setNetworkConfiguration(configureEndpointPorts(canvas.networkConfiguration, edited, useSettingsStore.getState().units))
     setEditingEndpoint(null)
     updateNodeInternals(id)
   }, [setNodes, takeSnapshot, updateNodeInternals])

@@ -1,0 +1,35 @@
+.card {
+  position: relative;
+  color: var(--text-strong);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px var(--shadow-color);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-strong);
+  cursor: pointer;
+}
+
+.iconButton:hover { border-color: var(--accent); color: var(--accent); }
+.iconButton:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

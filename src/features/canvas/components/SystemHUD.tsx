@@ -1,14 +1,17 @@
-import { useState, useMemo, type CSSProperties } from 'react'
+import { categoryDisplayName } from '@/common/i18n/resourceLabels'
+import { useTranslation } from '@/common/i18n'
+import { translateDiagnostic } from '@/common/i18n/translateDiagnostic'
+import { Icon } from '@/common/components/Icon'
+import { useCanvasStore } from '@/features/canvas/canvas.store'
+import type { CSSProperties } from 'react'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 import { resolveCategoryDef } from '@/features/recipe/recipe.endpointNorm'
 import { formatSimpleRate } from '@/common/utils/rateFormat'
-import { normalizeResourceKey, parseNormalizedKey, stripNetPrefix, isVirtualGlobal } from '@/common/utils/resourceId'
+import { normalizeResourceKey, parseNormalizedKey, isVirtualGlobal } from '@/common/utils/resourceId'
 import { IntermediateProductsPanel } from './IntermediateProductsPanel'
 import styles from './SystemHUD.module.css'
 
-/**
- *
- */
+/** Separate gross boundary flows and installation quantities supplied by the result owner. */
 type SystemHUDProps = {
   systemInputs: Record<string, number>
   systemOutputs: Record<string, number>
@@ -17,227 +20,78 @@ type SystemHUDProps = {
   capexList: Record<string, number>
 }
 
-/**
- * Split a normalized resource key into its category and name parts.
- * @param item - The normalized resource key.
- * @returns An object with `category` and `name`.
- */
-function parseItemKey(item: string): { category: string; name: string } {
-  const { category, id } = parseNormalizedKey(item)
-  return { category, name: id }
-}
-
-/**
- * Normalize a resource key for global bus matching.
- * @param item - The resource key to normalize.
- * @returns The normalized resource key.
- */
-function getGlobalKey(item: string): string {
-  return normalizeResourceKey(item)
-}
-
-/**
- * Renders a single resource row within the system HUD.
- * @param root0 - Component props.
- * @param root0.item - The normalized resource key.
- * @param root0.value - The numeric rate value.
- * @param root0.isGlobal - Whether this resource uses global bus routing.
- * @returns Rendered JSX for the resource row.
+/** Render a resource quantity without mixing rate and installation semantics.
+ * @param props - Resource identity, quantity and routing indicator.
+ * @param props.item - Qualified resource identity.
+ * @param props.value - Already calculated rate or occupancy quantity.
+ * @param props.isGlobal - Whether this boundary uses a global bus.
+ * @returns A labelled quantity row.
  */
 function HUDResourceRow({ item, value, isGlobal }: { item: string; value: number; isGlobal: boolean }) {
-  const userCategories = useGlobalResourceTable((state) => state.categories)
-  const userOverrides = useGlobalResourceTable((state) => state.overrides)
-  const { category, name } = parseItemKey(item)
-  const catDef = resolveCategoryDef(category, userCategories, userOverrides)
-  const hexColor = catDef.themeColor
-
-  return (
-    <div className={`${styles['system-hud__row']}${isGlobal ? ` ${styles['system-hud__row--global']}` : ''}`}>
-      <span className={styles['system-hud__item']}>
-        <span className={styles['system-hud__badge']} style={{ '--resource-color': hexColor } as CSSProperties}>
-          {catDef.displayName}
-        </span>
-        <span className={styles['system-hud__name']}>{name}</span>
-      </span>
-      <span className={styles['system-hud__value']}>{formatSimpleRate(value)}</span>
-    </div>
-  )
+  const categories = useGlobalResourceTable(state => state.categories)
+  const overrides = useGlobalResourceTable(state => state.overrides)
+  const { category, id } = parseNormalizedKey(item)
+  const definition = resolveCategoryDef(category, categories, overrides)
+  return <div className={`${styles['system-hud__row']}${isGlobal ? ` ${styles['system-hud__row--global']}` : ''}`}>
+    <span className={styles['system-hud__item']}>
+      <span className={styles['system-hud__badge']} style={{ '--resource-color': definition.themeColor } as CSSProperties}>{categoryDisplayName(category, definition.displayName)}</span>
+      <span className={styles['system-hud__name']} title={id}>{id}</span>
+    </span>
+    <span className={styles['system-hud__value']}>{formatSimpleRate(value)}</span>
+  </div>
 }
 
-/**
- * System-level heads-up display showing real-time material balances.
- * Displays system inputs (wired and global), system outputs (wired and global),
- * and a build-list (CapEx) panel. Each section can be collapsed independently.
- * Material rates are computed from the net difference between system inputs and outputs.
- *
- * @param props - Component props
- * @param props.systemInputs - Raw map of resource keys to input rates across the canvas
- * @param props.systemOutputs - Raw map of resource keys to output rates across the canvas
- * @param props.globalInputIds - Set of resource IDs designated as global bus inputs
- * @param props.globalOutputIds - Set of resource IDs designated as global bus outputs
- * @param props.capexList - Map of resource keys to their capital expenditure (build) quantities
- * @returns Rendered JSX element for the system HUD.
+/** Group wired and global boundaries without rendering empty subpanels.
+ * @param props - Boundary quantities and routing identities.
+ * @param props.values - Gross rates keyed by resource identity.
+ * @param props.globalIds - Resources explicitly routed through a global pool.
+ * @returns Present boundary rows or a compact empty explanation.
  */
-export function SystemHUD({
-  systemInputs,
-  systemOutputs,
-  globalInputIds,
-  globalOutputIds,
-  capexList,
-}: SystemHUDProps) {
-  const [inputsCollapsed, setInputsCollapsed] = useState(false)
-  const [outputsCollapsed, setOutputsCollapsed] = useState(false)
-  const [capexCollapsed, setCapexCollapsed] = useState(false)
-  const globalInputSet = new Set(globalInputIds)
-  const globalOutputSet = new Set(globalOutputIds)
+function BoundaryRows({ values, globalIds }: { values: Record<string, number>; globalIds: string[] }) {
+  const { t } = useTranslation()
+  const globals = new Set(globalIds)
+  const entries = Object.entries(values).filter(([item]) => !isVirtualGlobal(item))
+  const wired = entries.filter(([item]) => !globals.has(normalizeResourceKey(item)))
+  const global = entries.filter(([item]) => globals.has(normalizeResourceKey(item)))
+  if (!entries.length) return <p className={styles['system-hud__empty']}>{t('shell.noExchange')}</p>
+  return <div className={styles['system-hud__list']}>
+    {wired.map(([item, value]) => <HUDResourceRow key={item} item={item} value={value} isGlobal={false} />)}
+    {global.length > 0 && <><span className={styles['system-hud__subhead']}>{t('shell.globalBus')}</span>{global.map(([item, value]) => <HUDResourceRow key={item} item={item} value={value} isGlobal />)}</>}
+  </div>
+}
 
-  const { displayInputs, displayOutputs } = useMemo(() => {
-    const net: Record<string, number> = {}
-    for (const [key, rate] of Object.entries(systemInputs)) {
-      const baseId = stripNetPrefix(key)
-      net[baseId] = (net[baseId] ?? 0) - rate
-    }
-    for (const [key, rate] of Object.entries(systemOutputs)) {
-      const baseId = stripNetPrefix(key)
-      net[baseId] = (net[baseId] ?? 0) + rate
-    }
-    const inputs: Record<string, number> = {}
-    const outputs: Record<string, number> = {}
-    for (const [baseId, netRate] of Object.entries(net)) {
-      if (netRate > 1e-9) {
-        outputs[baseId] = netRate
-      } else if (netRate < -1e-9) {
-        inputs[baseId] = -netRate
-      }
-    }
-    return { displayInputs: inputs, displayOutputs: outputs }
-  }, [systemInputs, systemOutputs])
-
-  const allInputEntries = Object.entries(displayInputs)
-    .filter(([item]) => !isVirtualGlobal(item))
-  const allOutputEntries = Object.entries(displayOutputs)
-    .filter(([item]) => !isVirtualGlobal(item))
-  const wiredInputEntries = allInputEntries.filter(([item]) => !globalInputSet.has(getGlobalKey(item)))
-  const globalInputEntries = allInputEntries.filter(([item]) => globalInputSet.has(getGlobalKey(item)))
-  const wiredOutputEntries = allOutputEntries.filter(([item]) => !globalOutputSet.has(getGlobalKey(item)))
-  const globalOutputEntries = allOutputEntries.filter(([item]) => globalOutputSet.has(getGlobalKey(item)))
-
-  return (
-    <div className={styles['system-hud']}>
-      <div className={styles['system-hud__left-col']}>
-      <section className={`${styles['system-hud__panel']} ${styles['system-hud__panel--inputs']}`}>
-        <header className={styles['system-hud__header']}>
-          <span className={`${styles['system-hud__title']} ${styles['system-hud__title--inputs']}`}>
-            ⬇️ SYSTEM INPUTS (/s)
-          </span>
-          <button
-            className={`${styles['system-hud__toggle']}${inputsCollapsed ? ` ${styles['system-hud__toggle--collapsed']}` : ''}`}
-            type="button"
-            onClick={() => setInputsCollapsed((prev) => !prev)}
-            aria-expanded={!inputsCollapsed}
-            aria-label="Toggle inputs panel"
-          >
-            ▾
-          </button>
-        </header>
-        {!inputsCollapsed && (
-          <div className={styles['system-hud__list']}>
-            {wiredInputEntries.length > 0 ? (
-              wiredInputEntries.map(([item, value]) => (
-                <HUDResourceRow key={item} item={item} value={value} isGlobal={false} />
-              ))
-            ) : (
-              <div className={styles['system-hud__empty']}>有线输入暂无数据</div>
-            )}
-
-            <div className={styles['system-hud__divider']} />
-            <div className={styles['system-hud__subhead']}>GLOBAL BUS</div>
-
-            {globalInputEntries.length > 0 ? (
-              globalInputEntries.map(([item, value]) => (
-                <HUDResourceRow key={`g-in-${item}`} item={item} value={value} isGlobal={true} />
-              ))
-            ) : (
-              <div className={styles['system-hud__empty']}>全局管网输入暂无数据</div>
-            )}
-          </div>
-        )}
-      </section>
-
-      <section className={`${styles['system-hud__panel']} ${styles['system-hud__panel--capex']}`}>
-        <header className={styles['system-hud__header']}>
-          <span className={`${styles['system-hud__title']} ${styles['system-hud__title--capex']}`}>
-            🏗️ BUILD LIST (CapEx)
-          </span>
-          <button
-            className={`${styles['system-hud__toggle']}${capexCollapsed ? ` ${styles['system-hud__toggle--collapsed']}` : ''}`}
-            type="button"
-            onClick={() => setCapexCollapsed((prev) => !prev)}
-            aria-expanded={!capexCollapsed}
-            aria-label="Toggle CapEx panel"
-          >
-            ▾
-          </button>
-        </header>
-        {!capexCollapsed && (
-          <div className={styles['system-hud__list']}>
-            {Object.keys(capexList).length > 0 ? (
-              Object.entries(capexList).map(([item, value]) => (
-                <HUDResourceRow key={`capex-${item}`} item={item} value={value} isGlobal={false} />
-              ))
-            ) : (
-              <div className={styles['system-hud__empty']}>暂无数据 / 请运行计算</div>
-            )}
-          </div>
-        )}
-      </section>
+/** Keep result details in one positioned, initially compact entry point.
+ * @param props - Gross supply/delivery flows, routing and installation quantities.
+ * @returns A compact status and expandable result inspector which never changes canvas layout.
+ */
+export function SystemHUD(props: SystemHUDProps) {
+  const { t } = useTranslation()
+  const { systemInputs, systemOutputs, globalInputIds, globalOutputIds, capexList } = props
+  const status = useCanvasStore(state => state.calculationStatus)
+  const hasResult = useCanvasStore(state => state.lastCalculationResult !== null)
+  const message = useCanvasStore(state => state.calculationMessage)
+  const nets = useCanvasStore(state => state.netSummaries)
+  const startup = useCanvasStore(state => state.startup)
+  const spills = useCanvasStore(state => state.systemSpills)
+  const labels = { idle: t('shell.idle'), running: hasResult ? t('shell.runningRetained') : t('shell.running'), success: t('shell.success'), feasible: t('shell.feasible'), stale: t('shell.stale'), error: hasResult ? t('shell.errorRetained') : t('shell.error') }
+  return <aside className={styles['system-hud']} aria-label={t('shell.resultsLabel')}>
+    <details className={styles.resultInspector}>
+      <summary className={styles.resultEntry}>
+        <span>{t('shell.results')}</span>
+        <span className={styles.status} role="status">{labels[status]}</span><span className={styles.entryIcon}><Icon name="chevronUp" size={15} /></span>
+      </summary>
+      <div className={styles.resultBody}>
+        {message && <p className={styles.message}>{translateDiagnostic(message)}</p>}
+        {!hasResult ? <p className={styles['system-hud__empty']}>{status === 'idle' ? t('shell.idleHint') : status === 'stale' ? t('shell.staleHint') : status === 'running' ? t('shell.runningHint') : t('shell.errorHint')}</p> : <>
+          <details className={styles.resultSection}><summary>{t('shell.supply')} <span>{Object.keys(systemInputs).length} {t('shell.items')}</span><span className={styles.expandIcon}><Icon name="chevronRight" size={14} /></span></summary><p className={styles.hint}>{t('shell.units')}</p><BoundaryRows values={systemInputs} globalIds={globalInputIds} /></details>
+          <details className={styles.resultSection}><summary>{t('shell.delivery')} <span>{Object.keys(systemOutputs).length} {t('shell.items')}</span><span className={styles.expandIcon}><Icon name="chevronRight" size={14} /></span></summary><p className={styles.hint}>{t('shell.units')}</p><BoundaryRows values={systemOutputs} globalIds={globalOutputIds} /></details>
+          <details className={styles.resultSection}><summary>{t('shell.bom')} <span>{Object.keys(capexList).length} {t('shell.items')}</span><span className={styles.expandIcon}><Icon name="chevronRight" size={14} /></span></summary><div className={styles['system-hud__list']}>{Object.entries(capexList).map(([item, value]) => <HUDResourceRow key={item} item={item} value={value} isGlobal={false} />)}{!Object.keys(capexList).length && <p className={styles['system-hud__empty']}>{t('shell.noBom')}</p>}</div></details>
+          <details className={styles.resultSection}><summary>{t('shell.spill')} <span>{Object.keys(spills).length} {t('shell.items')}</span><span className={styles.expandIcon}><Icon name="chevronRight" size={14} /></span></summary><p className={styles.hint}>{t('shell.spillHint')}</p><BoundaryRows values={spills} globalIds={[]} /></details>
+          <details className={styles.resultSection}><summary>{t('shell.networks')} <span>{nets.length} {t('shell.count')}</span><span className={styles.expandIcon}><Icon name="chevronRight" size={14} /></span></summary>{nets.map((net, index) => <div className={styles.net} key={net.id}><strong>{t('shell.network')} {index + 1} · {net.resourceId}</strong><p>{t('shell.external')} {formatSimpleRate(net.source)} / {t('shell.delivered')} {formatSimpleRate(net.delivery)} / {t('shell.spill')} {formatSimpleRate(net.spill)}</p><details><summary>{t('shell.netIdentity')}<span className={styles.expandIcon}><Icon name="chevronRight" size={14} /></span></summary><code>{net.id}</code></details></div>)}</details>
+          <details className={styles.resultSection}><summary>{t('shell.startup')} <span>{t('shell.pending')}</span><span className={styles.expandIcon}><Icon name="chevronRight" size={14} /></span></summary><p className={styles.hint}>{t('shell.startupHint')}</p>{startup ? <><p>{t('shell.catalysts')}{startup.catalysts.map(item => `${item.nodeId} · ${item.resourceId} × ${formatSimpleRate(item.amount)}`).join('；') || t('shell.notDeclared')}</p><p>{t('shell.cycles')}{startup.cycles.map(cycle => cycle.join(' → ')).join('；') || t('shell.noCycles')}</p>{startup.preheat.map(item => <p key={item.nodeId}>{item.nodeId}：{item.requirement}</p>)}</> : <p>{t('shell.noStartup')}</p>}</details>
+          <details className={styles.resultSection}><summary>{t('shell.internal')}<span className={styles.expandIcon}><Icon name="chevronRight" size={14} /></span></summary><IntermediateProductsPanel systemInputs={systemInputs} systemOutputs={systemOutputs} /></details>
+        </>}
       </div>
-
-      <div className={styles['system-hud__right-col']}>
-      <section className={`${styles['system-hud__panel']} ${styles['system-hud__panel--outputs']}`}>
-        <header className={`${styles['system-hud__header']} ${styles['system-hud__header--right']}`}>
-          <span className={`${styles['system-hud__title']} ${styles['system-hud__title--outputs']}`}>
-            ⬆️ SYSTEM OUTPUTS (/s)
-          </span>
-          <button
-            className={`${styles['system-hud__toggle']}${outputsCollapsed ? ` ${styles['system-hud__toggle--collapsed']}` : ''}`}
-            type="button"
-            onClick={() => setOutputsCollapsed((prev) => !prev)}
-            aria-expanded={!outputsCollapsed}
-            aria-label="Toggle outputs panel"
-          >
-            ▾
-          </button>
-        </header>
-        {!outputsCollapsed && (
-          <div className={styles['system-hud__list']}>
-            {wiredOutputEntries.length > 0 ? (
-              wiredOutputEntries.map(([item, value]) => (
-                <HUDResourceRow key={item} item={item} value={value} isGlobal={false} />
-              ))
-            ) : (
-              <div className={styles['system-hud__empty']}>有线输出暂无数据</div>
-            )}
-
-            <div className={styles['system-hud__divider']} />
-            <div className={styles['system-hud__subhead']}>GLOBAL BUS</div>
-
-            {globalOutputEntries.length > 0 ? (
-              globalOutputEntries.map(([item, value]) => (
-                <HUDResourceRow key={`g-out-${item}`} item={item} value={value} isGlobal={true} />
-              ))
-            ) : (
-              <div className={styles['system-hud__empty']}>全局管网输出暂无数据</div>
-            )}
-          </div>
-        )}
-      </section>
-
-      <IntermediateProductsPanel
-        systemInputs={systemInputs}
-        systemOutputs={systemOutputs}
-      />
-      </div>
-    </div>
-  )
+    </details>
+  </aside>
 }

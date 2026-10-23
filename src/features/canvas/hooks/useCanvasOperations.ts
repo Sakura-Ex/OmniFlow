@@ -1,3 +1,4 @@
+import { createSplitterData } from '@/features/calculation/splitter'
 import { graphPorts, connectionIssue } from '@/features/calculation/graphPorts'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { useSettingsStore } from '@/features/settings/settings.store'
@@ -72,6 +73,11 @@ export function useCanvasOperations({
     takeSnapshot()
     setEdges(useCanvasStore.getState().edges.filter((e) => e.id !== edge.id))
   }, [setEdges, takeSnapshot])
+
+  const handleAddSplitter = useCallback(() => {
+    takeSnapshot()
+    useCanvasStore.getState().addNode({ id: makeId(), type: 'splitterNode', position: getViewportCenter(), data: createSplitterData() })
+  }, [takeSnapshot, getViewportCenter])
 
   const handleAddSource = useCallback(() => {
     takeSnapshot()
@@ -162,7 +168,7 @@ export function useCanvasOperations({
 
   const handleDeleteSelectedNodes = useCallback(() => {
     takeSnapshot()
-    useCanvasStore.getState().deleteSelected()
+    useCanvasStore.getState().deleteSelected('nodes')
   }, [takeSnapshot])
 
   const handleSelectAll = useCallback(() => {
@@ -181,7 +187,7 @@ export function useCanvasOperations({
     isValidConnection,
     onConnect,
     onEdgeDoubleClick,
-    handleAddSource,
+    handleAddSource, handleAddSplitter,
     handleAddFurnace,
     handleAddCustomRecipe,
     handleAddTarget,

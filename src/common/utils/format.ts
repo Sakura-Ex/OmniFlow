@@ -31,7 +31,7 @@ export function sanitizeFloat(num: number, epsilon = 1e-6): number {
  */
 function formatWithSpaceSeparator(num: number, maxDecimals: number): string {
   const cleanNum = sanitizeFloat(num)
-  const formatted = new Intl.NumberFormat('en-US', { maximumFractionDigits: maxDecimals }).format(cleanNum)
+  const formatted = new Intl.NumberFormat('en-US', { maximumFractionDigits: maxDecimals }).format(cleanNum === 0 ? 0 : cleanNum)
   return formatted.replace(/,/g, '\u202F')
 }
 

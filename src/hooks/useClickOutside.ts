@@ -16,6 +16,9 @@ export function useClickOutside(
     if (!enabled) return
     const handleClick = (e: MouseEvent) => {
       if (ref.current?.contains(e.target as Node)) return
+      const portal = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-combobox-owner]') : null
+      const owner = portal?.dataset.comboboxOwner
+      if (owner && ref.current?.contains(document.getElementById(owner))) return
       handler()
     }
     document.addEventListener('mousedown', handleClick, true)

@@ -1,36 +1,31 @@
+"""Historical mathematical counterexamples run through the v2 HTTP contract."""
 import pytest
 
 
-@pytest.mark.skip(reason="PR-07 / T06: compute summaries from explicit boundary variables")
 def test_boundary_summary(client, production_graph):
-    """Show 10/s input and delivery rather than conservation residuals."""
+    """T06: explicit source/delivery variables each report 10/s, separate from residuals."""
     result = client.post("/api/calculate", json=production_graph).json()
-    assert result["system_inputs"]["Net_ore"] == pytest.approx(10)
-    assert result["system_outputs"]["Net_plate"] == pytest.approx(10)
+    assert result["solution"]["values"] == pytest.approx([10, 10, 10])
+    assert all(abs(row["residual"]) < 1e-7 for row in result["solution"]["feasibility"]["row_residuals"])
 
 
-@pytest.mark.skip(reason="PR-06/07: reject implicit supply through Void inputs")
 def test_void_is_not_free_supply(client, production_graph):
-    """Require an explicit source for positive recipe inputs."""
-    production_graph["nodes"].pop(0)
-    production_graph["nodes"][0]["data"]["inputs"] = {"Void_ore": 1}
-    production_graph["edges"] = []
-    result = client.post("/api/calculate", json=production_graph).json()
-    assert result["status"] in ("invalid_model", "infeasible")
-
-
-@pytest.mark.skip(reason="PR-06/07 / T04: compile explicit waste policy")
-def test_no_implicit_waste_disposal(client, production_graph):
-    """Reject forced waste without an explicitly permitted outlet."""
-    production_graph["nodes"][1]["data"]["outputs"]["Net_waste"] = 1
+    """No source variable means conservation forbids free production, regardless of names."""
+    production_graph["variables"][0]["upper"] = 0
+    production_graph["equalities"]["row_ids"][0] = "Void_ore"
     assert client.post("/api/calculate", json=production_graph).json()["status"] == "infeasible"
 
 
-@pytest.mark.skip(reason="PR-05/07 / T09: lexicographic objectives replace weighted costs")
-def test_slow_recipe_still_maximizes(client, production_graph):
-    """Maximize delivery before minimizing machine equivalents."""
-    production_graph["nodes"][0]["data"]["amount"] = 1
-    production_graph["nodes"][1]["data"]["outputs"]["Net_plate"] = 0.00005
-    production_graph["nodes"][2]["data"]["mode"] = "maximize"
-    result = client.post("/api/calculate", json=production_graph).json()
-    assert result["node_results"]["target"]["actual_amounts"]["Net_plate"] == pytest.approx(0.00005)
+def test_no_implicit_waste_disposal(client, production_graph):
+    """T04: a mandatory closed byproduct prevents production until an outlet is modeled."""
+    production_graph["equalities"]["row_ids"].append("waste")
+    production_graph["equalities"]["rhs"].append(0)
+    production_graph["equalities"]["entries"].append({"row": 3, "col": 1, "value": 1})
+    assert client.post("/api/calculate", json=production_graph).json()["status"] == "infeasible"
+
+
+def test_slow_recipe_still_maximizes(client, lp_models):
+    """T09: delivery priority wins even when it requires 20000 operating equivalents."""
+    model = next(m for m in lp_models if m["id"] == "T09-slow-production")
+    result = client.post("/api/calculate", json=model["request"]).json()
+    assert result["solution"]["values"] == pytest.approx([20000, 1])

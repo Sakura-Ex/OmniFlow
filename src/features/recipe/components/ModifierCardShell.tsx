@@ -1,7 +1,13 @@
+import { modifierNameKeys, modifierControlKeys } from '@/common/i18n/editorMessages'
+import { useTranslation } from '@/common/i18n'
+import { Icon } from '@/common/components/Icon'
 import type { ReactNode, FC } from 'react'
-import type { IMachineModifier, ModifierCardRenderProps } from '@/features/modifier/modifier.types'
+import type { IMachineModifier } from '@/features/modifier/modifier.types'
+import type { ModifierCardRenderProps } from '@/features/modifier/modifier.ui.types'
+import { modifierUIRegistry } from '@/features/modifier/modifier.ui.registry'
 import type { Resource } from '@/common/types/resource'
 import styles from './ModifierCardShell.module.css'
+import { Combobox } from '@/common/components/Combobox'
 
 /** Props for the `ModifierCardShell` component. */
 interface ModifierCardShellProps {
@@ -40,11 +46,7 @@ const Toggle: ModifierCardRenderProps['Toggle'] = ({ label, checked, onChange })
 const Select: ModifierCardRenderProps['Select'] = ({ label, value, options, onChange }) => (
   <label className={styles.control}>
     <span>{label}</span>
-    <select value={value} onChange={(e) => onChange(e.target.value)}>
-      {options.map((opt) => (
-        <option key={opt} value={opt}>{opt}</option>
-      ))}
-    </select>
+    <Combobox value={value} onChange={onChange} aria-label={label} options={options.map(option => ({ value: option, label: option }))} />
   </label>
 )
 
@@ -64,7 +66,7 @@ const Input: ModifierCardRenderProps['Input'] = ({ label, value, onChange, min, 
 
 /**
  * Shell component that renders a modifier card with its UI elements.
- * Delegates body rendering to the modifier's `renderBody` or auto-generates
+ * Delegates body rendering to the registered custom renderer or auto-generates
  * controls from its `ui_schema`.
  *
  * @param root0 - Component props.
@@ -90,8 +92,11 @@ export function ModifierCardShell({
   recipeOutputs,
   hardwareSpecs,
 }: ModifierCardShellProps) {
+  const { t } = useTranslation()
+  const modifierNameKey = modifierNameKeys[modifier.id]
+  const modifierName = modifierNameKey ? t(modifierNameKey) : modifier.name
   const renderProps: ModifierCardRenderProps = { state, onChange, readOnly, Field, Toggle, Select, Slider, Input, recipeInputs, recipeOutputs, hardwareSpecs }
-  const removeTitle = isFixedModifier ? '默认修饰器不可移除' : '移除此修饰器'
+  const removeTitle = isFixedModifier ? t('editor.fixedModifier') : t('editor.removeModifier')
 
   const removeButton = !readOnly && (
     <button
@@ -102,18 +107,19 @@ export function ModifierCardShell({
       aria-label={removeTitle}
       disabled={isFixedModifier}
     >
-      {isFixedModifier ? '🔒' : '✕'}
+      <Icon name={isFixedModifier ? 'lock' : 'close'} />
     </button>
   )
 
-  if (modifier.renderBody) {
+  const RenderBody = modifierUIRegistry[modifier.id]?.renderBody
+  if (RenderBody) {
     return (
       <div className={styles.modifierCard}>
         <div className={styles.modifierCardHeader}>
-          <h6>{modifier.name}</h6>
+          <h6>{modifierName}</h6>
           {removeButton}
         </div>
-        {modifier.renderBody(renderProps)}
+        <RenderBody {...renderProps} />
       </div>
     )
   }
@@ -121,31 +127,33 @@ export function ModifierCardShell({
   return (
     <div className={styles.modifierCard}>
       <div className={styles.modifierCardHeader}>
-        <h6>{modifier.name}</h6>
+        <h6>{modifierName}</h6>
         {removeButton}
       </div>
       {modifier.ui_schema.map((control) => {
         const currentValue = state[control.key]
+        const labelKey = modifierControlKeys[`${modifier.id}.${control.key}`]
+        const label = labelKey ? t(labelKey) : control.label
         if (control.type === 'toggle') {
-          return <Toggle key={control.key} label={control.label} checked={Boolean(currentValue)} onChange={(v) => { if (!readOnly) onChange(control.key, v) }} />
+          return <Toggle key={control.key} label={label} checked={Boolean(currentValue)} onChange={(v) => { if (!readOnly) onChange(control.key, v) }} />
         }
         if (control.type === 'select') {
           const options = control.options ?? []
           if (readOnly) {
-            return <Field key={control.key} label={control.label}><span className={styles.readOnlyValue}>{String(currentValue ?? '')}</span></Field>
+            return <Field key={control.key} label={label}><span className={styles.readOnlyValue}>{String(currentValue ?? '')}</span></Field>
           }
-          return <Select key={control.key} label={control.label} value={String(currentValue ?? '')} options={options} onChange={(v) => onChange(control.key, v)} />
+          return <Select key={control.key} label={label} value={String(currentValue ?? '')} options={options} onChange={(v) => onChange(control.key, v)} />
         }
         if (control.type === 'slider') {
           if (readOnly) {
-            return <Field key={control.key} label={control.label}><span className={styles.readOnlyValue}>{Number(currentValue ?? 0)}</span></Field>
+            return <Field key={control.key} label={label}><span className={styles.readOnlyValue}>{Number(currentValue ?? 0)}</span></Field>
           }
-          return <Slider key={control.key} label={control.label} value={Number(currentValue ?? 0)} min={(control.min as number) ?? 0} max={(control.max as number) ?? 8} onChange={(v) => { if (!readOnly) onChange(control.key, v) }} />
+          return <Slider key={control.key} label={label} value={Number(currentValue ?? 0)} min={(control.min as number) ?? 0} max={(control.max as number) ?? 8} onChange={(v) => { if (!readOnly) onChange(control.key, v) }} />
         }
         if (readOnly) {
-          return <Field key={control.key} label={control.label}><span className={styles.readOnlyValue}>{Number(currentValue ?? 0)}</span></Field>
+          return <Field key={control.key} label={label}><span className={styles.readOnlyValue}>{Number(currentValue ?? 0)}</span></Field>
         }
-        return <Input key={control.key} label={control.label} value={Number(currentValue ?? 0)} min={control.min as number | undefined} max={control.max as number | undefined} step={control.step as number | undefined} onChange={(v) => onChange(control.key, v)} />
+        return <Input key={control.key} label={label} value={Number(currentValue ?? 0)} min={control.min as number | undefined} max={control.max as number | undefined} step={control.step as number | undefined} onChange={(v) => onChange(control.key, v)} />
       })}
     </div>
   )

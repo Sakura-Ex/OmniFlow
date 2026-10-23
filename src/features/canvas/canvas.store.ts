@@ -1,14 +1,16 @@
+import { stripCalculationResults } from '@/common/utils/calculationState'
+import type { DiagnosticReport, ActiveLimit } from '@/features/calculation/diagnostics'
+import type { StartupChecklist } from '@/common/types/api'
+import { configureEndpointPorts } from '@/features/calculation/endpointConfiguration'
+import { emptyNetworkConfiguration, NetworkConfigurationSchema, type NetworkConfiguration } from '@/common/schemas/network.schema'
+import { useSettingsStore } from '@/features/settings/settings.store'
 import { normalizeGraph } from './graphDocument'
 import { normalizeCanvasNode } from './canvas.validators'
-import { endpointSubNodeId } from '@/features/calculation/payloadBuilder'
 import { create } from 'zustand'
 import type { Edge, Node } from 'reactflow'
 import type { RecipeNodeData } from '@/common/types/recipe'
-import type { CalculateResponse } from '@/common/types/api'
+import type { CalculateResponse, NetSummary } from '@/common/types/api'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
-import { normalizeEndpointPorts } from '@/features/recipe/recipe.endpointNorm'
-import { normalizeResourceKey } from '@/common/utils/resourceId'
-import { computeCapexList } from '@/features/calculation/capEx'
 import { formatCalculationError } from '@/features/calculation/calculationClient'
 
 /**
@@ -18,33 +20,29 @@ import { formatCalculationError } from '@/features/calculation/calculationClient
  */
 function clearNodeResults(nodes: Node[]): Node[] {
   return nodes.map((node) => {
-    const data = { ...node.data }
-    delete data.machines_exact
-    delete data.machines_actual
-    delete data.utilization
-    delete data.actual_amounts
+    const data = stripCalculationResults(node.data)
     return { ...node, data }
   })
 }
 
-/**
- * Normalize and extract `actual_amounts` from a single sub-node calculation result.
- * @param subResult - An optional sub-result containing `actual_amounts`.
- * @returns A record of resource keys (normalized) to their actual amounts.
- */
-function extractActualAmounts(
-  subResult: { actual_amounts?: Record<string, number> } | undefined,
-): Record<string, number> {
-  if (!subResult?.actual_amounts) return {}
-  const result: Record<string, number> = {}
-  for (const [key, value] of Object.entries(subResult.actual_amounts)) {
-    result[normalizeResourceKey(key)] = value
-  }
-  return result
-}
-
 /** Root state and actions for the canvas Zustand store. */
 export type CanvasStore = {
+  lastCalculationResult: CalculateResponse | null
+  beginCalculation: () => void
+  diagnosticReport?: DiagnosticReport
+  activeLimits: ActiveLimit[]
+  startup?: StartupChecklist
+  setDiagnosticReport: (report: DiagnosticReport | undefined) => void
+  setActiveLimits: (limits: ActiveLimit[]) => void
+  documentRevision: number
+  calculationStatus: 'idle' | 'running' | 'success' | 'feasible' | 'stale' | 'error'
+  calculationIssues: NonNullable<CalculateResponse['errors']>
+  calculationMessage: string | null
+  netSummaries: NetSummary[]
+  systemSpills: Record<string, number>
+  invalidateCalculation: () => void
+  networkConfiguration: NetworkConfiguration
+  setNetworkConfiguration: (configuration: NetworkConfiguration) => void
   /** All React Flow nodes currently on the canvas. */
   nodes: Node[]
   /** All React Flow edges currently on the canvas. */
@@ -97,7 +95,7 @@ export type CanvasStore = {
   /** Mark the canvas as having unsaved changes. */
   markDirty: () => void
   /** Load a canvas from the database, replacing all state and clearing the dirty flag. */
-  loadFromDB: (canvasId: string, projectId: string, nodes: Node[], edges: Edge[], viewport: { x: number; y: number; zoom: number }, recipes?: Record<string, RecipeNodeData>) => void
+  loadFromDB: (canvasId: string, projectId: string, nodes: Node[], edges: Edge[], viewport: { x: number; y: number; zoom: number }, recipes?: Record<string, RecipeNodeData>, configuration?: NetworkConfiguration) => void
   /** Reset the canvas to its initial empty state (clears nodes, edges, and metadata). */
   resetCanvas: () => void
 
@@ -109,7 +107,7 @@ export type CanvasStore = {
   /** Add a recipe node and register its recipe data in the recipe store. */
   addRecipeNode: (id: string, nodeData: RecipeNodeData, newNode: Node) => void
   /** Delete all currently selected nodes and their connected edges. */
-  deleteSelected: () => void
+  deleteSelected: (scope?: 'all' | 'nodes') => void
   /** Delete all currently selected edges without removing nodes. */
   deleteSelectedEdges: () => void
   /** Clear all nodes, edges, and calculation state from the canvas. */
@@ -122,7 +120,21 @@ export type CanvasStore = {
 }
 
 /** Zustand store managing all canvas state, including nodes, edges, viewport, calculation results, and derived data. */
-export const useCanvasStore = create<CanvasStore>((set) => ({
+export const useCanvasStore = create<CanvasStore>((set, get) => ({
+  diagnosticReport: undefined, activeLimits: [], startup: undefined,
+  setDiagnosticReport: (diagnosticReport) => set({ diagnosticReport }),
+  setActiveLimits: (activeLimits) => set({ activeLimits }),
+  documentRevision: 0,
+  calculationStatus: 'idle',
+  calculationMessage: null,
+  calculationIssues: [],
+  netSummaries: [],
+  systemSpills: {},
+  lastCalculationResult: null,
+  beginCalculation: () => set({ calculationStatus: 'running', error: null, calculationMessage: null, calculationIssues: [], activeLimits: [], diagnosticReport: undefined }),
+  invalidateCalculation: () => set(state => ({ documentRevision: state.documentRevision + 1, calculationStatus: 'stale', diagnosticReport: undefined, activeLimits: [], error: null, calculationMessage: null, calculationIssues: [] })),
+  networkConfiguration: emptyNetworkConfiguration(),
+  setNetworkConfiguration: (configuration) => set({ networkConfiguration: NetworkConfigurationSchema.parse(configuration), isDirty: true }),
   nodes: [],
   edges: [],
   viewport: { x: 0, y: 0, zoom: 1 },
@@ -138,7 +150,12 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
   canvasId: null,
   projectId: null,
 
-  setNodes: (nodes) => set({ nodes }),
+  setNodes: (nodes) => set(state => {
+    const ids = new Set(nodes.map(node => node.id))
+    const ports = Object.fromEntries(Object.entries(state.networkConfiguration.ports).filter(([key]) => { try { return ids.has(JSON.parse(key)[0]) } catch { return true } }))
+    const machines = Object.fromEntries(Object.entries(state.networkConfiguration.machines).filter(([id]) => ids.has(id)))
+    return { nodes: nodes.map(node => ({ ...node, data: { ...node.data, ...state.lastCalculationResult?.node_results?.[node.id] } })), networkConfiguration: { ...state.networkConfiguration, ports, machines } }
+  }),
   setEdges: (edges) => set({ edges }),
   setSystemInputs: (v) => set({ systemInputs: v }),
   setSystemOutputs: (v) => set({ systemOutputs: v }),
@@ -149,15 +166,22 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
   setCapexList: (v) => set({ capexList: v }),
   setError: (v) => set({ error: v }),
   markDirty: () => set({ isDirty: true }),
-  loadFromDB: (canvasId, projectId, nodes, edges, viewport, recipes = {}) => {
+  loadFromDB: (canvasId, projectId, nodes, edges, viewport, recipes = {}, configuration = emptyNetworkConfiguration()) => {
     const graph = normalizeGraph(nodes, edges, recipes, true)
     useRecipeStore.setState({ recipes: {} })
     useRecipeStore.getState().loadAll(graph.recipes)
-    set({ canvasId, projectId, nodes: graph.nodes, edges: graph.edges, viewport, isDirty: false })
+    get().resetCalculationState()
+    set({ canvasId, projectId, nodes: graph.nodes, edges: graph.edges, viewport, networkConfiguration: NetworkConfigurationSchema.parse(configuration), isDirty: false })
   },
-  resetCanvas: () => set({ nodes: [], edges: [], canvasId: null, projectId: null, isDirty: false, systemInputs: {}, systemOutputs: {}, lastSystemInputs: {}, lastSystemOutputs: {}, globalInputIds: [], globalOutputIds: [], capexList: {}, error: null }),
+  resetCanvas: () => set({ lastCalculationResult: null, calculationStatus: 'idle', diagnosticReport: undefined, activeLimits: [], startup: undefined, networkConfiguration: emptyNetworkConfiguration(), nodes: [], edges: [], canvasId: null, projectId: null, isDirty: false, systemInputs: {}, systemOutputs: {}, lastSystemInputs: {}, lastSystemOutputs: {}, globalInputIds: [], globalOutputIds: [], capexList: {}, error: null }),
 
   resetCalculationState: () => set((state) => ({
+    lastCalculationResult: null,
+    calculationStatus: 'idle', diagnosticReport: undefined, activeLimits: [], startup: undefined,
+    calculationMessage: null,
+    calculationIssues: [],
+    netSummaries: [],
+    systemSpills: {},
     nodes: clearNodeResults(state.nodes),
     systemInputs: {},
     systemOutputs: {},
@@ -170,7 +194,7 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
   })),
 
   addNode: (node) => {
-    set((state) => ({ nodes: [...state.nodes, normalizeCanvasNode(node)] }))
+    set((state) => { const normalized = normalizeCanvasNode(node); return { nodes: [...state.nodes, normalized], networkConfiguration: configureEndpointPorts(state.networkConfiguration, normalized, useSettingsStore.getState().units) } })
   },
 
   addRecipeNode: (id, nodeData, newNode) => {
@@ -178,18 +202,21 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
     set((state) => ({ nodes: [...state.nodes, { ...newNode, data: useRecipeStore.getState().recipes[id] }] }))
   },
 
-  deleteSelected: () => {
+  deleteSelected: (scope = 'all') => {
     set((state) => {
       const toRemove = state.nodes.filter((n) => n.selected).map((n) => n.id)
-      if (toRemove.length === 0) return state
+      if (toRemove.length === 0 && (scope === 'nodes' || !state.edges.some(edge => edge.selected))) return state
       const recipeStore = useRecipeStore.getState()
       for (const id of toRemove) {
         recipeStore.removeRecipe(id)
       }
+      const removed = new Set(toRemove)
+      const networkConfiguration = { ...state.networkConfiguration, machines: Object.fromEntries(Object.entries(state.networkConfiguration.machines).filter(([id]) => !removed.has(id))), ports: Object.fromEntries(Object.entries(state.networkConfiguration.ports).filter(([key]) => { try { return !removed.has(JSON.parse(key)[0]) } catch { return true } })) }
       return {
+        networkConfiguration,
         nodes: state.nodes.filter((n) => !toRemove.includes(n.id)),
         edges: state.edges.filter(
-          (e) => !toRemove.includes(e.source) && !toRemove.includes(e.target)
+          (e) => (scope === 'nodes' || !e.selected) && !toRemove.includes(e.source) && !toRemove.includes(e.target)
         ),
       }
     })
@@ -200,8 +227,10 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
   },
 
   clearAll: () => {
+    get().resetCalculationState()
     useRecipeStore.setState({ recipes: {} })
     set({
+      diagnosticReport: undefined, activeLimits: [], startup: undefined, networkConfiguration: emptyNetworkConfiguration(),
       nodes: [],
       edges: [],
       systemInputs: {},
@@ -234,7 +263,7 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
       if (!dataChanged) return state
 
       const nextNodes = state.nodes.map((node) =>
-        node.id === nodeId ? { ...node, data: mergedData } : node
+        node.id === nodeId ? { ...node, data: { ...mergedData, ...state.lastCalculationResult?.node_results?.[nodeId] } } : node
       )
 
       const nextEdges = state.edges
@@ -247,62 +276,40 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
     const nextSystemInputs = result.system_inputs ?? {}
     const nextSystemOutputs = result.system_outputs ?? {}
 
-    if (result.status !== 'success') {
-      set((state) => ({
-        nodes: clearNodeResults(state.nodes),
-        systemInputs: {},
-        systemOutputs: {},
-        lastSystemInputs: {},
-        lastSystemOutputs: {},
-        capexList: {},
-        globalInputIds: [],
-        globalOutputIds: [],
+    if (result.status !== 'success' && !(result.status === 'limit_reached' && result.has_verified_solution)) {
+      set({
+        activeLimits: [], diagnosticReport: undefined,
         error: formatCalculationError(result),
-      }))
+        calculationStatus: 'error',
+        calculationMessage: result.message ?? null,
+        calculationIssues: result.errors ?? [],
+      })
       return
     }
 
     set((state) => {
-      const recipeStore = useRecipeStore.getState()
       const nextNodes = state.nodes.map((node) => {
-        let nextData = node.data as Record<string, unknown>
-        const directNodeResult = nodeResults[node.id]
-        const shaped = recipeStore.recipes[node.id]
-        const recipeId =
-          shaped?.recipe_id && typeof shaped.recipe_id === 'string'
-            ? shaped.recipe_id
-            : null
-        const nodeResult =
-          directNodeResult ?? (recipeId ? nodeResults[recipeId] : undefined)
+        let nextData = stripCalculationResults(node.data as Record<string, unknown>)
+        const nodeResult = nodeResults[node.id]
 
         if (nodeResult) {
           nextData = { ...nextData, ...nodeResult }
-        }
-
-        if (node.type === 'sourceNode' || node.type === 'targetNode') {
-          const ports = normalizeEndpointPorts(node.data)
-          const actualAmounts: Record<string, number> = {}
-          for (let pi = 0; pi < ports.length; pi++) {
-            const subNodeId = endpointSubNodeId(node.id, ports[pi].portId!)
-            const subResult = nodeResults[subNodeId]
-            const values = Object.values(extractActualAmounts(subResult))
-            actualAmounts[ports[pi].portId!] = values.reduce((sum, value) => sum + value, 0)
-          }
-          nextData = {
-            ...nextData,
-            actual_amounts: actualAmounts,
-          }
         }
 
         if (nextData === node.data) return node
         return { ...node, data: nextData }
       })
 
-      const capexMap = computeCapexList(recipeStore.recipes, nodeResults)
+      const capexMap = result.bom ?? {}
 
       return {
-        nodes: nextNodes,
+        lastCalculationResult: result, calculationIssues: [],
+        nodes: nextNodes, startup: result.startup,
         error: null,
+        calculationStatus: result.status === 'success' ? 'success' : 'feasible',
+        calculationMessage: result.message ?? null,
+        netSummaries: result.net_summaries ?? [],
+        systemSpills: result.system_spills ?? {},
         systemInputs: nextSystemInputs,
         systemOutputs: nextSystemOutputs,
         lastSystemInputs: nextSystemInputs,

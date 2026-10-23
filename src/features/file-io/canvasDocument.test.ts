@@ -4,7 +4,7 @@ import type { RecipeNodeData } from '@/common/types/recipe'
 import { readCanvasDocument } from './canvasDocument'
 import { UnitSystem } from '@/common/units/UnitSystem'
 import { DEFAULT_UNIT_SNAPSHOT } from '@/common/units/defaults'
-import { buildCalculationPayload } from '@/features/calculation/payloadBuilder'
+import { runModifierPipeline } from '@/features/modifier/modifier.pipeline'
 
 const recipe: RecipeNodeData = {
   recipe_id: 'r', machine_name: 'Machine', system: 'custom', duration_seconds: 4,
@@ -23,7 +23,7 @@ describe('versioned document migration', () => {
   it('upgrades v2 units/environment/ports without mutating the original and reports default TPS', () => {
     const raw = legacy(), original = structuredClone(raw)
     const { document, warnings } = readCanvasDocument(raw)
-    expect(document.version).toBe(4)
+    expect(document.version).toBe(5)
     expect(document.environment.ticksPerSecond).toBe(20)
     expect(warnings.join(' ')).toContain('20 TPS')
     expect(document.ui.edges[0].targetHandle).toBe(document.domain.recipes.r.base_inputs![0].portId)
@@ -48,9 +48,7 @@ describe('versioned document migration', () => {
     expect(restored.document.domain.recipes.r.base_inputs?.map((p) => p.unit)).toEqual(migrated.domain.recipes.r.base_inputs?.map((p) => p.unit))
     const units = new UnitSystem(restored.document.environment)
     expect(units.unit('custom').conversionScale(units.unit('J'))).toBe(2)
-    expect(buildCalculationPayload(restored.document.ui.nodes, [], restored.document.domain.recipes, restored.document.environment).payloadNodes[0].data.inputs).toEqual(expect.objectContaining({
-      [Object.keys(buildCalculationPayload(restored.document.ui.nodes, [], restored.document.domain.recipes, restored.document.environment).payloadNodes[0].data.inputs as object)[2]]: 1280,
-    }))
+    expect(runModifierPipeline(restored.document.domain.recipes.r, restored.document.environment).recipe_inputs.find((port) => port.id === 'eu')?.amount).toBe(1280)
   })
   it('preserves unrecognized legacy labels as isolated atoms and only maps explicit kg', () => {
     const registry = { categories: {
@@ -71,7 +69,7 @@ describe('versioned document migration', () => {
   })
   it('rejects invalid environment, unknown factors and unsupported file/plugin API versions', () => {
     const migrated = readCanvasDocument(legacy()).document
-    expect(() => readCanvasDocument({ ...migrated, version: 5 })).toThrow()
+    expect(() => readCanvasDocument({ ...migrated, version: 6 })).toThrow()
     expect(() => readCanvasDocument({ ...migrated, pluginApiVersion: 1 })).toThrow()
     expect(() => readCanvasDocument({ ...migrated, environment: undefined })).toThrow('environment')
     expect(() => readCanvasDocument({ ...migrated, environment: { ...migrated.environment, ticksPerSecond: 0 } })).toThrow()
@@ -105,11 +103,25 @@ describe('versioned document migration', () => {
 it('reopens the real browser-exported v4 document with stable handles and physical quantities', () => {
   const raw = JSON.parse(exportedDocumentJson)
   const { document, warnings } = readCanvasDocument(raw)
-  expect(warnings).toEqual([])
+  expect(warnings.join(' ')).toContain('隐式')
   expect(document.ui.edges).toEqual(raw.ui.edges)
   expect(document.ui.nodes).toHaveLength(6)
   expect(document.domain.recipes['node-1'].base_inputs![0].amount).toBe(1)
   expect(document.domain.recipes['node-1'].base_inputs![0].unit).toEqual([{ baseUnitId: 'mB', prefixId: 'k', exponent: 1 }])
   expect(new UnitSystem(document.environment).toRate(1, document.domain.recipes['node-1'].base_inputs![0].unit!, 'per_cycle', 5)).toBe(200)
   expect(JSON.stringify(raw)).not.toContain('_computed')
+})
+
+
+it('migrates only visible endpoints and round trips explicit v5 policies without hidden supply', () => {
+  const { document } = readCanvasDocument(legacy())
+  const address = JSON.stringify(['s', document.ui.nodes[1].data.ports[0].portId])
+  expect(Object.keys(document.networkConfiguration.ports)).toEqual([address])
+  expect(document.networkConfiguration.ports[address].boundary).toEqual({ kind: 'source', capacity: 10 })
+  document.networkConfiguration.ports[address].boundary = { kind: 'source', capacity: 3.5 }
+  document.networkConfiguration.machines.r = { installed: 2, operatingUpper: 1.2 }
+  const restored = readCanvasDocument(JSON.parse(JSON.stringify(document)))
+  expect(restored.document.networkConfiguration).toEqual(document.networkConfiguration)
+  expect(restored.warnings).toEqual([])
+  expect(() => readCanvasDocument({ ...document, networkConfiguration: undefined })).toThrow('Missing network configuration')
 })

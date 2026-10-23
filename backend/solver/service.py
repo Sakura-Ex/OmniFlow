@@ -1,6 +1,7 @@
 """Solve validated sparse linear programs with explicit lexicographic stages."""
 
 from dataclasses import dataclass
+import logging
 from math import fsum, isfinite
 from time import perf_counter
 from typing import Any, Mapping
@@ -15,11 +16,14 @@ from .schema import (
     Objective, ObjectiveResult, RowResidual, Solution, SparseRows, Timings,
 )
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass(frozen=True)
 class SolverLimits:
     """Set server-owned size, budget and residual tolerances."""
 
+    max_threads: int = 1
     max_variables: int = 50_000
     max_rows: int = 100_000
     max_nonzeros: int = 1_000_000
@@ -41,6 +45,8 @@ class SolverLimits:
         ):
             if not isfinite(value) or value < 0:
                 raise ValueError("Solver time and tolerances must be finite and nonnegative")
+        if isinstance(self.max_threads, bool) or not isinstance(self.max_threads, int) or self.max_threads < 1:
+            raise ValueError("Native thread limit must be a positive integer")
         if self.max_time_limit_ms == 0:
             raise ValueError("The server time limit must be positive")
 
@@ -359,7 +365,7 @@ def solve_lp(payload: LPRequest | Mapping[str, Any], *, limits: SolverLimits | N
                             A_ub=inequality_matrix if inequality_matrix.shape[0] else None,
                             b_ub=np.asarray(rhs) if inequality_matrix.shape[0] else None,
                             bounds=[(variable.lower, variable.upper) for variable in request.variables],
-                            method="highs", options={"time_limit": remaining},
+                            method="highs", options={"time_limit": remaining, "threads": server_limits.max_threads},
                         )
                     finally:
                         solve_ms += max(0, (perf_counter() - optimizer_started) * 1000)
@@ -372,6 +378,7 @@ def solve_lp(payload: LPRequest | Mapping[str, Any], *, limits: SolverLimits | N
                             stage_status = "solver_error"
                             diagnostics.append(Diagnostic(code="invalid_solution", message="The optimizer's solution failed finite, residual or bound validation", objective_id=spec.id if spec else None))
         except Exception:
+            logger.exception("Optimizer stage failed request_id=%s objective_id=%s", request.request_id, spec.id if spec else None)
             diagnostics.append(Diagnostic(code="solver_exception", message="The optimizer failed to execute or returned malformed data", objective_id=spec.id if spec else None))
             stage_status = "solver_error"
 

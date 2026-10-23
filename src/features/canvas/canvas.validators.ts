@@ -1,7 +1,9 @@
+import { stripCalculationResults } from '@/common/utils/calculationState'
 import { normalizeEndpointData } from '@/features/recipe/recipe.endpointNorm'
 import type { Node } from 'reactflow'
 import type { RecipeNodeData, SourceNodeData, TargetNodeData } from '@/common/types/recipe'
 import { ensureRecipeDataShape } from '@/features/modifier/modifier.normalize'
+import { SplitterNodeDataSchema } from '@/common/schemas/splitter.schema'
 
 /**
  * Normalize a canvas node by ensuring required defaults (`mode`) are present and
@@ -11,7 +13,8 @@ import { ensureRecipeDataShape } from '@/features/modifier/modifier.normalize'
  */
 export function normalizeCanvasNode(node: Node): Node {
   if (!node.data) return node
-  const raw = node.data as Record<string, unknown>
+  const raw = stripCalculationResults(node.data as Record<string, unknown>)
+  if (node.type === 'splitterNode') return { ...node, data: SplitterNodeDataSchema.parse(raw) }
 
   const isMode = (value: unknown): value is string => typeof value === 'string'&& value.length > 0
 

@@ -1,102 +1,85 @@
+import { runNetworkDiagnostics, explainActiveLimits } from '../diagnostics'
+import type { LPRequest } from '@/common/types/lp'
+import { useCallback, useEffect, useRef } from 'react'
 import { useSettingsStore } from '@/features/settings/settings.store'
-import type { CalculationPayload } from '../payloadBuilder'
-import { useCallback } from 'react'
-import { readCalculationResponse } from '../calculationClient'
-import { buildCalculationPayload } from '../payloadBuilder'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { useCanvasStore } from '@/features/canvas/canvas.store'
+import { generateId } from '@/common/utils/id'
+import { readCalculationResponse } from '../calculationClient'
+import { compileNetwork } from '../networkCompiler'
+import { mapCalculationResult } from '../calculationResult'
+import { calculationDocumentKey, CalculationSession } from '../calculationSession'
 
 /**
- * React hook that orchestrates a full calculation cycle:
- *
- * 1. Reads canvas nodes, edges and recipe store from Zustand.
- * 2. Calls {@link buildCalculationPayload} to assemble the backend payload.
- * 3. Validates final port identities, units and explicit recipe eligibility.
- * 4. POSTs the payload to the backend `/api/calculate` endpoint.
- * 5. Stores the {@link CalculateResponse} back into the canvas store.
- *
- * Also exposes cached system stats (inputs, outputs, capex) and provides
- * a `resetSystemStats` callback to clear the previous calculation state.
- *
- * @returns An object containing:
- *  - `systemInputs` / `systemOutputs` — current system-level resource aggregates.
- *  - `lastSystemInputs` / `lastSystemOutputs` — cached values from the last run.
- *  - `globalInputIds` / `globalOutputIds` — globally-routed port resource IDs.
- *  - `capexList` — capital expenditure breakdown.
- *  - `error` — last calculation error message, if any.
- *  - `resetSystemStats` — callback to clear calculation state.
- *  - `handleCalculate` — async callback that runs the full calculation flow.
+ * Compile one snapshot, cancel obsolete work, and apply only matching verified results.
+ * @returns Calculation commands and current presentation values.
  */
 export function useCalculation() {
-  const systemInputs = useCanvasStore((s) => s.systemInputs)
-  const systemOutputs = useCanvasStore((s) => s.systemOutputs)
-  const lastSystemInputs = useCanvasStore((s) => s.lastSystemInputs)
-  const lastSystemOutputs = useCanvasStore((s) => s.lastSystemOutputs)
-  const globalInputIds = useCanvasStore((s) => s.globalInputIds)
-  const globalOutputIds = useCanvasStore((s) => s.globalOutputIds)
-  const capexList = useCanvasStore((s) => s.capexList)
-  const error = useCanvasStore((s) => s.error)
-
-  const resetSystemStats = useCallback(() => {
-    useCanvasStore.getState().resetCalculationState()
+  const session = useRef(new CalculationSession())
+  const systemInputs = useCanvasStore(s => s.systemInputs)
+  const systemOutputs = useCanvasStore(s => s.systemOutputs)
+  const lastSystemInputs = useCanvasStore(s => s.lastSystemInputs)
+  const lastSystemOutputs = useCanvasStore(s => s.lastSystemOutputs)
+  const globalInputIds = useCanvasStore(s => s.globalInputIds)
+  const globalOutputIds = useCanvasStore(s => s.globalOutputIds)
+  const capexList = useCanvasStore(s => s.capexList)
+  const error = useCanvasStore(s => s.error)
+  const capture = useCallback(() => {
+    const canvas = useCanvasStore.getState()
+    return calculationDocumentKey(canvas.nodes, canvas.edges, useRecipeStore.getState().recipes, canvas.networkConfiguration, useSettingsStore.getState().units)
   }, [])
-
+  useEffect(() => {
+    const activeSession = session.current
+    let key = capture()
+    const changed = () => {
+      const next = capture()
+      if (key === next) return
+      key = next
+      activeSession.invalidate()
+      useCanvasStore.getState().invalidateCalculation()
+    }
+    const dispose = [useCanvasStore.subscribe(changed), useRecipeStore.subscribe(changed), useSettingsStore.subscribe(changed)]
+    return () => { dispose.forEach(unsubscribe => unsubscribe()); activeSession.invalidate() }
+  }, [capture])
+  const resetSystemStats = useCallback(() => { session.current.invalidate(); useCanvasStore.getState().resetCalculationState() }, [])
   const handleCalculate = useCallback(async () => {
-    const nodes = useCanvasStore.getState().nodes
-    const edges = useCanvasStore.getState().edges
-    const recipeStore = useRecipeStore.getState().recipes
-    useCanvasStore.getState().resetCalculationState()
-
-    let result: CalculationPayload
-    try { result = buildCalculationPayload(nodes, edges, recipeStore, useSettingsStore.getState().units) }
-    catch (error) {
-      useCanvasStore.getState().setError(error instanceof Error ? error.message : String(error))
-      return
-    }
-
-    const payload = {
-      nodes: result.payloadNodes,
-      edges: result.payloadEdges,
-    }
-
-    const canvasStore = useCanvasStore.getState()
-    canvasStore.setGlobalInputIds(Array.from(result.globalInputSet))
-    canvasStore.setGlobalOutputIds(Array.from(result.globalOutputSet))
-
+    const started = performance.now()
+    const deadline = started + 10000
+    const requestId = generateId()
+    let activeRequestId = requestId
     const backendUrl = import.meta.env.VITE_BACKEND_URL || `http://${window.location.hostname}:7998`
-    const apiUrl = `${backendUrl}/api/calculate`
-
-    let response: Response
+    const pending = session.current.begin(() => { void fetch(`${backendUrl}/api/calculate/${encodeURIComponent(activeRequestId)}`, { method: 'DELETE' }).catch(() => undefined) })
+    const canvas = useCanvasStore.getState()
+    canvas.beginCalculation()
+    const revision = useCanvasStore.getState().documentRevision
+    const key = capture()
     try {
-      response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-    } catch (err) {
-      canvasStore.setError(`Cannot connect to backend at ${apiUrl}: ${err instanceof Error ? err.message : 'Unknown error'}`)
-      return
+      const snapshot = { recipes: useRecipeStore.getState().recipes, configuration: canvas.networkConfiguration, environment: useSettingsStore.getState().units }
+      const model = compileNetwork({ nodes: canvas.nodes, edges: canvas.edges, ...snapshot, requestId, documentRevision: revision })
+      const isCurrent = () => pending.isCurrent() && capture() === key && useCanvasStore.getState().documentRevision === revision
+      const solve = async (request: LPRequest) => {
+        const remaining = deadline - performance.now()
+        if (remaining <= 0) throw new Error('请求总预算已用尽，尚未取得已验证方案。')
+        const submitted = { ...request, solver_options: { time_limit_ms: Math.min(request.solver_options.time_limit_ms, remaining) } }
+        const signal = AbortSignal.any([pending.signal, AbortSignal.timeout(Math.ceil(remaining))])
+        activeRequestId = request.request_id
+        const response = await fetch(`${backendUrl}/api/calculate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(submitted), signal })
+        return readCalculationResponse(response, request)
+      }
+      const result = await solve(model.request)
+      if (!isCurrent()) return
+      useCanvasStore.getState().setCalculationResult(mapCalculationResult(model, result))
+      useCanvasStore.getState().setActiveLimits(explainActiveLimits(model, result))
+      if (result.status === 'infeasible') {
+        const report = await runNetworkDiagnostics(model, result, { deadline, requestId: generateId(), solve, isCurrent })
+        if (isCurrent() && report.status !== 'stale') useCanvasStore.getState().setDiagnosticReport(report)
+      }
+    } catch (failure) {
+      if (!pending.isCurrent() || capture() !== key) return
+      const message = failure instanceof Error ? failure.message : String(failure)
+      const addresses = message.match(/\["(?:[^"\\]|\\.)*","(?:[^"\\]|\\.)*"\]/g) ?? []
+      useCanvasStore.getState().setCalculationResult({ status: performance.now() >= deadline ? 'limit_reached' : 'solver_error', message: performance.now() >= deadline ? '请求总预算已用尽，尚未取得已验证方案。' : message, errors: addresses.map(address => ({ node_id: JSON.parse(address)[0] as string, path: [address], code: 'compile_error', message })) })
     }
-    try {
-      canvasStore.setCalculationResult(await readCalculationResponse(response))
-    } catch (err) {
-      canvasStore.setCalculationResult({
-        status: 'solver_error',
-        message: `Invalid calculation result: ${err instanceof Error ? err.message : 'Unknown error'}`,
-      })
-    }
-  }, [])
-
-  return {
-    systemInputs,
-    systemOutputs,
-    lastSystemInputs,
-    lastSystemOutputs,
-    globalInputIds,
-    globalOutputIds,
-    capexList,
-    error,
-    resetSystemStats,
-    handleCalculate,
-  }
+  }, [capture])
+  return { systemInputs, systemOutputs, lastSystemInputs, lastSystemOutputs, globalInputIds, globalOutputIds, capexList, error, resetSystemStats, handleCalculate }
 }

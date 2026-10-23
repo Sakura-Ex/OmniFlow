@@ -1,3 +1,4 @@
+import { configureEndpointPorts } from '@/features/calculation/endpointConfiguration'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { useSettingsStore } from '@/features/settings/settings.store'
 import { useCallback } from 'react'
@@ -59,38 +60,33 @@ export function useNodeOperations({
     useCanvasStore.getState().updateNodeData(nodeId, nextData)
   }, [takeSnapshot])
 
-  const autoFillEndpoints = useCallback((nodeId: string) => {
-    const recipeNode = nodesRef.current.find((node) => node.id === nodeId)
-    if (!recipeNode || recipeNode.type !== 'recipeNode') return
-
-    const result = computeAutoFillEndpoints({
-      nodeId,
-      recipeNodeData: useRecipeStore.getState().recipes[nodeId] ?? recipeNode.data as RecipeNodeData,
-      environment: useSettingsStore.getState().units,
-      allNodes: nodesRef.current,
-      allEdges: edgesRef.current,
-      lastSystemInputs,
-      lastSystemOutputs,
-      makeId,
-    })
-
-    if (result.nodesToAdd.length === 0 && result.edgesToAdd.length === 0) return
-
+  const fillNodes = useCallback((ids: string[]) => {
+    let nextNodes = nodesRef.current, nextEdges = edgesRef.current
+    let configuration = useCanvasStore.getState().networkConfiguration
+    const environment = useSettingsStore.getState().units
+    for (const nodeId of ids) {
+      const recipeNode = nextNodes.find(node => node.id === nodeId)
+      if (!recipeNode || recipeNode.type !== 'recipeNode') continue
+      const result = computeAutoFillEndpoints({ nodeId, configuration,
+        recipeNodeData: useRecipeStore.getState().recipes[nodeId] ?? recipeNode.data as RecipeNodeData,
+        environment, allNodes: nextNodes, allEdges: nextEdges, lastSystemInputs, lastSystemOutputs, makeId })
+      if (!result.nodesToAdd.length && !result.edgesToAdd.length) continue
+      nextNodes = [...nextNodes, ...result.nodesToAdd]
+      nextEdges = [...nextEdges, ...result.edgesToAdd]
+      configuration = result.nodesToAdd.reduce((current, node) => configureEndpointPorts(current, node, environment), configuration)
+    }
+    if (nextNodes === nodesRef.current && nextEdges === edgesRef.current) return
     takeSnapshot()
-
-    const nextNodes = [...nodesRef.current, ...result.nodesToAdd]
-    const nextEdges = [...edgesRef.current, ...result.edgesToAdd]
     setNodes(nextNodes)
+    useCanvasStore.getState().setNetworkConfiguration(configuration)
     setEdges(nextEdges)
     nodesRef.current = nextNodes
     edgesRef.current = nextEdges
   }, [nodesRef, edgesRef, setNodes, setEdges, takeSnapshot, lastSystemInputs, lastSystemOutputs])
-
+  const autoFillEndpoints = useCallback((nodeId: string) => fillNodes([nodeId]), [fillNodes])
   const handleAutoFillSelected = useCallback(() => {
-    const selected = nodesRef.current.filter((node) => node.selected && node.type === 'recipeNode')
-    if (selected.length === 0) return
-    selected.forEach((node) => autoFillEndpoints(node.id))
-  }, [nodesRef, autoFillEndpoints])
+    fillNodes(nodesRef.current.filter(node => node.selected && node.type === 'recipeNode').map(node => node.id))
+  }, [nodesRef, fillNodes])
 
   return { updateNodeData, autoFillEndpoints, handleAutoFillSelected }
 }

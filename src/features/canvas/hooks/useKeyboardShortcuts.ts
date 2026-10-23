@@ -47,6 +47,7 @@ export function useKeyboardShortcuts({
 }: UseKeyboardShortcutsParams) {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || (e.target instanceof HTMLElement && e.target.isContentEditable)) return
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
@@ -77,14 +78,17 @@ export function useKeyboardShortcuts({
         e.preventDefault()
         handleDuplicate()
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault()
         if (e.shiftKey) {
           redo()
         } else {
           undo()
         }
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault()
         redo()
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault()
         onDelete()
       }
     }

@@ -1,6 +1,6 @@
 import type { SourceNodeData } from '@/common/types/recipe'
 import { normalizeEndpointData } from './recipe.endpointNorm'
-import { buildCalculationPayload } from '@/features/calculation/payloadBuilder'
+import { graphPorts } from '@/features/calculation/graphPorts'
 import { beforeEach, expect, it } from 'vitest'
 import { useRecipeStore } from './recipe.store'
 import { useSettingsStore } from '@/features/settings/settings.store'
@@ -60,6 +60,6 @@ it('captures a custom category’s declared unit on endpoint creation', () => {
   useGlobalResourceTable.getState().addCategory({ id: 'mass', displayName: 'Mass', base_unit: 'g', themeColor: '#fff', preferred_time_base: 'rate_per_sec' })
   const data = normalizeEndpointData<SourceNodeData>({ ports: [{ category: 'mass', id: 'powder', amount: 0.25 }] })
   expect(data.ports?.[0].unit).toEqual([{ baseUnitId: 'g', exponent: 1 }])
-  const payload = buildCalculationPayload([{ id: 'source', type: 'sourceNode', position: { x: 0, y: 0 }, data }], [], {}, useSettingsStore.getState().units)
-  expect(payload.payloadNodes[0].data.amount).toBe(0.25)
+  const ports = graphPorts([{ id: 'source', type: 'sourceNode', position: { x: 0, y: 0 }, data }], {}, useSettingsStore.getState().units)
+  expect(ports[0].port.amount).toBe(0.25)
 })

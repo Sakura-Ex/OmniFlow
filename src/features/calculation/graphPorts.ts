@@ -8,6 +8,7 @@ import { runModifierPipeline } from '@/features/modifier/modifier.pipeline'
 import { identifyPorts } from '@/common/utils/ports'
 import { UnitSystem } from '@/common/units/UnitSystem'
 import { defaultResourceUnit, DEFAULT_UNIT_SNAPSHOT } from '@/common/units/defaults'
+import { splitterPorts } from './splitter'
 
 /** A port address always includes direction and persistent identity. */
 export interface GraphPort {
@@ -27,6 +28,7 @@ export interface GraphPort {
  */
 export function graphPorts(nodes: Node[], recipes: Record<string, RecipeNodeData>, environment: UnitSnapshot = DEFAULT_UNIT_SNAPSHOT): GraphPort[] {
   const ports = nodes.flatMap((node): GraphPort[] => {
+    if (node.type === 'splitterNode') return splitterPorts(node.id, node.data)
     if (node.type === 'recipeNode') {
       const data = recipes[node.id]
       if (!data) throw new Error(`Missing recipe: ${node.id}`)
@@ -53,12 +55,13 @@ export function graphPorts(nodes: Node[], recipes: Record<string, RecipeNodeData
  * @returns A located issue message, or null for a valid connection.
  * @param connection - Proposed or existing edge endpoints.
  * @param ports - Independent ports to inspect.
+ * @param index - Optional prevalidated node/port index for large graph compilation.
  */
-export function connectionIssue(connection: Connection | Edge, ports: GraphPort[]): string | null {
-  const source = ports.find((p) => p.nodeId === connection.source && p.portId === connection.sourceHandle && p.direction === 'output')
-  const target = ports.find((p) => p.nodeId === connection.target && p.portId === connection.targetHandle && p.direction === 'input')
-  if (!source) return `Missing output port: ${connection.source}/${connection.sourceHandle}`
-  if (!target) return `Missing input port: ${connection.target}/${connection.targetHandle}`
+export function connectionIssue(connection: Connection | Edge, ports: GraphPort[], index?: ReadonlyMap<string, GraphPort>): string | null {
+  const source = index ? index.get(JSON.stringify([connection.source, connection.sourceHandle])) : ports.find((p) => p.nodeId === connection.source && p.portId === connection.sourceHandle && p.direction === 'output')
+  const target = index ? index.get(JSON.stringify([connection.target, connection.targetHandle])) : ports.find((p) => p.nodeId === connection.target && p.portId === connection.targetHandle && p.direction === 'input')
+  if (!source || source.direction !== 'output') return `Missing output port: ${connection.source}/${connection.sourceHandle}`
+  if (!target || target.direction !== 'input') return `Missing input port: ${connection.target}/${connection.targetHandle}`
   if (source.resourceId !== target.resourceId) return `Incompatible resources: ${source.resourceId} / ${target.resourceId}`
   if (source.port.routing_mode === 'global' || target.port.routing_mode === 'global') return 'Global ports cannot have physical edges'
   return null

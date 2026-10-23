@@ -30,6 +30,7 @@ const suffix = (key: string) => Array.from(key).map((c) => c.codePointAt(0)!.toS
 
 /**
  * Resolve each independent final port, then form deterministic shared nets.
+ * @deprecated Legacy naming model retained for regression comparison only. Use compileNetwork for v2 network identity, including scope and bus isolation.
  * @returns Deterministic net lookup and port provenance.
  * @param nodes - Canvas nodes.
  * @param edges - Canvas edges with persistent port handles.

@@ -1,6 +1,30 @@
 # 现有代码与 v2 设计差距评估
 
+> **v2 收尾更新（2026-10-23）**：本轮已补保存基准与离开保护、TPS／字典／已建状态历史事务、批量补全一次撤销、系统剪贴板优先级，以及有效的模块边界检查、CI 配置、后端来源／请求体限制和异常日志。最新实测为前端 317、后端 183 项通过；详细覆盖及尚未完成的浏览器验收见[测试记录](testing.md)。下文旧快照中的对应缺口不再代表现状。全图快照性能、恢复机制、完整浏览器自动化等仍未因此解决；三种显示模式留到下一阶段。
+
 评估日期：2026-09-22。依据当前工作区源代码与 technical-design-v2-proposal.md，不以旧设计的声明替代实现证据。本次没有修改业务代码。
+
+> 历史时点说明（2026-10-23）：下文第 1–7 节完整保留 2026-09-22 的评估，源码行号和“当前”等用语均指该历史时点，不能作为现有缺陷清单。此后已实施单位表达式、稳定端口、纯修饰器管线、严格网络编译、版本化 LP HTTP、有界执行、分流器和诊断等改造。当前核验入口是 [T01–T24 证据矩阵](validation/v2-completion/acceptance-matrix.md)、[测试指南](testing.md) 与 [继续实施记录](validation/v2-completion/README.md)；未观察的 UI 和未完成的跨模块验收不在此自动宣称通过。
+
+## 2026-10-23 实现核对：历史问题的当前落点
+
+| 历史问题 | 当前实现及证据 | 仍需区分的验证范围 |
+|---|---|---|
+| 免费 Void 供给、自动排放、非完整守恒 | networkCompiler 使用最终端口、每 flow Net 等式和显式 Source/Delivery/Spill；HTTP 已移除旧图建模；真实 compiler/diagnostic/HTTP fixtures | 只有明确 fixture 与浏览器观察能证明对应场景；不把编译 schema 通过当端到端通过 |
+| 同资源端口混合、Net 不稳定 | 持久 portId、结构化节点端口地址、确定 Net/指纹、复制重映射；ports/history/file tests | 复制、保存、撤销的定量求解与 UI 证据按矩阵独立登记 |
+| 单位仅标签、TPS 缓存 | Unit/Quantity/UnitSystem 统一代数及显式环境；单位、环境、文件测试 | 原文第 5 节单 unitId/换算族接口是历史建议；现已采用可乘除整数次幂单位表达式，不应按旧建议补回第二套转换逻辑 |
+| 大 M 和稠密业务建模 | 稀疏 COO/CSR、按优先级分层及带尺度容差的目标锁；真实慢配方、无界与残差测试 | 连续 LP 不保证最少整数安装或动态启动可行 |
+| API 强制断言、结果错配 | LPRequest/LPResponse 的 Pydantic/Zod、三个请求身份、变量映射、session过期控制；HTTP/client/session tests | 运行中用户编辑的浏览器乱序交互仍以实际观察记录为准 |
+| BOM/安装/启动不足 | installation、最终 bom_occupancy、运行与安装投影已进入当前领域模块 | T14/24 有实际 solver 响应投影，T14 浏览器显示 1.2/2/60%/BOM2；T12 是启动待确认检查而非动态证明，T19 自动固定负荷明确拒绝 |
+| 同步阻塞、无预算和并发控制 | runtime 有界 worker/queue/native线程、排队预算、排队取消、health响应；7项运行测试 | 不支持强制中止已运行 native；AbortController 不是后端终止机制 |
+| Splitter 未注册 | 独立 splitterNode、比例约束/连续变量、退化连接校验、编辑/存档/复制与7组真实求解fixtures | 分配比例不等于有外供或旁路时的消费比例 |
+| 无结构化诊断或实测性能 | 有限弹性LP与独立诊断报告、满载余量；真实T03/T04，浏览器确认独立缺口报告；固定硬件数据集性能报告 | 诊断不是唯一原因/最小冲突集/可运行方案；后端性能不等于浏览器编译渲染性能 |
+
+修饰器计算入口现从 modifier.registry / modifier.pipeline 导出纯计算定义；React 卡片在 modifier.ui.registry 独立注册，GT 共用规则在纯规则模块，compiler 每配方只运行一次管线。modifier.isolation.test 以阻止 React/UI 导入的方式验证入口隔离。IMachineModifier 仍保留可序列化 ui_schema 元数据，Context 中仍带 UnitSystem 和四组端口快照，这不等于计算依赖 React。设计草案中“Context→Effect”已落地；旧 Context→Context 和内嵌 renderBody 不能当当前契约。
+
+本轮最终集成回归由协调 agent 验证：212 项前端测试、163 项后端测试通过且无 skip，31 组真实编译器 LP fixtures 包括独立同资源网、单位显示不变、安装与 100能力/60负荷/40余量发电；lint 零告警，build 通过且保留约 677 kB 主包大小告警。浏览器已观察 baseline、fractional、shortage、closed waste 和 splitter 堵塞/排放/容量/零支路，具体值及截图见验收矩阵和 ledger，其他 UI 路径不由这些结果自动推定。性能仍以带硬件、样本和阶段边界的实测文档为准。
+
+以下保留历史评估原文。
 
 ## 1. 结论
 

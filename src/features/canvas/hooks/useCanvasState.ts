@@ -1,3 +1,7 @@
+import { configureEndpointPorts } from '@/features/calculation/endpointConfiguration'
+import { emptyNetworkConfiguration, type NetworkConfiguration } from '@/common/schemas/network.schema'
+import { useSettingsStore } from '@/features/settings/settings.store'
+import type { UnitSnapshot } from '@/common/types/units'
 import { normalizeGraph } from '@/features/canvas/graphDocument'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { useLayoutEffect, useRef, useCallback } from 'react'
@@ -9,11 +13,13 @@ import { useCanvasStore } from '@/features/canvas/canvas.store'
  *
  * @param initialNodes  Nodes to seed the store with on first render.
  * @param initialEdges  Edges to seed the store with on first render.
+ * @param initialConfiguration - Explicit starter policies, without implicit external supply.
+ * @param initialEnvironment - Unit definitions belonging to the starter document.
  * @returns An object containing the current `nodes`, `edges`, their setters,
  *          React Flow-compatible change handlers (`onNodesChange`,
  *          `onEdgesChange`), and mutable refs (`nodesRef`, `edgesRef`).
  */
-export function useCanvasState(initialNodes: Node[], initialEdges: Edge[]) {
+export function useCanvasState(initialNodes: Node[], initialEdges: Edge[], initialConfiguration?: NetworkConfiguration, initialEnvironment?: UnitSnapshot) {
   const nodes = useCanvasStore((s) => s.nodes)
   const edges = useCanvasStore((s) => s.edges)
   const setNodes = useCanvasStore((s) => s.setNodes)
@@ -30,14 +36,16 @@ export function useCanvasState(initialNodes: Node[], initialEdges: Edge[]) {
   const initRef = useRef(false)
   useLayoutEffect(() => {
     if (initRef.current) return
+    if (initialEnvironment) useSettingsStore.getState().setEnvironment(initialEnvironment)
     const graph = normalizeGraph(initialNodes, initialEdges, {}, true)
     useRecipeStore.getState().loadAll(graph.recipes)
     setNodes(graph.nodes)
     setEdges(graph.edges)
+    useCanvasStore.getState().setNetworkConfiguration(graph.nodes.reduce((configuration, node) => configureEndpointPorts(configuration, node, useSettingsStore.getState().units), initialConfiguration ?? emptyNetworkConfiguration()))
     nodesRef.current = graph.nodes
     edgesRef.current = graph.edges
     initRef.current = true
-  }, [initialNodes, initialEdges, setNodes, setEdges])
+  }, [initialNodes, initialEdges, initialConfiguration, initialEnvironment, setNodes, setEdges])
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     setNodes(applyNodeChanges(changes, nodesRef.current))

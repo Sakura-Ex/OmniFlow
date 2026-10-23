@@ -1,773 +1,106 @@
-import math
-import logging
-from typing import Annotated, Any, Dict, List, Literal, Optional
+"""Expose the versioned mathematical LP service over HTTP."""
 
-import numpy as np
+from contextlib import asynccontextmanager
+import logging
+from time import perf_counter
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, StringConstraints, ValidationError, model_validator
-from scipy.optimize import linprog
+from fastapi.responses import JSONResponse
 
-logger = logging.getLogger("omniflow")
+from backend.solver import LPResponse
+from backend.solver.runtime import SolverRuntime
+from backend.solver.schema import Diagnostic, Timings
+from backend.http_policy import BodyLimitMiddleware, allowed_origins
 
-# ── Net 命名常量 (与前端 resourceIdentifier.ts 保持同步) ──
-VOID_PREFIX = "Void_"
-NET_PREFIX = "Net_"
-GLOBAL_PREFIX = "Global_"
-VIRTUAL_GLOBAL_PREFIX = "Virtual_Global_"
+logger = logging.getLogger(__name__)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Own the bounded solver workers for the complete application lifetime."""
+    app.state.solver_runtime = SolverRuntime()
+    await app.state.solver_runtime.start()
+    try:
+        yield
+    finally:
+        await app.state.solver_runtime.close()
 
-def is_void_name(name: str) -> bool:
-    """Check if a resource identifier represents a void port.
-    
-    Void ports (prefixed with 'Void_') are isolated endpoints that should be 
-    directly discarded from the material balance constraints.
-    
-    Args:
-        name: The resource identifier to check.
-    
-    Returns:
-        True if the name starts with VOID_PREFIX, False otherwise.
-    
-    Example:
-        >>> is_void_name("Void_Heat")
-        True
-        >>> is_void_name("Net_Power")
-        False
-    """
-    return name.startswith(VOID_PREFIX)
-
-
-def is_net_name(name: str) -> bool:
-    """Check if a resource identifier represents a networked item.
-    
-    Networked items (prefixed with 'Net_') are connected through physical 
-    conduits and participate in the topological network analysis.
-    
-    Args:
-        name: The resource identifier to check.
-    
-    Returns:
-        True if the name starts with NET_PREFIX, False otherwise.
-    
-    Example:
-        >>> is_net_name("Net_Electricity")
-        True
-        >>> is_net_name("Global_Steam")
-        False
-    """
-    return name.startswith(NET_PREFIX)
-
-
-# =====================================================================
-# 1. 基础环境与 FastAPI 实例初始化
-# =====================================================================
-app = FastAPI(
-    title="OmniFlow Backend",
-    description="Backend calculation engine for the production line calculator",
-    version="0.1.0"
-)
-
-# Configure CORS middleware to allow cross-origin requests from the frontend.
-# In development, localhost:5173 is allowed. In production, replace '*' with 
-# specific domain names for security.
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "*",  # Allow all origins for development; restrict in production
-]
-
+app = FastAPI(title="OmniFlow Backend", version="2.0.0", lifespan=lifespan)
+app.add_middleware(BodyLimitMiddleware)
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    CORSMiddleware, allow_origins=allowed_origins(), allow_credentials=False,
+    allow_methods=["GET", "POST", "DELETE"], allow_headers=["Content-Type"],
 )
 
 
-# =====================================================================
-# 2. Pydantic 数据模型定义 (API 契约)
-# =====================================================================
-ResourceId = Annotated[str, StringConstraints(min_length=1, pattern=r"\S")]
-NonnegativeNumber = Annotated[float, Field(ge=0, allow_inf_nan=False, strict=True)]
-
-
-class RecipeNodeData(BaseModel):
-    """Data model for recipe node configuration.
-    
-    Represents a processing machine in the production flow with defined 
-    input/output rates and operational constraints.
-    
-    Attributes:
-        recipe_id: Unique identifier for the recipe being executed.
-        machine_name: Display name for the machine in the UI.
-        system: The mod/system this machine belongs to (e.g., 'gregtech').
-        inputs: Dictionary mapping resource identifiers to input rates (items/s).
-        outputs: Dictionary mapping resource identifiers to output rates (items/s).
-        mode: Operation mode - 'auto' for unlimited, 'limit' for manual cap.
-        manual_machines: Maximum number of machines when mode is 'limit'.
-        metadata: Additional machine-specific configuration data.
-    """
-    recipe_id: str = Field("", description="Recipe ID")
-    machine_name: str = Field("Recipe", description="Machine name")
-    system: Optional[str] = Field(None, description="Mod system")
-    inputs: Dict[ResourceId, NonnegativeNumber] = Field(default_factory=dict, description="Input rates")
-    outputs: Dict[ResourceId, NonnegativeNumber] = Field(default_factory=dict, description="Output rates")
-    mode: Optional[Literal['auto', 'limit']] = None
-    manual_machines: Optional[NonnegativeNumber] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Machine metadata")
-
-    @model_validator(mode="after")
-    def require_manual_cap(self) -> "RecipeNodeData":
-        """Require an explicit capacity for limited recipes."""
-        if self.mode == "limit" and self.manual_machines is None:
-            raise ValueError("manual_machines is required in limit mode")
-        return self
-
-
-class SourceNodeData(BaseModel):
-    """Data model for source node (input provider).
-    
-    Represents an external source that provides resources to the production flow.
-    
-    Attributes:
-        id: The resource identifier being supplied.
-        amount: The supply rate or total amount available.
-        mode: Supply mode - 'infinite' for unlimited, 'limit' for capped supply.
-        actual_amounts: Backend-calculated actual throughput per port (for multi-port sources).
-    """
-    id: ResourceId = Field(..., description="Resource ID")
-    amount: NonnegativeNumber = Field(0, description="Amount/rate")
-    mode: Optional[Literal['infinite', 'limit']] = None
-    actual_amounts: Optional[Dict[ResourceId, NonnegativeNumber]] = None
-
-
-class TargetNodeData(BaseModel):
-    """Data model for target node (output consumer).
-    
-    Represents an external sink that consumes resources from the production flow.
-    
-    Attributes:
-        id: The resource identifier being consumed.
-        amount: The demand rate or target amount.
-        mode: Target mode - 'demand' for fixed requirement, 'maximize' for unbounded output,
-              'overflow' for excess disposal.
-        actual_amounts: Backend-calculated actual throughput per port (for multi-port targets).
-    """
-    id: ResourceId = Field(..., description="Resource ID")
-    amount: NonnegativeNumber = Field(0, description="Amount/rate")
-    mode: Optional[Literal['demand', 'maximize', 'overflow']] = None
-    actual_amounts: Optional[Dict[ResourceId, NonnegativeNumber]] = None
-
-
-class GraphNode(BaseModel):
-    """Data model for a node in the React Flow graph.
-    
-    Generic wrapper for any node type in the production flow diagram.
-    
-    Attributes:
-        id: Unique identifier for the node in the graph.
-        type: Node type discriminator - 'recipeNode', 'sourceNode', or 'targetNode'.
-        data: Node-specific data payload matching the corresponding data model.
-    """
-    id: ResourceId = Field(..., description="Unique node identifier")
-    type: str = Field(..., description="Node type: recipeNode|sourceNode|targetNode")
-    data: Dict[str, Any] = Field(default_factory=dict, description="Node data payload")
-
-
-class GraphEdge(BaseModel):
-    """Data model for an edge (connection) in the React Flow graph.
-    
-    Represents a material flow connection between two nodes.
-    
-    Attributes:
-        source: The source node's ID.
-        target: The target node's ID.
-        sourceHandle: The resource identifier flowing out of the source.
-        targetHandle: The resource identifier flowing into the target.
-    """
-    source: str = Field(..., description="Source node ID")
-    target: str = Field(..., description="Target node ID")
-    sourceHandle: Optional[str] = Field(None, description="Output resource ID")
-    targetHandle: Optional[str] = Field(None, description="Input resource ID")
-
-
-class CalculateRequest(BaseModel):
-    """Request payload for the /api/calculate endpoint.
-    
-    Contains the complete graph representation of the production flow to be solved.
-    
-    Attributes:
-        nodes: List of all nodes in the production flow graph.
-        edges: List of all connections between nodes.
-    """
-    nodes: List[GraphNode] = Field(..., description="All graph nodes")
-    edges: List[GraphEdge] = Field(..., description="All graph edges")
-
-
-class InvalidGraph(Exception):
-    """Carry JSON-safe validation issues for the complete graph."""
-
-    def __init__(self, errors: List[Dict[str, Any]]) -> None:
-        super().__init__("Graph validation failed")
-        self.errors = errors
-
-
-@app.exception_handler(InvalidGraph)
-async def invalid_graph_handler(_request: Request, exc: InvalidGraph) -> JSONResponse:
-    """Return a consistent error envelope without serializing invalid inputs."""
-    return JSONResponse(status_code=422, content={
-        "status": "invalid_model", "message": str(exc), "errors": exc.errors,
-    })
+def http_response(result: LPResponse) -> JSONResponse:
+    """Preserve mathematical outcomes and distinguish invalid/server failures."""
+    status = {"invalid_model": 422, "solver_error": 500}.get(result.status, 200)
+    return JSONResponse(status_code=status, content=result.model_dump(mode="json"))
 
 
 @app.exception_handler(RequestValidationError)
-async def invalid_request_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    """Normalize outer request errors to the graph validation contract."""
-    errors = []
-    for issue in exc.errors():
-        path = list(issue["loc"])
-        if path and path[0] == "body":
-            path = path[1:]
-        node_id = None
-        if (len(path) >= 2 and path[0] == "nodes" and isinstance(path[1], int)
-                and isinstance(exc.body, dict)):
-            nodes = exc.body.get("nodes")
-            if isinstance(nodes, list) and path[1] < len(nodes):
-                node = nodes[path[1]]
-                if isinstance(node, dict) and isinstance(node.get("id"), str):
-                    node_id = node["id"]
-        errors.append({"node_id": node_id, "path": path,
-                       "code": issue["type"], "message": issue["msg"]})
-    return await invalid_graph_handler(request, InvalidGraph(errors))
+async def invalid_request(_request: Request, error: RequestValidationError) -> JSONResponse:
+    """Return the LP envelope for malformed JSON without echoing request data."""
+    result = LPResponse(
+        request_id=None, document_revision=None, compiler_fingerprint=None,
+        status="invalid_model", solution=None, objective_results=[], model_stats=None,
+        diagnostics=[Diagnostic(code=item["type"], message=item["msg"], path=list(item["loc"]))
+                     for item in error.errors()],
+        timings=Timings(queue_ms=0, solve_ms=0, total_ms=0),
+    )
+    return http_response(result)
 
 
-def validate_graph(request: CalculateRequest) -> tuple[list[Dict[str, Any]], list[Dict[str, Any]], list[Dict[str, Any]]]:
-    """Validate every node and edge before either route builds a matrix.
-
-    Args:
-        request: Graph containing business nodes and optional global helpers.
-
-    Returns:
-        Validated recipe, source and target groups in request order.
-
-    Raises:
-        InvalidGraph: If any node or edge is invalid.
-    """
-    groups: Dict[str, list[Dict[str, Any]]] = {"recipeNode": [], "sourceNode": [], "targetNode": []}
-    models = {"recipeNode": RecipeNodeData, "sourceNode": SourceNodeData,
-              "targetNode": TargetNodeData}
-    virtual_nodes = {"Virtual_Global_Source": "global_source",
-                     "Virtual_Global_Target": "global_target"}
-    errors = []
-    node_ids = set()
-    for index, node in enumerate(request.nodes):
-        path = ["nodes", index]
-        if node.id in node_ids:
-            errors.append({"node_id": node.id, "path": path + ["id"],
-                           "code": "duplicate_id", "message": "Node ID must be unique"})
-        node_ids.add(node.id)
-        if node.type == "virtualNode":
-            if node.id not in virtual_nodes or node.data.get("kind") != virtual_nodes[node.id]:
-                errors.append({"node_id": node.id, "path": path + ["data", "kind"],
-                               "code": "invalid_virtual_node", "message": "Unknown global helper node"})
-            continue
-        if node.type not in models:
-            errors.append({"node_id": node.id, "path": path + ["type"],
-                           "code": "unknown_node_type", "message": "Unsupported node type"})
-            continue
-        try:
-            data = models[node.type].model_validate(node.data)
-            groups[node.type].append({"node_id": node.id, "data": data})
-        except ValidationError as exc:
-            for issue in exc.errors():
-                errors.append({"node_id": node.id, "path": path + ["data", *issue["loc"]],
-                               "code": issue["type"], "message": issue["msg"]})
-    for index, edge in enumerate(request.edges):
-        for field in ("source", "target"):
-            if getattr(edge, field) not in node_ids:
-                errors.append({"node_id": getattr(edge, field), "path": ["edges", index, field],
-                               "code": "missing_node", "message": "Edge references an unknown node"})
-    if errors:
-        raise InvalidGraph(errors)
-    return groups["recipeNode"], groups["sourceNode"], groups["targetNode"]
+@app.get("/api/health")
+async def health() -> dict[str, str]:
+    """Provide a cheap event-loop responsiveness probe."""
+    return {"status": "ok", "schema_version": "omniflow.lp.v1"}
 
 
-# =====================================================================
-# 3. 路由与 Mock 解算接口
-# =====================================================================
-@app.post("/api/calculate", summary="提交工艺图解算请求")
-async def calculate_flow(request: CalculateRequest):
-    """Receive React Flow graph data and perform topology analysis and recipe solving.
-    
-    Uses linear programming (SciPy linprog) to solve material balance constraints
-    for the production flow graph. Supports multiple node types (recipe, source, target)
-    and operation modes.
-    
-    Args:
-        request: CalculateRequest object containing nodes and edges.
-    
-    Returns:
-        dict: Calculation result with the following fields:
-            - status: Solver status (success/unbounded/infeasible)
-            - node_results: Machine counts and utilization per node
-            - system_inputs: Total system input rates
-            - system_outputs: Total system output rates
-    
-    Raises:
-        InvalidGraph: If node data or graph structure is invalid.
-    
-    Note:
-        - Void_ prefixed ports are directly discarded from constraints
-        - Spill variables use dynamic Big-M method (White Paper §7.3.4)
-    """
-    recipe_nodes, source_nodes, target_nodes = validate_graph(request)
 
-    # Step 1: Parse network, extract all items and build index
-    items: List[str] = []
-    item_index: Dict[str, int] = {}
+@app.middleware("http")
+async def request_clock(request: Request, call_next):
+    """Start the budget before request body parsing and route validation."""
+    if not hasattr(request.state, "started"):
+        request.state.started = perf_counter()
+    return await call_next(request)
 
-    def ensure_item(item_id: str) -> None:
-        """Ensure item exists in the index, adding if necessary."""
-        if item_id not in item_index:
-            item_index[item_id] = len(items)
-            items.append(item_id)
 
-    for recipe in recipe_nodes:
-        recipe_data: RecipeNodeData = recipe["data"]
-        for item_id in recipe_data.inputs:
-            ensure_item(item_id)
-        for item_id in recipe_data.outputs:
-            ensure_item(item_id)
-
-    # Also include items that only appear in source/target nodes
-    for source in source_nodes:
-        ensure_item(source["data"].id)
-    for target in target_nodes:
-        ensure_item(target["data"].id)
-
-    # Step 2: Build unified variable vector x = [x_recipes | x_sources | x_sinks]
-    recipe_count = len(recipe_nodes)
-    source_count = len(source_nodes)
-    sink_count = len(target_nodes)
-    source_start = recipe_count
-    sink_start = recipe_count + source_count
-    total_vars = recipe_count + source_count + sink_count
-
-    item_rows: Dict[str, np.ndarray] = {
-        item_id: np.zeros(total_vars, dtype=float)
-        for item_id in items
-    }
-
-    # Write item coefficients for all nodes (must be done before building spill)
-    for col, recipe in enumerate(recipe_nodes):
-        recipe_data: RecipeNodeData = recipe["data"]
-        for item_id, rate in recipe_data.outputs.items():
-            item_rows[item_id][col] += rate
-        for item_id, rate in recipe_data.inputs.items():
-            item_rows[item_id][col] -= rate
-
-    source_specs: List[Dict[str, Any]] = []
-    for offset, source in enumerate(source_nodes):
-        source_data: SourceNodeData = source["data"]
-        source_col = source_start + offset
-        src_mode = source_data.mode or 'infinite'
-        item_rows[source_data.id][source_col] += 1.0
-        source_specs.append({
-            "node_id": source["node_id"],
-            "item_id": source_data.id,
-            "col": source_col,
-            "mode": src_mode,
-            "amount": source_data.amount,
-        })
-
-    sink_specs: List[Dict[str, Any]] = []
-    for offset, target in enumerate(target_nodes):
-        target_data: TargetNodeData = target["data"]
-        sink_col = sink_start + offset
-        tgt_mode = target_data.mode or 'maximize'
-        item_rows[target_data.id][sink_col] -= 1.0
-        sink_specs.append({
-            "node_id": target["node_id"],
-            "item_id": target_data.id,
-            "col": sink_col,
-            "mode": tgt_mode,
-            "amount": target_data.amount,
-        })
-
-    # Step 2.5: Identify spill items and extend matrix (White Paper §7.2.2)
-    # Void_ ports = directly discarded, no conservation constraint, no spill variable
-    # Use spill soft constraint for all non-Void items: Ax - v_k = 0
-    spill_items: List[str] = []
-    spill_index: Dict[str, int] = {}
-    for item_id in items:
-        if is_void_name(item_id):
-            continue
-        row = item_rows[item_id]
-        if bool(np.any(row > 1e-12)):
-            spill_items.append(item_id)
-            spill_index[item_id] = len(spill_items) - 1
-
-    spill_count = len(spill_items)
-    spill_start = total_vars
-    total_vars += spill_count
-
-    for item_id in items:
-        item_rows[item_id] = np.append(item_rows[item_id], np.zeros(spill_count, dtype=float))
-    for spill_item in spill_items:
-        item_rows[spill_item][spill_start + spill_index[spill_item]] = -1.0
-
-    # Step 3: Build objective function c and variable bounds
-    c = np.zeros(total_vars, dtype=float)
-    bounds: List[tuple[float, Optional[float]]] = []
-    for col, recipe in enumerate(recipe_nodes):
-        recipe_data: RecipeNodeData = recipe["data"]
-        recipe_mode = recipe_data.mode or 'auto'
-        c[col] = 1.0
-        if recipe_mode == 'auto' or recipe_data.manual_machines is None:
-            bounds.append((0, None))
-        else:
-            manual_cap = max(0.0, float(recipe_data.manual_machines))
-            bounds.append((0, manual_cap))
-
-    for source in source_specs:
-        src_mode = source["mode"]
-        upper_bound = max(0.0, float(source["amount"])) if src_mode == 'limit' else None
-        bounds.append((0, upper_bound))
-
-    for sink in sink_specs:
-        tgt_mode = sink["mode"]
-        demand_amt = max(0.0, float(sink["amount"]))
-        if tgt_mode == 'demand':
-            c[sink["col"]] = 0.0
-            bounds.append((demand_amt, None))
-        elif tgt_mode == 'maximize':
-            c[sink["col"]] = -10000.0
-            bounds.append((0, None))
-        else:
-            c[sink["col"]] = 0.001
-            bounds.append((0, None))
-
-    # Dynamic Big-M (White Paper §7.3.4): spill penalty = max(1,000,000, max(|c_user|) × 10)
-    user_weights = [abs(c[col]) for col in range(spill_start) if abs(c[col]) > 0]
-    _spill_m = max(1_000_000, (max(user_weights) * 10) if user_weights else 1)
-
-    for i in range(spill_count):
-        c[spill_start + i] = _spill_m
-        bounds.append((0, None))
-
-    # Step 4: Build constraints (White Paper §7.2.3)
-    # Void_ ports have no constraint - directly discarded
-    A_eq_rows: List[List[float]] = []
-    b_eq: List[float] = []
-    A_ub_rows: List[List[float]] = []
-    b_ub: List[float] = []
-
-    for item_id in items:
-        row = item_rows[item_id]
-        if is_void_name(item_id):
-            continue
-        if item_id in spill_index:
-            A_eq_rows.append(row.tolist())
-            b_eq.append(0.0)
-
-    A_eq = np.array(A_eq_rows, dtype=float) if A_eq_rows else None
-    b_eq_arr = np.array(b_eq, dtype=float) if b_eq else None
-    A_ub = np.array(A_ub_rows, dtype=float) if A_ub_rows else None
-    b_ub_arr = np.array(b_ub, dtype=float) if b_ub else None
-
-    # Step 5: Solve with SciPy
-    if total_vars == 0:
-        return {
-            "status": "success",
-            "node_results": {},
-            "system_inputs": {},
-            "system_outputs": {},
-        }
-
+async def run_calculation(payload: dict, request: Request) -> JSONResponse:
+    """Use the same runtime for calculation and debug, with no alternate modeling."""
     try:
-        res = linprog(
-            c, A_ub=A_ub, b_ub=b_ub_arr, A_eq=A_eq, b_eq=b_eq_arr,
-            bounds=bounds, method="highs",
-        )
+        result, status = await request.app.state.solver_runtime.submit(payload, started=request.state.started)
     except Exception:
-        logger.exception("Calculation solver failed")
-        return JSONResponse(status_code=500, content={
-            "status": "solver_error", "message": "Solver execution failed. See server logs.",
-        })
-
-    if res.status != 0 or not res.success:
-        status = {1: "limit_reached", 2: "infeasible", 3: "unbounded"}.get(res.status, "solver_error")
-        return JSONResponse(status_code=500 if status == "solver_error" else 200, content={
-            "status": status, "message": str(res.message),
-        })
-    if res.x is None or len(res.x) != total_vars or not np.all(np.isfinite(res.x)):
-        return JSONResponse(status_code=500, content={
-            "status": "solver_error", "message": "Solver returned an invalid solution vector.",
-        })
-
-    # Step 6: Format and return results
-    node_results: Dict[str, Dict[str, float]] = {}
-    rounding_eps = 1e-8
-    for idx, recipe in enumerate(recipe_nodes):
-        recipe_data: RecipeNodeData = recipe["data"]
-        exact_rate = float(res.x[idx])
-        machines_actual = math.ceil(exact_rate - rounding_eps)
-        utilization = exact_rate / machines_actual if machines_actual > 0 else 0.0
-
-        key = recipe_data.recipe_id or recipe["node_id"]
-        if key in node_results:
-            key = recipe["node_id"]
-
-        node_results[key] = {
-            "machines_exact": exact_rate,
-            "machines_actual": machines_actual,
-            "utilization": utilization,
-        }
-
-    for source_spec in source_specs:
-        raw_value = float(res.x[source_spec["col"]])
-        actual_value = 0.0 if abs(raw_value) <= 1e-6 else raw_value
-        node_results[source_spec["node_id"]] = {
-            "actual_amounts": {source_spec["item_id"]: actual_value},
-        }
-
-    for sink_spec in sink_specs:
-        raw_value = float(res.x[sink_spec["col"]])
-        actual_value = 0.0 if abs(raw_value) <= 1e-6 else raw_value
-        node_results[sink_spec["node_id"]] = {
-            "actual_amounts": {sink_spec["item_id"]: actual_value},
-        }
-
-    # Full matrix back-substitution
-    full_matrix = np.array([item_rows[item_id] for item_id in items], dtype=float).reshape(len(items), total_vars)
-    net_rates = full_matrix @ res.x
-
-    system_inputs: Dict[str, float] = {}
-    system_outputs: Dict[str, float] = {}
-    for i, item_id in enumerate(items):
-        net = float(net_rates[i])
-        if net > 1e-6:
-            system_outputs[item_id] = net
-        elif net < -1e-6:
-            system_inputs[item_id] = -net
-
-    return {
-        "status": "success",
-        "node_results": node_results,
-        "system_inputs": system_inputs,
-        "system_outputs": system_outputs,
-    }
+        request_id = payload.get("request_id")
+        logger.exception("Calculation request failed request_id=%s", request_id if isinstance(request_id, str) and len(request_id) <= 200 else None)
+        result = LPResponse(
+            request_id=None, document_revision=None, compiler_fingerprint=None,
+            status="solver_error", solution=None, objective_results=[], model_stats=None,
+            diagnostics=[Diagnostic(code="request_execution_error", message="The calculation service failed to execute")],
+            timings=Timings(queue_ms=0, solve_ms=0, total_ms=(perf_counter() - request.state.started) * 1000),
+        )
+        status = 500
+    response = http_response(result)
+    if status != 200:
+        response.status_code = status
+    return response
 
 
-@app.post("/api/debug", summary="诊断：转储矩阵构建过程")
-async def debug_matrix(request: CalculateRequest):
-    """Dump matrix construction process for debugging without solving.
-    
-    Follows the same logic as /api/calculate but returns diagnostic information
-    about the constraint matrix, variable bounds, and objective coefficients
-    instead of solving the linear program.
-    
-    Args:
-        request: CalculateRequest object containing nodes and edges.
-    
-    Returns:
-        dict: Diagnostic information including:
-            - nodes_summary: Counts of recipes, sources, targets, spills
-            - variables: List of variable names
-            - variable_bounds: Bounds for each variable
-            - objective_coeffs: Objective function coefficients
-            - constraint_details: Detailed constraint information per item
-            - edges_received: All edges with handles
-    """
-    edges = request.edges
-    recipe_nodes, source_nodes, target_nodes = validate_graph(request)
+@app.post("/api/calculate")
+async def calculate(payload: dict, request: Request) -> JSONResponse:
+    """Solve only the versioned LP contract through bounded execution."""
+    return await run_calculation(payload, request)
 
-    items: List[str] = []
-    item_index: Dict[str, int] = {}
 
-    def ensure_item(item_id: str) -> None:
-        """Ensure item exists in the index, adding if necessary."""
-        if item_id not in item_index:
-            item_index[item_id] = len(items)
-            items.append(item_id)
+@app.post("/api/debug")
+async def debug(payload: dict, request: Request) -> JSONResponse:
+    """Inspect the same verified stages and residuals as the calculation service."""
+    return await run_calculation(payload, request)
 
-    for recipe in recipe_nodes:
-        recipe_data: RecipeNodeData = recipe["data"]
-        for item_id in recipe_data.inputs:
-            ensure_item(item_id)
-        for item_id in recipe_data.outputs:
-            ensure_item(item_id)
-    for source in source_nodes:
-        ensure_item(source["data"].id)
-    for target in target_nodes:
-        ensure_item(target["data"].id)
 
-    recipe_count = len(recipe_nodes)
-    source_count = len(source_nodes)
-    sink_count = len(target_nodes)
-    source_start = recipe_count
-    sink_start = recipe_count + source_count
-    total_vars = recipe_count + source_count + sink_count
-
-    item_rows: Dict[str, np.ndarray] = {
-        item_id: np.zeros(total_vars, dtype=float)
-        for item_id in items
-    }
-
-    # Write item coefficients for all nodes (must be done before building spill)
-    for col, recipe in enumerate(recipe_nodes):
-        recipe_data: RecipeNodeData = recipe["data"]
-        for item_id, rate in recipe_data.outputs.items():
-            item_rows[item_id][col] += rate
-        for item_id, rate in recipe_data.inputs.items():
-            item_rows[item_id][col] -= rate
-
-    source_specs: List[Dict[str, Any]] = []
-    for offset, source in enumerate(source_nodes):
-        source_data: SourceNodeData = source["data"]
-        source_col = source_start + offset
-        src_mode = source_data.mode or 'infinite'
-        item_rows[source_data.id][source_col] += 1.0
-        source_specs.append({
-            "node_id": source["node_id"],
-            "item_id": source_data.id,
-            "col": source_col,
-            "mode": src_mode,
-            "amount": source_data.amount,
-        })
-
-    sink_specs: List[Dict[str, Any]] = []
-    for offset, target in enumerate(target_nodes):
-        target_data: TargetNodeData = target["data"]
-        sink_col = sink_start + offset
-        tgt_mode = target_data.mode or 'maximize'
-        item_rows[target_data.id][sink_col] -= 1.0
-        sink_specs.append({
-            "node_id": target["node_id"],
-            "item_id": target_data.id,
-            "col": sink_col,
-            "mode": tgt_mode,
-            "amount": target_data.amount,
-        })
-
-    # Step 2.5: Identify spill items (White Paper §7.2.2)
-    spill_items2: List[str] = []
-    spill_index2: Dict[str, int] = {}
-    for item_id in items:
-        if is_void_name(item_id):
-            continue
-        row = item_rows[item_id]
-        if bool(np.any(row > 1e-12)):
-            spill_items2.append(item_id)
-            spill_index2[item_id] = len(spill_items2) - 1
-
-    spill_count2 = len(spill_items2)
-    spill_start2 = total_vars
-    total_vars += spill_count2
-
-    for item_id in items:
-        item_rows[item_id] = np.append(item_rows[item_id], np.zeros(spill_count2, dtype=float))
-    for spill_item in spill_items2:
-        item_rows[spill_item][spill_start2 + spill_index2[spill_item]] = -1.0
-
-    c = np.zeros(total_vars, dtype=float)
-    bounds: List[tuple[float, Optional[float]]] = []
-    for col, recipe in enumerate(recipe_nodes):
-        recipe_data: RecipeNodeData = recipe["data"]
-        recipe_mode = recipe_data.mode or 'auto'
-        c[col] = 1.0
-        if recipe_mode == 'auto' or recipe_data.manual_machines is None:
-            bounds.append((0, None))
-        else:
-            manual_cap = max(0.0, float(recipe_data.manual_machines))
-            bounds.append((0, manual_cap))
-
-    for source in source_specs:
-        src_mode = source["mode"]
-        upper_bound = max(0.0, float(source["amount"])) if src_mode == 'limit' else None
-        bounds.append((0, upper_bound))
-
-    for sink in sink_specs:
-        tgt_mode = sink["mode"]
-        demand_amt = max(0.0, float(sink["amount"]))
-        if tgt_mode == 'demand':
-            c[sink["col"]] = 0.0
-            bounds.append((demand_amt, None))
-        elif tgt_mode == 'maximize':
-            c[sink["col"]] = -10000.0
-            bounds.append((0, None))
-        else:
-            c[sink["col"]] = 0.001
-            bounds.append((0, None))
-
-    # Dynamic Big-M (White Paper §7.3.4)
-    user_weights2 = [abs(c[col]) for col in range(spill_start2) if abs(c[col]) > 0]
-    _spill_m2 = max(1_000_000, (max(user_weights2) * 10) if user_weights2 else 1)
-
-    for i in range(spill_count2):
-        c[spill_start2 + i] = _spill_m2
-        bounds.append((0, None))
-
-    # Build constraints
-    A_eq_rows: List[List[float]] = []
-    b_eq: List[float] = []
-    A_ub_rows: List[List[float]] = []
-    b_ub: List[float] = []
-    constraint_details: List[Dict[str, Any]] = []
-
-    for item_id in items:
-        row = item_rows[item_id]
-        detail = {
-            "item_id": item_id,
-            "row": [round(v, 6) for v in row.tolist()],
-            "has_positive": bool(np.any(row > 1e-12)),
-            "has_negative": bool(np.any(row < -1e-12)),
-        }
-        if is_void_name(item_id):
-            detail["constraint"] = "skip (Void — directly discarded)"
-        elif item_id in spill_index2:
-            A_eq_rows.append(row.tolist())
-            b_eq.append(0.0)
-            detail["constraint"] = f"soft_eq + spill (M={_spill_m2})"
-        else:
-            detail["constraint"] = "skip (no positive coefficients)"
-        constraint_details.append(detail)
-
-    # Variable names
-    var_names: List[str] = []
-    for i, r in enumerate(recipe_nodes):
-        var_names.append(f"Recipe[{r['node_id']}]")
-    for i, s in enumerate(source_nodes):
-        var_names.append(f"Source[{s['node_id']}]")
-    for i, t in enumerate(target_nodes):
-        var_names.append(f"Sink[{t['node_id']}]")
-    for spill_item in spill_items2:
-        var_names.append(f"Spill[{spill_item}]")
-
-    return {
-        "nodes_summary": {
-            "recipe_count": recipe_count,
-            "source_count": source_count,
-            "target_count": sink_count,
-            "spill_count": spill_count2,
-            "total_vars": total_vars,
-            "spill_m": _spill_m2,
-        },
-        "variables": var_names,
-        "variable_bounds": [[float(b[0]), b[1]] for b in bounds],
-        "objective_coeffs": [float(x) for x in c.tolist()],
-        "edges_received": [
-            {"source": e.source, "target": e.target, "sourceHandle": e.sourceHandle, "targetHandle": e.targetHandle}
-            for e in edges
-        ],
-        "items": items,
-        "constraint_details": constraint_details,
-        "equality_rows_count": len(A_eq_rows),
-        "inequality_rows_count": len(A_ub_rows),
-        "b_eq": b_eq,
-        "b_ub": b_ub,
-    }
+@app.delete("/api/calculate/{request_id}")
+async def cancel_queued(request_id: str, request: Request) -> dict[str, bool]:
+    """Cancel an explicitly identified queued request; never claim native termination."""
+    cancelled = await request.app.state.solver_runtime.cancel(request_id)
+    return {"cancelled": cancelled}

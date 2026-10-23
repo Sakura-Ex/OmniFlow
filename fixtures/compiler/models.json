@@ -1,0 +1,3672 @@
+[
+  {
+    "id": "T02-explicit-source",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:5f50500b",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        10,
+        10,
+        10
+      ]
+    }
+  },
+  {
+    "id": "T04-closed-coproduct",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:b4ac8d36",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 2
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "id": "T04-explicit-spill",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:a8e0d41f",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "spill:[\"r\",\"waste\"]",
+          "lower": 0,
+          "upper": 6
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 2
+          },
+          {
+            "row": 2,
+            "col": 3,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        3,
+        3,
+        3,
+        6
+      ]
+    }
+  },
+  {
+    "id": "T03-exact-demand-infeasible",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:c537d74d",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 11,
+          "upper": 11
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "infeasible",
+      "values": null
+    }
+  },
+  {
+    "id": "T05-capacity-is-upper-bound",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:a629dbeb",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [
+          "capacity:0"
+        ],
+        "rhs": [
+          5
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": 2
+          }
+        ]
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        2.5,
+        2.5,
+        2.5
+      ]
+    }
+  },
+  {
+    "id": "T17-fixed-infrastructure-load",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:3091de4f",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": 2
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          4,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        2,
+        6,
+        2
+      ]
+    }
+  },
+  {
+    "id": "T09-slow-recipe-product-priority",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:b184e8f7",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -0.001
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 0.001
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        10000,
+        10,
+        10
+      ]
+    }
+  },
+  {
+    "id": "T23-fractional-throughput",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:8c7b0e1b",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 0.25
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        0.25,
+        0.25,
+        0.25
+      ]
+    }
+  },
+  {
+    "id": "T02-explicit-infinite-source",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:e8ceecba",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 12,
+          "upper": 12
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        12,
+        12,
+        12
+      ]
+    }
+  },
+  {
+    "id": "T18-fixed-state-qualified",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:8b8369c1",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        10,
+        10,
+        10
+      ]
+    }
+  },
+  {
+    "id": "T22-same-variable-gross-input-output",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:fd9873ce",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -0.5
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        20,
+        10,
+        20
+      ]
+    }
+  },
+  {
+    "id": "T05-spill-receives-entire-shared-net",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:182f3f",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": 3
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "spill:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": 6
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          -6
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 1,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        0,
+        0,
+        6
+      ]
+    }
+  },
+  {
+    "id": "same-level-normalized-weight",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:57a2859",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "delivery:[\"u\",\"u\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 0,
+            "col": 2,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 3,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            },
+            {
+              "col": 3,
+              "value": -2
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        0,
+        10,
+        0,
+        10
+      ]
+    }
+  },
+  {
+    "id": "same-level-fixed-ratio",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:2e26099f",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "delivery:[\"u\",\"u\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "ratio:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          },
+          {
+            "row": 1,
+            "col": 3,
+            "value": -1
+          },
+          {
+            "row": 2,
+            "col": 2,
+            "value": 1
+          },
+          {
+            "row": 2,
+            "col": 3,
+            "value": -0.3333333333333333
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            },
+            {
+              "col": 3,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        10,
+        10,
+        2.5,
+        7.5
+      ]
+    }
+  },
+  {
+    "id": "at-least-delivery-default-minimum-operation",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:d76eea03",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 2,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        2,
+        2,
+        2
+      ]
+    }
+  },
+  {
+    "id": "T11-final-dynamic-ports-compiled-once",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:3a9fc7de",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 2
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        10,
+        10,
+        20
+      ]
+    }
+  },
+  {
+    "id": "T07-isolated-water-net-cannot-borrow-surplus",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:83d0e6fe",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 3
+        },
+        {
+          "id": "source:[\"s2\",\"s2\"]",
+          "lower": 0,
+          "upper": 100
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 2,
+          "upper": 2
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -2
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": 1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 2,
+            "col": 3,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "infeasible",
+      "values": null
+    }
+  },
+  {
+    "id": "T08-independent-processing-and-cooling-water",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:993d9daf",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 5
+        },
+        {
+          "id": "source:[\"s2\",\"s2\"]",
+          "lower": 0,
+          "upper": 100
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -2
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": -3
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": 1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 2,
+            "col": 3,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 3,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        2.5,
+        5,
+        7.5,
+        2.5
+      ]
+    }
+  },
+  {
+    "id": "T10-micro-coproduct-L-display",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:bbf284bf",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "spill:[\"r\",\"micro\"]",
+          "lower": 0,
+          "upper": 0.00005
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 0.00001
+          },
+          {
+            "row": 2,
+            "col": 3,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        5,
+        5,
+        5,
+        0.00005
+      ]
+    }
+  },
+  {
+    "id": "T10-micro-coproduct-mL-display",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:bbf284bf",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "spill:[\"r\",\"micro\"]",
+          "lower": 0,
+          "upper": 0.00005
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 0.00001
+          },
+          {
+            "row": 2,
+            "col": 3,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        5,
+        5,
+        5,
+        0.00005
+      ]
+    }
+  },
+  {
+    "id": "T13-fixed-40-60",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "splitter-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:169d3812",
+      "variables": [
+        {
+          "id": "splitter:f",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "delivery:[\"u\",\"u\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 0.4
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 0.6
+          },
+          {
+            "row": 2,
+            "col": 3,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            },
+            {
+              "col": 3,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        10,
+        10,
+        4,
+        6
+      ]
+    }
+  },
+  {
+    "id": "T13-blocked-branch-blocks-allocation",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "splitter-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:84f42a71",
+      "variables": [
+        {
+          "id": "splitter:f",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 0.4
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 0.6
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "id": "T13-explicit-spill-enables-branch",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "splitter-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:ad4a6c00",
+      "variables": [
+        {
+          "id": "splitter:f",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "spill:[\"f\",\"b\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 0.4
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 0.6
+          },
+          {
+            "row": 2,
+            "col": 3,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        10,
+        10,
+        4,
+        6
+      ]
+    }
+  },
+  {
+    "id": "T13-fractional-capacity",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "splitter-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:5b012a78",
+      "variables": [
+        {
+          "id": "splitter:f",
+          "lower": 0,
+          "upper": 2.5
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "delivery:[\"u\",\"u\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 0.4
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 0.6
+          },
+          {
+            "row": 2,
+            "col": 3,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            },
+            {
+              "col": 3,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        2.5,
+        2.5,
+        1,
+        1.5
+      ]
+    }
+  },
+  {
+    "id": "T13-branch-delivery-bottleneck",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "splitter-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:917f5b62",
+      "variables": [
+        {
+          "id": "splitter:f",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": 1
+        },
+        {
+          "id": "delivery:[\"u\",\"u\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 0.4
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 0.6
+          },
+          {
+            "row": 2,
+            "col": 3,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            },
+            {
+              "col": 3,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        2.5,
+        2.5,
+        1,
+        1.5
+      ]
+    }
+  },
+  {
+    "id": "T13-spill-capacity-bottleneck",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "splitter-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:b4b79914",
+      "variables": [
+        {
+          "id": "splitter:f",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "spill:[\"f\",\"b\"]",
+          "lower": 0,
+          "upper": 3
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 0.4
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 0.6
+          },
+          {
+            "row": 2,
+            "col": 3,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        5,
+        5,
+        2,
+        3
+      ]
+    }
+  },
+  {
+    "id": "T13-zero-branch-does-not-block",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "splitter-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:6d808611",
+      "variables": [
+        {
+          "id": "splitter:f",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        10,
+        10,
+        10
+      ]
+    }
+  },
+  {
+    "id": "T14-fractional-operation-and-catalyst",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:1706ba59",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 1.2,
+          "upper": 1.2
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 2,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        1.2,
+        1.2,
+        1.2
+      ]
+    }
+  },
+  {
+    "id": "T24-idle-automatic-installation",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:c4ee9b4",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "id": "T24-idle-fixed-installation",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:e234d781",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": 3
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "id": "T18-dispatchable-power-100-capacity-60-load",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:26b1830c",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": 100
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 60,
+          "upper": 60
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0"
+        ],
+        "rhs": [
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        60,
+        60
+      ],
+      "upper_slacks": {
+        "operation:r": 40
+      }
+    }
+  },
+  {
+    "id": "explicit-recipe-input-sufficient-supply",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:f9c4db55",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"r\",\"in\"]",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 4,
+          "upper": 4
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        4,
+        4,
+        4
+      ]
+    }
+  },
+  {
+    "id": "explicit-recipe-input-limited-supply",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:80e8dae5",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"r\",\"in\"]",
+          "lower": 0,
+          "upper": 2.5
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        2.5,
+        2.5,
+        2.5
+      ]
+    }
+  },
+  {
+    "id": "explicit-recipe-input-zero-supply-stops-operation",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:119e5655",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"r\",\"in\"]",
+          "lower": 0,
+          "upper": 0
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "success",
+      "values": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "id": "explicit-recipe-input-supply-cannot-leak-between-nets",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:58528b88",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"r\",\"in\"]",
+          "lower": 0,
+          "upper": 2
+        },
+        {
+          "id": "source:[\"r\",\"coolant\"]",
+          "lower": 0,
+          "upper": 100
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 3,
+          "upper": 3
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": 1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 2,
+            "col": 3,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "infeasible",
+      "values": null
+    }
+  },
+  {
+    "id": "explicit-recipe-input-sufficient-supply-unbounded-product",
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:f920b6cb",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"r\",\"in\"]",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 0,
+          "upper": null
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:0",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 2,
+              "value": -1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        },
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "expected": {
+      "status": "unbounded",
+      "values": null
+    }
+  }
+]

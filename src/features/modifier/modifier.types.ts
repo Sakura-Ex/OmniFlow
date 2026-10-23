@@ -1,7 +1,6 @@
 import type { UnitSystem } from '@/common/units/UnitSystem'
 import type { Resource } from '@/common/types/resource'
 import type { ValueOf } from '@/common/types/common'
-import type { ReactNode, FC } from 'react'
 
 /** Supported UI control types for modifier configuration fields. */
 export const ModifierUIControlType = {
@@ -63,33 +62,7 @@ export interface PipelineContext {
   }
 }
 
-/** Props passed to a modifier's custom card render-body component. */
-export interface ModifierCardRenderProps {
-  /** Current UI state values keyed by control key. */
-  state: Record<string, unknown>
-  /** Callback invoked when a UI control value changes. */
-  onChange: (key: string, value: unknown) => void
-  /** Whether the card is rendered in read-only (non-editable) mode. */
-  readOnly?: boolean
-  /** Injected Field layout wrapper component. */
-  Field: FC<{ label: string; children: ReactNode }>
-  /** Injected Toggle switch control component. */
-  Toggle: FC<{ label: string; checked: boolean; onChange: (v: boolean) => void }>
-  /** Injected Select dropdown control component. */
-  Select: FC<{ label: string; value: string; options: string[]; onChange: (v: string) => void }>
-  /** Injected Slider control component. */
-  Slider: FC<{ label: string; value: number; min: number; max: number; onChange: (v: number) => void }>
-  /** Injected Number input control component. */
-  Input: FC<{ label: string; value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number }>
-  /** Recipe inputs available for context-aware UI rendering. */
-  recipeInputs?: Resource[]
-  /** Recipe outputs available for context-aware UI rendering. */
-  recipeOutputs?: Resource[]
-  /** Machine hardware specifications for context-aware UI rendering. */
-  hardwareSpecs?: Record<string, unknown>
-}
-
-/** Describes a single machine modifier plugin — its identity, UI configuration, and evaluation logic. */
+/** Describes a single machine modifier plugin — its identity, serializable configuration, and evaluation logic. */
 export interface IMachineModifier {
   /** Unique identifier for this modifier (e.g. `gt_overclocker`). */
   id: string
@@ -110,8 +83,6 @@ export interface IMachineModifier {
     ctx: PipelineContext,
     uiState: Readonly<Record<string, unknown>>
   ) => ModifierEffect
-  /** Optional custom card body renderer for complex modifier UIs. Falls back to auto-generated controls when omitted. */
-  renderBody?: (props: ModifierCardRenderProps) => ReactNode
 }
 
 /** Declarative replacement effects; only the pipeline applies them. */

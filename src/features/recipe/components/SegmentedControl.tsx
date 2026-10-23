@@ -1,3 +1,4 @@
+import { useTranslation } from '@/common/i18n'
 import styles from './SegmentedControl.module.css'
 
 /** A single option in the segmented control. */
@@ -25,8 +26,9 @@ type SegmentedControlProps = {
  * @returns Rendered JSX element for the segmented control.
  */
 export function SegmentedControl({ value, options, onChange, className }: SegmentedControlProps) {
+  const { t } = useTranslation()
   return (
-    <div className={`${styles['segmented-control']}${className ? ` ${className}` : ''}`} role="tablist" aria-label="Node mode selector">
+    <div className={`${styles['segmented-control']}${className ? ` ${className}` : ''}`} role="tablist" aria-label={t('editor.nodeMode')}>
       {options.map((option) => {
         const isActive = option.value === value
         return (

@@ -1,3 +1,4 @@
+import { UnitSystem } from '@/common/units/UnitSystem'
 import { legacyUnit } from '@/common/units/defaults'
 import { useSettingsStore } from '@/features/settings/settings.store'
 import { create } from 'zustand'
@@ -27,6 +28,26 @@ const initialEntries: Record<string, ResourceEntry> = {}
  * categories, per-resource unit overrides, and tracked resource entries.
  */
 export const useGlobalResourceTable = create<GlobalResourceTableState>((set, get) => ({
+  apply: (snapshot) => {
+    const next = structuredClone(snapshot)
+    for (const [id, category] of Object.entries(next.categories)) {
+      if (!id.trim() || id.startsWith('__new_') || category.id !== id) throw new Error('Invalid category identity')
+    }
+    for (const id of Object.keys(next.overrides)) {
+      if (!/^[^:]+:.+$/.test(id) || id.startsWith('__new_')) throw new Error('Invalid resource identity')
+    }
+    const settings = useSettingsStore.getState()
+    const definitions = [...settings.units.definitions]
+    const labels = [...Object.values(next.categories).map((c) => c.base_unit), ...Object.values(next.overrides).map((o) => o.unit_override).filter((v): v is string => v !== undefined)]
+    for (const label of labels) {
+      const id = legacyUnit(label)[0].baseUnitId
+      if (!definitions.some((d) => d.id === id)) definitions.push({ id, symbol: label })
+    }
+    const environment = new UnitSystem({ ...settings.units, definitions }).snapshot
+    settings.setEnvironment(environment)
+    cache.clear()
+    set(next)
+  },
   restore: (snapshot) => {
     cache.clear()
     set(snapshot)

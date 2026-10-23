@@ -6,6 +6,7 @@ export const ResourceSchema = z.object({
   portId: z.string().min(1).optional(),
   unit: UnitExpressionSchema.optional(),
   displayUnit: UnitExpressionSchema.optional(),
+  occupancy_basis: z.enum(['per_machine', 'per_parallel_slot', 'global']).optional(),
   scaling: z.enum(['per_cycle', 'per_parallel_slot', 'per_running_machine', 'per_installed_machine']).optional(),
   category: z.string(),
   id: z.string(),

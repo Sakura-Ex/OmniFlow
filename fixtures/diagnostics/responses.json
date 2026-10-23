@@ -1,0 +1,578 @@
+[
+  {
+    "id": "T03",
+    "original": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:2d92a378",
+      "status": "infeasible",
+      "solution": null,
+      "objective_results": [
+        {
+          "objective_id": "priority:10",
+          "priority": 10,
+          "status": "infeasible",
+          "proven_optimal": false,
+          "value": null,
+          "normalized_value": null,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 1e-08,
+          "rel_tolerance": 1e-09,
+          "lock_upper": null,
+          "elapsed_ms": 0,
+          "feasibility": null
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "infeasible",
+          "message": "Optimization stopped with infeasible",
+          "path": [],
+          "row_id": null,
+          "variable_id": null,
+          "objective_id": "priority:10"
+        }
+      ],
+      "model_stats": {
+        "variables": 3,
+        "equality_rows": 2,
+        "inequality_rows": 0,
+        "matrix_nonzeros": 4,
+        "objective_nonzeros": 1,
+        "objective_layers": 1
+      },
+      "timings": {
+        "queue_ms": 0,
+        "solve_ms": 0,
+        "total_ms": 0
+      }
+    },
+    "response": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "diagnostic-T03",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:2d92a378:diagnostic",
+      "status": "success",
+      "solution": {
+        "variable_ids": [
+          "operation:r",
+          "source:[\"s\",\"s\"]",
+          "delivery:[\"t\",\"t\"]",
+          "diagnostic:flow:0:missing_supply",
+          "diagnostic:flow:1:missing_outlet"
+        ],
+        "values": [
+          10.0,
+          5.0,
+          10.0,
+          5.0,
+          0.0
+        ],
+        "feasibility": {
+          "passed": true,
+          "absolute_tolerance": 1e-07,
+          "relative_tolerance": 1e-09,
+          "max_violation": 0.0,
+          "row_residuals": [
+            {
+              "row_id": "flow:0",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1.2e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "flow:1",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1.2e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "diagnostic:normalized-deficit",
+              "kind": "objective_lock",
+              "activity": 5.0,
+              "rhs": 5.0,
+              "residual": 0.0,
+              "slack": -0.0,
+              "tolerance": 1.05e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ],
+          "bound_slacks": [
+            {
+              "variable_id": "operation:r",
+              "value": 10.0,
+              "lower_slack": 10.0,
+              "upper_slack": null,
+              "tolerance": 1.0999999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "source:[\"s\",\"s\"]",
+              "value": 5.0,
+              "lower_slack": 5.0,
+              "upper_slack": 0.0,
+              "tolerance": 1.05e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "delivery:[\"t\",\"t\"]",
+              "value": 10.0,
+              "lower_slack": 0.0,
+              "upper_slack": 0.0,
+              "tolerance": 1.0999999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "diagnostic:flow:0:missing_supply",
+              "value": 5.0,
+              "lower_slack": 5.0,
+              "upper_slack": 999995.0,
+              "tolerance": 0.0010001,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "diagnostic:flow:1:missing_outlet",
+              "value": 0.0,
+              "lower_slack": 0.0,
+              "upper_slack": 1000000.0,
+              "tolerance": 0.0010001,
+              "violation": 0.0,
+              "passed": true
+            }
+          ]
+        }
+      },
+      "objective_results": [
+        {
+          "objective_id": "diagnostic:normalized-deficit",
+          "priority": 0,
+          "status": "optimal",
+          "proven_optimal": true,
+          "value": 5.0,
+          "normalized_value": 5.0,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 0.0,
+          "rel_tolerance": 0.0,
+          "lock_upper": 5.0,
+          "elapsed_ms": 0,
+          "feasibility": {
+            "passed": true,
+            "absolute_tolerance": 1e-07,
+            "relative_tolerance": 1e-09,
+            "max_violation": 0.0,
+            "row_residuals": [
+              {
+                "row_id": "flow:0",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1.2e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "row_id": "flow:1",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1.2e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ],
+            "bound_slacks": [
+              {
+                "variable_id": "operation:r",
+                "value": 10.0,
+                "lower_slack": 10.0,
+                "upper_slack": null,
+                "tolerance": 1.0999999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "source:[\"s\",\"s\"]",
+                "value": 5.0,
+                "lower_slack": 5.0,
+                "upper_slack": 0.0,
+                "tolerance": 1.05e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "delivery:[\"t\",\"t\"]",
+                "value": 10.0,
+                "lower_slack": 0.0,
+                "upper_slack": 0.0,
+                "tolerance": 1.0999999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "diagnostic:flow:0:missing_supply",
+                "value": 5.0,
+                "lower_slack": 5.0,
+                "upper_slack": 999995.0,
+                "tolerance": 0.0010001,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "diagnostic:flow:1:missing_outlet",
+                "value": 0.0,
+                "lower_slack": 0.0,
+                "upper_slack": 1000000.0,
+                "tolerance": 0.0010001,
+                "violation": 0.0,
+                "passed": true
+              }
+            ]
+          }
+        }
+      ],
+      "diagnostics": [],
+      "model_stats": {
+        "variables": 5,
+        "equality_rows": 2,
+        "inequality_rows": 0,
+        "matrix_nonzeros": 6,
+        "objective_nonzeros": 2,
+        "objective_layers": 1
+      },
+      "timings": {
+        "queue_ms": 0,
+        "solve_ms": 0,
+        "total_ms": 0
+      }
+    }
+  },
+  {
+    "id": "T04",
+    "original": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:2b612729",
+      "status": "infeasible",
+      "solution": null,
+      "objective_results": [
+        {
+          "objective_id": "priority:10",
+          "priority": 10,
+          "status": "infeasible",
+          "proven_optimal": false,
+          "value": null,
+          "normalized_value": null,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 1e-08,
+          "rel_tolerance": 1e-09,
+          "lock_upper": null,
+          "elapsed_ms": 0,
+          "feasibility": null
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "infeasible",
+          "message": "Optimization stopped with infeasible",
+          "path": [],
+          "row_id": null,
+          "variable_id": null,
+          "objective_id": "priority:10"
+        }
+      ],
+      "model_stats": {
+        "variables": 3,
+        "equality_rows": 3,
+        "inequality_rows": 0,
+        "matrix_nonzeros": 5,
+        "objective_nonzeros": 1,
+        "objective_layers": 1
+      },
+      "timings": {
+        "queue_ms": 0,
+        "solve_ms": 0,
+        "total_ms": 0
+      }
+    },
+    "response": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "diagnostic-T04",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:2b612729:diagnostic",
+      "status": "success",
+      "solution": {
+        "variable_ids": [
+          "operation:r",
+          "source:[\"s\",\"s\"]",
+          "delivery:[\"t\",\"t\"]",
+          "diagnostic:flow:0:missing_supply",
+          "diagnostic:flow:1:missing_outlet",
+          "diagnostic:flow:2:missing_outlet"
+        ],
+        "values": [
+          10.0,
+          10.0,
+          10.0,
+          -0.0,
+          0.0,
+          10.0
+        ],
+        "feasibility": {
+          "passed": true,
+          "absolute_tolerance": 1e-07,
+          "relative_tolerance": 1e-09,
+          "max_violation": 0.0,
+          "row_residuals": [
+            {
+              "row_id": "flow:0",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1.2e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "flow:1",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1.2e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "flow:2",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1.3999999999999998e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "diagnostic:normalized-deficit",
+              "kind": "objective_lock",
+              "activity": 10.0,
+              "rhs": 10.0,
+              "residual": 0.0,
+              "slack": -0.0,
+              "tolerance": 1.0999999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ],
+          "bound_slacks": [
+            {
+              "variable_id": "operation:r",
+              "value": 10.0,
+              "lower_slack": 10.0,
+              "upper_slack": null,
+              "tolerance": 1.0999999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "source:[\"s\",\"s\"]",
+              "value": 10.0,
+              "lower_slack": 10.0,
+              "upper_slack": 0.0,
+              "tolerance": 1.0999999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "delivery:[\"t\",\"t\"]",
+              "value": 10.0,
+              "lower_slack": 0.0,
+              "upper_slack": 0.0,
+              "tolerance": 1.0999999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "diagnostic:flow:0:missing_supply",
+              "value": -0.0,
+              "lower_slack": -0.0,
+              "upper_slack": 1000000.0,
+              "tolerance": 0.0010001,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "diagnostic:flow:1:missing_outlet",
+              "value": 0.0,
+              "lower_slack": 0.0,
+              "upper_slack": 1000000.0,
+              "tolerance": 0.0010001,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "diagnostic:flow:2:missing_outlet",
+              "value": 10.0,
+              "lower_slack": 10.0,
+              "upper_slack": 999990.0,
+              "tolerance": 0.0010001,
+              "violation": 0.0,
+              "passed": true
+            }
+          ]
+        }
+      },
+      "objective_results": [
+        {
+          "objective_id": "diagnostic:normalized-deficit",
+          "priority": 0,
+          "status": "optimal",
+          "proven_optimal": true,
+          "value": 10.0,
+          "normalized_value": 10.0,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 0.0,
+          "rel_tolerance": 0.0,
+          "lock_upper": 10.0,
+          "elapsed_ms": 0,
+          "feasibility": {
+            "passed": true,
+            "absolute_tolerance": 1e-07,
+            "relative_tolerance": 1e-09,
+            "max_violation": 0.0,
+            "row_residuals": [
+              {
+                "row_id": "flow:0",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1.2e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "row_id": "flow:1",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1.2e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "row_id": "flow:2",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1.3999999999999998e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ],
+            "bound_slacks": [
+              {
+                "variable_id": "operation:r",
+                "value": 10.0,
+                "lower_slack": 10.0,
+                "upper_slack": null,
+                "tolerance": 1.0999999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "source:[\"s\",\"s\"]",
+                "value": 10.0,
+                "lower_slack": 10.0,
+                "upper_slack": 0.0,
+                "tolerance": 1.0999999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "delivery:[\"t\",\"t\"]",
+                "value": 10.0,
+                "lower_slack": 0.0,
+                "upper_slack": 0.0,
+                "tolerance": 1.0999999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "diagnostic:flow:0:missing_supply",
+                "value": -0.0,
+                "lower_slack": -0.0,
+                "upper_slack": 1000000.0,
+                "tolerance": 0.0010001,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "diagnostic:flow:1:missing_outlet",
+                "value": 0.0,
+                "lower_slack": 0.0,
+                "upper_slack": 1000000.0,
+                "tolerance": 0.0010001,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "diagnostic:flow:2:missing_outlet",
+                "value": 10.0,
+                "lower_slack": 10.0,
+                "upper_slack": 999990.0,
+                "tolerance": 0.0010001,
+                "violation": 0.0,
+                "passed": true
+              }
+            ]
+          }
+        }
+      ],
+      "diagnostics": [],
+      "model_stats": {
+        "variables": 6,
+        "equality_rows": 3,
+        "inequality_rows": 0,
+        "matrix_nonzeros": 8,
+        "objective_nonzeros": 3,
+        "objective_layers": 1
+      },
+      "timings": {
+        "queue_ms": 0,
+        "solve_ms": 0,
+        "total_ms": 0
+      }
+    }
+  }
+]

@@ -203,12 +203,12 @@
   animation: toast-in 0.25s ease-out;
 }
 
-.toast-error::before {
-  content: '⚠';
+.toast-error__icon {
   position: absolute;
   left: 16px;
   top: 14px;
-  font-size: 18px;
+  display: inline-flex;
+  color: var(--danger);
 }
 
 @keyframes toast-in {

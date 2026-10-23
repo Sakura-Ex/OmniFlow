@@ -1,3 +1,4 @@
+import type { NetworkConfiguration } from '@/common/schemas/network.schema'
 import type { UnitSnapshot } from '@/common/types/units'
 import Dexie, { type Table } from 'dexie'
 import type { Node, Edge } from 'reactflow'
@@ -33,6 +34,7 @@ interface Canvas {
   name: string
   nodes: Node[]
   edges: Edge[]
+  networkConfiguration?: NetworkConfiguration
   viewport: { x: number; y: number; zoom: number }
   createdAt: string
   updatedAt: string

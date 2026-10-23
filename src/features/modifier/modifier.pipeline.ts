@@ -79,6 +79,7 @@ export function runModifierPipeline(rawData: RecipeNodeData, environment: UnitSn
     if (!Number.isSafeInteger(context.actualParallel) || context.actualParallel < 1) throw new Error('Invalid parallel count')
     const seen = new Set<string>()
     for (const port of ports(context)) {
+      if (!port.category?.trim() || !port.id.trim()) throw new Error('Resource category and ID must not be blank')
       const id = portIdentity(port)
       if (seen.has(id)) throw new Error(`Duplicate final port: ${id}`)
       seen.add(id)

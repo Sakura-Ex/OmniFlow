@@ -1,0 +1,291 @@
+{
+  "version": 5,
+  "networkConfiguration": {
+    "version": 1,
+    "ports": {
+      "[\"s\",\"s\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 10
+        }
+      },
+      "[\"t\",\"t\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "delivery",
+          "mode": "maximize",
+          "amount": 0,
+          "capacity": null,
+          "objective": {
+            "priority": 0,
+            "weight": 1,
+            "scale": 1
+          }
+        }
+      },
+      "[\"f\",\"b\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      }
+    },
+    "machines": {}
+  },
+  "pluginApiVersion": 2,
+  "environment": {
+    "ticksPerSecond": 20,
+    "definitions": [
+      {
+        "id": "s",
+        "symbol": "s"
+      },
+      {
+        "id": "g",
+        "symbol": "g"
+      },
+      {
+        "id": "m",
+        "symbol": "m"
+      },
+      {
+        "id": "L",
+        "symbol": "L"
+      },
+      {
+        "id": "J",
+        "symbol": "J"
+      },
+      {
+        "id": "EU",
+        "symbol": "EU"
+      },
+      {
+        "id": "RF",
+        "symbol": "RF"
+      },
+      {
+        "id": "HU",
+        "symbol": "HU"
+      },
+      {
+        "id": "su",
+        "symbol": "su"
+      },
+      {
+        "id": "RPM",
+        "symbol": "RPM"
+      },
+      {
+        "id": "mB",
+        "symbol": "mB"
+      },
+      {
+        "id": "item",
+        "symbol": "个"
+      },
+      {
+        "id": "tick",
+        "symbol": "t",
+        "scale": 0.05,
+        "derived": [
+          {
+            "baseUnitId": "s",
+            "exponent": 1
+          }
+        ]
+      },
+      {
+        "id": "W",
+        "symbol": "W",
+        "nativeRate": true,
+        "derived": [
+          {
+            "baseUnitId": "J",
+            "exponent": 1
+          },
+          {
+            "baseUnitId": "s",
+            "exponent": -1
+          }
+        ]
+      }
+    ],
+    "prefixes": [
+      {
+        "id": "k",
+        "symbol": "k",
+        "scale": 1000
+      },
+      {
+        "id": "milli",
+        "symbol": "m",
+        "scale": 0.001
+      },
+      {
+        "id": "micro",
+        "symbol": "µ",
+        "scale": 0.000001
+      },
+      {
+        "id": "mega",
+        "symbol": "M",
+        "scale": 1000000
+      }
+    ]
+  },
+  "registry": {
+    "categories": {
+      "item": {
+        "id": "item",
+        "displayName": "物品",
+        "base_unit": "个",
+        "themeColor": "#e5e7eb",
+        "preferred_time_base": "per_cycle"
+      },
+      "fluid": {
+        "id": "fluid",
+        "displayName": "流体",
+        "base_unit": "mB",
+        "themeColor": "#4ddcff",
+        "preferred_time_base": "per_cycle"
+      },
+      "energy": {
+        "id": "energy",
+        "displayName": "能源",
+        "base_unit": "EU",
+        "themeColor": "#f59e0b",
+        "preferred_time_base": "rate_per_tick"
+      },
+      "stress": {
+        "id": "stress",
+        "displayName": "应力",
+        "base_unit": "su",
+        "themeColor": "#c084fc",
+        "preferred_time_base": "per_cycle"
+      },
+      "heat": {
+        "id": "heat",
+        "displayName": "热能",
+        "base_unit": "HU",
+        "themeColor": "#fb7185",
+        "preferred_time_base": "rate_per_tick"
+      }
+    },
+    "overrides": {
+      "stress:create_su": {
+        "unit_override": "RPM"
+      },
+      "energy:thermal_rf": {
+        "unit_override": "RF"
+      }
+    },
+    "entries": {}
+  },
+  "ui": {
+    "nodes": [
+      {
+        "id": "f",
+        "type": "splitterNode",
+        "position": {
+          "x": 300,
+          "y": 100
+        },
+        "data": {
+          "input": {
+            "category": "item",
+            "id": "ore",
+            "amount": 1,
+            "portId": "in"
+          },
+          "outputs": [
+            {
+              "category": "item",
+              "id": "ore",
+              "amount": 1,
+              "portId": "a",
+              "ratio": 0.4
+            },
+            {
+              "category": "item",
+              "id": "ore",
+              "amount": 1,
+              "portId": "b",
+              "ratio": 0.6
+            }
+          ],
+          "capacity": null
+        }
+      },
+      {
+        "id": "s",
+        "type": "sourceNode",
+        "position": {
+          "x": 0,
+          "y": 100
+        },
+        "data": {
+          "ports": [
+            {
+              "category": "item",
+              "id": "ore",
+              "amount": 1,
+              "portId": "s"
+            }
+          ]
+        }
+      },
+      {
+        "id": "t",
+        "type": "targetNode",
+        "position": {
+          "x": 630,
+          "y": 100
+        },
+        "data": {
+          "ports": [
+            {
+              "category": "item",
+              "id": "ore",
+              "amount": 1,
+              "portId": "t"
+            }
+          ]
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "in",
+        "source": "s",
+        "target": "f",
+        "sourceHandle": "s",
+        "targetHandle": "in"
+      },
+      {
+        "id": "a",
+        "source": "f",
+        "target": "t",
+        "sourceHandle": "a",
+        "targetHandle": "t"
+      }
+    ]
+  },
+  "domain": {
+    "recipes": {}
+  }
+}

@@ -4,6 +4,8 @@
 
 Explicit user instructions take precedence. Tool-specific rules link here. Historical specs/status reports are references, not tasks. Verify code/configuration; consult [v2 design](docs/technical-design-v2-proposal.md) and [gap assessment](docs/v2-code-gap-assessment.md) for calculation changes.
 
+For UI entry points, defaults and workflows, read the [interaction design handbook](docs/interaction-design-handbook.md) and inspect the pre-v2 behavior before changing them. Preserve established inline editing and shortcuts; integrate v2 capabilities into existing workflows and document necessary deviations.
+
 ## Implementation Strategy
 
 Prefer the smallest architecturally sound change.
@@ -18,6 +20,8 @@ Prefer the smallest architecturally sound change.
 ## Structure & Architecture
 
 - `src/features/`: domain-owned components, hooks, stores, and services.
+- `src/app/`: application-level UI composing feature entry points; shared controls stay in `src/common/components/`.
+- `tests/browser/`: manual browser validation harness; `fixtures/`: shared test data; `scripts/validation/`: validation helpers. Keep observations and screenshots in `docs/validation/`.
 - `src/common/`: shared types, schemas, utilities, and database infrastructure.
 - `src/data/archetypes/`: machine templates; `features/modifier/modifiers/`: game-specific rules.
 - `backend/main.py`: FastAPI and SciPy LP; `public/`: assets; `dist/`: generated output.

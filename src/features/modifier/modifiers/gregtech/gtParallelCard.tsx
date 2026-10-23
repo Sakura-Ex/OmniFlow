@@ -1,4 +1,5 @@
-import type { ModifierCardRenderProps } from '../../modifier.types'
+import { useTranslation } from '@/common/i18n'
+import type { ModifierCardRenderProps } from '../../modifier.ui.types'
 
 /**
  * Card body for the GT Parallel modifier.
@@ -11,10 +12,11 @@ import type { ModifierCardRenderProps } from '../../modifier.types'
  * @returns Rendered JSX for the parallel card body.
  */
 export function ParallelCardBody({ state, onChange, Select }: ModifierCardRenderProps) {
+  const { t } = useTranslation()
   return (
     <>
       <Select
-        label="并行上限"
+        label={t('editor.parallelLimit')}
         value={String(state.parallelLimit ?? 4)}
         options={['1', '4', '16', '64', '256', '1024', '4096', '16384', '65536', '262144', '1048576']}
         onChange={(v) => onChange('parallelLimit', v)}

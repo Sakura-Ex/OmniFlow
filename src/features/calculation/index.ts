@@ -1,9 +1,5 @@
-/**
- * Build the full calculation payload from canvas nodes, edges and recipe store.
- * @see {@link import('./payloadBuilder').buildCalculationPayload}
- */
-export { buildCalculationPayload } from './payloadBuilder'
-
+/** Compile one explicit, conserved network into the versioned LP contract. */
+export { compileNetwork } from './networkCompiler'
 /**
  * Compute the capital expenditure list from recipe data and backend results.
  * @see {@link import('./capEx').computeCapexList}

@@ -56,6 +56,7 @@ export interface Resource {
   portId?: string
   unit?: UnitExpression
   displayUnit?: UnitExpression
+  occupancy_basis?: 'per_machine' | 'per_parallel_slot' | 'global'
   scaling?: 'per_cycle' | 'per_parallel_slot' | 'per_running_machine' | 'per_installed_machine'
   category: ResourceCategory
   /** Unique identifier for the resource within its category. */
@@ -94,6 +95,7 @@ export interface NormalizedResource {
   portId?: string
   unit?: UnitExpression
   displayUnit?: UnitExpression
+  occupancy_basis?: 'per_machine' | 'per_parallel_slot' | 'global'
   scaling?: 'per_cycle' | 'per_parallel_slot' | 'per_running_machine' | 'per_installed_machine'
   category: ResourceCategory
   /** Unique identifier for the resource within its category. */

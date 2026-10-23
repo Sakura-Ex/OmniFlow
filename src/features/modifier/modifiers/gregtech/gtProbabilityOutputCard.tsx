@@ -1,4 +1,6 @@
-import type { ModifierCardRenderProps } from '../../modifier.types'
+import { useTranslation } from '@/common/i18n'
+import { categoryDisplayName } from '@/common/i18n/resourceLabels'
+import type { ModifierCardRenderProps } from '../../modifier.ui.types'
 import type { Resource } from '@/common/types/resource'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 
@@ -32,6 +34,7 @@ const READONLY_BASE: React.CSSProperties = {
  * @returns Rendered JSX for the probability output card body.
  */
 export function GtProbabilityOutputCardBody({ state, onChange, readOnly, recipeOutputs, Field }: ModifierCardRenderProps) {
+  const { t } = useTranslation()
   const categories = useGlobalResourceTable((s) => s.categories)
   const outputs: Resource[] = recipeOutputs ?? []
 
@@ -42,8 +45,8 @@ export function GtProbabilityOutputCardBody({ state, onChange, readOnly, recipeO
 
   if (chanceOutputs.length === 0) {
     return (
-      <Field label="概率产出">
-        <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--mono)', fontSize: 12 }}>仅 0&lt;概率&lt;1 的产出生效</span>
+      <Field label={t('editor.chanceOutput')}>
+        <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--mono)', fontSize: 12 }}>{t('editor.chanceHint')}</span>
       </Field>
     )
   }
@@ -51,12 +54,12 @@ export function GtProbabilityOutputCardBody({ state, onChange, readOnly, recipeO
   return (
     <>
       {chanceOutputs.map((o) => {
-        const catDisplayName = categories[o.category]?.displayName ?? o.category
+        const catDisplayName = categoryDisplayName(o.category, categories[o.category]?.displayName ?? o.category)
         const boostKey = getBoostKey(`${o.category}:${o.id}`)
         const boostValue = Number(state[boostKey] ?? 0)
 
         return (
-          <Field key={`${o.category}:${o.id}`} label="概率加成">
+          <Field key={`${o.category}:${o.id}`} label={t('editor.chanceBoost')}>
             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <input
                 value={catDisplayName}

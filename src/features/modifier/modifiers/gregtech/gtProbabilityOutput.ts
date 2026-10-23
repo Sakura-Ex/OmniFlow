@@ -1,8 +1,7 @@
 import { gtEuPerTick } from './gtUnits'
 import type { IMachineModifier, PipelineContext } from '../../modifier.types'
 import type { Resource } from '@/common/types/resource'
-import { GtProbabilityOutputCardBody } from './gtProbabilityOutputCard'
-import { GT_VOLTAGE_TIERS, computePowerPool, toGtHatches } from './gtOverclocker'
+import { GT_VOLTAGE_TIERS, computePowerPool, toGtHatches } from './gtPower'
 
 const BOOST_KEY_PREFIX = 'boost:'
 
@@ -30,7 +29,6 @@ export const gtProbabilityOutputModifier: IMachineModifier = {
   compatible_archetypes: ['gt_electric'],
   max_placements: 1,
   ui_schema: [],
-  renderBody: GtProbabilityOutputCardBody,
   evaluate: (ctx: PipelineContext, uiState: Record<string, unknown>) => {
     const baseEu = gtEuPerTick(ctx.baseline.utilityInputs, ctx.baseline.durationSeconds, ctx.units)
     if (baseEu <= 0) return {}

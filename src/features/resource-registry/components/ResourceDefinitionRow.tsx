@@ -1,14 +1,16 @@
+import { useTranslation } from '@/common/i18n'
+import { categoryDisplayName } from '@/common/i18n/resourceLabels'
+import { Icon } from '@/common/components/Icon'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 import { legacyUnit } from '@/common/units/defaults'
 import type { UnitExpression } from '@/common/types/units'
 import { defaultResourceUnit } from '@/common/units/defaults'
 import { UnitExpressionEditor } from './UnitExpressionEditor'
-import { useState, useRef } from 'react'
+import { Combobox } from '@/common/components/Combobox'
 import type { TimeBase } from '@/common/types/resource'
 import type { ColumnDef } from './ResourceDefinitionRow.config'
 import { TIME_BASE_OPTIONS } from './ResourceDefinitionRow.config'
 import { parseResourceId } from '@/common/utils/resourceId'
-import { useClickOutside } from '@/hooks/useClickOutside'
 import styles from './ResourceDefinitionRow.module.css'
 
 /**
@@ -111,20 +113,11 @@ export function ResourceDefinitionRow({
   probabilityLocked,
   ioToggleLocked,
 }: ResourceDefinitionRowProps) {
+  const { t } = useTranslation()
   const categoryDefinitions = useGlobalResourceTable((s) => s.categories)
   const unitOverrides = useGlobalResourceTable((s) => s.overrides)
   const declaredLabel = unitOverrides[`${item.category}:${item.id}`]?.unit_override ?? categoryDefinitions[item.category ?? 'item']?.base_unit
   const expression = item.unit ?? (declaredLabel ? legacyUnit(declaredLabel) : defaultResourceUnit(item.category ?? 'item', item.id ?? ''))
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const idInputRef = useRef<HTMLInputElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useClickOutside(containerRef, () => setShowSuggestions(false), showSuggestions)
-
-  const filteredSuggestions = suggestions?.filter((s) =>
-    s.toLowerCase().includes((item.id ?? '').toLowerCase()),
-  ) ?? []
-
   const gridTemplate = columns.map((c) => c.width ?? 'auto').join(' ')
 
   return (
@@ -132,42 +125,14 @@ export function ResourceDefinitionRow({
       {columns.map((col) => {
         switch (col.id) {
           case 'id':
-            return (
-              <div key={col.id} ref={containerRef} style={{ position: 'relative', minWidth: 0 }}>
-                <input
-                  ref={idInputRef}
-                  type="text"
-                  placeholder="资源 ID"
-                  value={item.id ?? ''}
-                  disabled={idLocked}
-                  style={{ width: '100%' }}
-                  onFocus={() => setShowSuggestions(true)}
-                  onChange={(e) => onUpdate(index, { id: e.target.value })}
-                />
-                {showSuggestions && filteredSuggestions.length > 0 && (
-                  <div
-                    className={styles.suggestions}
-                  >
-                    {filteredSuggestions.map((s) => (
-                      <div
-                        key={s}
-                        onMouseDown={(e) => {
-                          e.preventDefault()
-                          const parsed = parseResourceId(s)
-                          const cat = parsed.category !== parsed.id ? parsed.category : ''
-                          const name = parsed.id
-                          onUpdate(index, { id: name, category: cat })
-                          setShowSuggestions(false)
-                        }}
-                        className={styles.suggestion}
-                      >
-                        {s}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )
+            return <Combobox key={col.id} aria-label={t('editor.resourceId')} placeholder={t('editor.resourceId')} value={item.id ?? ''} disabled={idLocked} allowCustom
+              options={(suggestions ?? []).map(value => ({ value, label: value }))}
+              onChange={value => onUpdate(index, { id: value })}
+              onSelect={value => {
+                const parsed = parseResourceId(value)
+                const category = parsed.category !== parsed.id ? parsed.category : ''
+                onUpdate(index, category ? { id: parsed.id, category } : { id: value })
+              }} />
 
           case 'unit':
             return <UnitExpressionEditor key={col.id} expression={expression} amount={item.amount ?? 0} displayExpression={item.displayUnit} onDisplayChange={(displayUnit) => onUpdate(index, { displayUnit })} onChange={(unit, amount) => onUpdate(index, { unit, amount })} />
@@ -187,32 +152,13 @@ export function ResourceDefinitionRow({
             )
 
           case 'time_base':
-            return (
-              <select
-                key={col.id}
-                value={item.time_base ?? 'per_cycle'}
-                disabled={timeBaseLocked}
-                onChange={(e) => onUpdate(index, { time_base: e.target.value as TimeBase })}
-              >
-                {TIME_BASE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            )
+            return <Combobox key={col.id} aria-label={t('editor.timeBase')} value={item.time_base ?? 'per_cycle'} disabled={timeBaseLocked}
+              options={TIME_BASE_OPTIONS.map(option => ({ ...option, label: t(option.labelKey) }))} onChange={value => onUpdate(index, { time_base: value as TimeBase })} />
 
           case 'category':
-            return (
-              <select
-                key={col.id}
-                value={item.category ?? ''}
-                disabled={categoryLocked}
-                onChange={(e) => onUpdate(index, { category: e.target.value })}
-              >
-                {categoryOptions?.map((opt) => (
-                  <option key={opt.id} value={opt.id}>{opt.displayName}</option>
-                )) ?? []}
-              </select>
-            )
+            return <Combobox key={col.id} aria-label={t('editor.category')} value={item.category ?? ''} disabled={categoryLocked}
+              options={(categoryOptions ?? []).map(option => ({ value: option.id, label: categoryDisplayName(option.id, option.displayName) }))}
+              onChange={value => onUpdate(index, { category: value })} />
 
           case 'probability':
             return (
@@ -236,24 +182,13 @@ export function ResourceDefinitionRow({
             )
 
           case 'routing':
-            return (
-              <button
-                key={col.id}
-                className={`${styles['route-btn']}${item.routing_mode === 'global' ? ' ' + styles['is-global'] : ''}`}
-                onClick={() => onToggleRouting?.(index)}
-                title={
-                  routingLocked
-                    ? '路由锁定，不可切换'
-                    : item.routing_mode === 'global'
-                      ? '当前：全局总线（点击切换到有线）'
-                      : '当前：有线连接（点击切换到全局总线）'
-                }
-                disabled={routingLocked}
-                type="button"
-              >
-                🌐
-              </button>
-            )
+            return <label key={col.id} className={styles.routingCell}
+              title={routingLocked ? t('editor.routingLocked') : t('editor.routingHint')}>
+              <input className={styles.routingCheckbox} type="checkbox" checked={item.routing_mode === 'global'}
+                aria-label={`${item.id || t('editor.unnamedResource')}: ${t('editor.global')}`} disabled={routingLocked}
+                onChange={() => onToggleRouting?.(index)} />
+              {item.routing_mode === 'global' && <span className={styles.routingMark}><Icon name="check" size={14} /></span>}
+            </label>
 
           case 'delete':
             return (
@@ -261,18 +196,18 @@ export function ResourceDefinitionRow({
                 key={col.id}
                 className={`${styles['icon-action']} ${styles['icon-action--danger']}`}
                 onClick={() => onRemove(index)}
-                title={canDelete === false ? '不可删除' : '删除'}
-                aria-label="删除"
+                title={canDelete === false ? t('editor.cannotDelete') : t('editor.delete')}
+                aria-label={t('editor.delete')}
                 disabled={canDelete === false}
                 type="button"
               >
-                {canDelete === false ? '🔒' : '✕'}
+                <Icon name={canDelete === false ? 'lock' : 'close'} />
               </button>
             )
 
           case 'preview_rate':
             return (
-              <span className={styles['row-rate']} key={col.id}>{rateText ?? ''}</span>
+              <span className={styles['row-rate']} title={rateText} key={col.id}>{rateText ?? ''}</span>
             )
 
           case 'label':
@@ -289,11 +224,11 @@ export function ResourceDefinitionRow({
                 key={col.id}
                 className={`${styles['io-btn']}${item.is_utility_output ? ' ' + styles['is-output'] : ''}`}
                 onClick={() => onIoTToggle?.(index)}
-                title={item.is_utility_output ? '当前：设施输出（点击切换）' : '当前：设施输入（点击切换）'}
+                title={item.is_utility_output ? t('editor.utilityOutputHint') : t('editor.utilityInputHint')}
                 disabled={ioToggleLocked}
                 type="button"
               >
-                {item.is_utility_output ? '出' : '入'}
+                {item.is_utility_output ? t('editor.outputShort') : t('editor.inputShort')}
               </button>
             )
 

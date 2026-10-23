@@ -5,6 +5,7 @@ import { portIdentity } from '@/common/utils/ports'
 import { normalizeCanvasNode } from './canvas.validators'
 import { normalizeEndpointPorts } from '@/features/recipe/recipe.endpointNorm'
 import { migrateEdgePorts, type GraphPort } from '@/features/calculation/graphPorts'
+import { splitterPorts } from '@/features/calculation/splitter'
 
 /**
  * Normalize editable identity independently of whether a recipe is currently runnable.
@@ -30,6 +31,8 @@ export function normalizeGraph(nodes: Node[], edges: Edge[], recipes: Record<str
       ] as const) {
         for (const port of groups) ports.push({ nodeId: node.id, portId: portIdentity(port), direction, resourceId: buildResourceId(port.category, port.id), port })
       }
+    } else if (node.type === 'splitterNode') {
+      ports.push(...splitterPorts(node.id, normalized.data))
     } else if (node.type === 'sourceNode' || node.type === 'targetNode') {
       for (const port of normalizeEndpointPorts(normalized.data)) ports.push({ nodeId: node.id, portId: portIdentity(port), direction: node.type === 'sourceNode' ? 'output' : 'input', resourceId: buildResourceId(port.category, port.id), port })
     }

@@ -1,3 +1,4 @@
+import type { CalculationNodeResult } from '@/common/types/api'
 import type { UnitExpression } from '@/common/types/units'
 import type { ValueOf } from '@/common/types/common'
 import type { Resource, ComputedNodePayload, RoutingMode } from '@/common/types/resource'
@@ -149,7 +150,7 @@ export interface ActiveModifier {
 /**
  * Full data payload for a recipe/processing node in the production flow.
  */
-export interface RecipeNodeData {
+export interface RecipeNodeData extends CalculationNodeResult {
   /** Identifier of the recipe being executed. */
   recipe_id: string
   /** Display name of the machine running the recipe. */

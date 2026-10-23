@@ -1,4 +1,12 @@
+import { useTranslation } from '@/common/i18n'
+import { useDocumentEdit } from '@/common/components/DocumentEditContext'
+import { useDraftState } from '@/common/components/DraftStateContext'
+import { documentKey } from '@/common/utils/saveBaseline'
+import { categoryDisplayName } from '@/common/i18n/resourceLabels'
+import { translateDiagnostic } from '@/common/i18n/translateDiagnostic'
+import { Icon } from '@/common/components/Icon'
 import { RESOURCE_COLOR_PALETTE } from '@/common/utils/resourcePalette'
+import { Combobox } from '@/common/components/Combobox'
 import { useState, useMemo } from 'react'
 import type { ValueOf } from '@/common/types/common'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
@@ -12,6 +20,7 @@ import styles from './ResourceRegistryPanel.module.css'
 /** Props for the `ResourceRegistryPanel` component. */
 type ResourceRegistryPanelProps = {
   onClose: () => void
+  embedded?: boolean
 }
 
 /** Available tabs in the resource registry panel. */
@@ -60,19 +69,17 @@ type DraftState = {
  *
  * @param props - Component props.
  * @param props.onClose – Callback fired when the panel is dismissed.
+ * @param props.embedded - Reuse the staged editor inside the full settings page.
  * @returns Rendered JSX element for the resource registry panel.
  */
-export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
+export function ResourceRegistryPanel({ onClose, embedded }: ResourceRegistryPanelProps) {
+  const commitEdit = useDocumentEdit()
+  const { t } = useTranslation()
   const categories = useGlobalResourceTable((state) => state.categories)
   const overrides = useGlobalResourceTable((state) => state.overrides)
   const entries = useGlobalResourceTable((state) => state.entries)
-  const removeCategory = useGlobalResourceTable((state) => state.removeCategory)
-  const removeOverride = useGlobalResourceTable((state) => state.removeOverride)
-  const removeEntry = useGlobalResourceTable((state) => state.removeEntry)
-  const updateCategory = useGlobalResourceTable((state) => state.updateCategory)
-  const addCategory = useGlobalResourceTable((state) => state.addCategory)
-  const setOverride = useGlobalResourceTable((state) => state.setOverride)
-  const setEntry = useGlobalResourceTable((state) => state.setEntry)
+  const apply = useGlobalResourceTable((state) => state.apply)
+  const [error, setError] = useState('')
 
   const [tab, setTab] = useState<ResourceRegistryTab>('categories')
 
@@ -84,6 +91,7 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
 
   const [newCatIds, setNewCatIds] = useState<Record<string, string>>({})
   const [ovEdits, setOvEdits] = useState<Record<string, { cat: string; asset: string }>>({})
+  useDraftState(documentKey(draft) !== documentKey({ categories, overrides, entries }) || Object.keys(newCatIds).length > 0 || Object.keys(ovEdits).length > 0)
 
   const categoryEntries = useMemo(() => Object.entries(draft.categories), [draft.categories])
   const overrideEntries = useMemo(() => Object.entries(draft.overrides), [draft.overrides])
@@ -127,6 +135,8 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
   const commitCategoryId = (tempKey: string) => {
     const newId = newCatIds[tempKey]?.trim()
     if (!newId || newId === tempKey) return
+    if (Object.hasOwn(draft.categories, newId)) { setError(t('editor.categoryExists')); return }
+    setError('')
     const def = draft.categories[tempKey]
     if (!def) return
     removeCatDraft(tempKey)
@@ -170,6 +180,8 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
     if (!edit || !edit.cat.trim() || !edit.asset.trim()) return
     const newKey = `${edit.cat.trim()}:${edit.asset.trim()}`
     if (newKey === tempKey) return
+    if (Object.hasOwn(draft.overrides, newKey)) { setError(t('editor.overrideExists')); return }
+    setError('')
     const def = draft.overrides[tempKey]
     if (!def) return
     removeOvDraft(tempKey)
@@ -197,74 +209,63 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
   }
 
   const handleApply = () => {
-    for (const id of Object.keys(categories)) {
-      if (!draft.categories[id]) removeCategory(id)
+    try {
+      commitEdit(() => apply(draft))
+      const { categories, overrides, entries } = useGlobalResourceTable.getState()
+      setDraft(structuredClone({ categories, overrides, entries }))
+      setNewCatIds({})
+      setOvEdits({})
+      setError('')
+      return true
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+      return false
     }
-    for (const fullId of Object.keys(overrides)) {
-      if (!draft.overrides[fullId]) removeOverride(fullId)
-    }
-    for (const fullId of Object.keys(entries)) {
-      if (!draft.entries[fullId]) removeEntry(fullId)
-    }
-    for (const [id, def] of Object.entries(draft.categories)) {
-      if (id.startsWith('__new_')) continue
-      if (categories[id]) {
-        updateCategory(id, def)
-      } else {
-        addCategory(def)
-      }
-    }
-    for (const [fullId, ov] of Object.entries(draft.overrides)) {
-      if (fullId.startsWith('__new_ov_')) continue
-      setOverride(fullId, { unit_override: ov.unit_override })
-    }
-    for (const [fullId, entry] of Object.entries(draft.entries)) {
-      setEntry(fullId, { displayName: entry.displayName })
-    }
-    setDraft({
-      categories: JSON.parse(JSON.stringify(categories)),
-      overrides: JSON.parse(JSON.stringify(overrides)),
-      entries: JSON.parse(JSON.stringify(entries)),
-    })
   }
 
   const handleConfirm = () => {
-    handleApply()
-    onClose()
+    if (handleApply() && !embedded) onClose()
   }
 
   const handleCancel = () => {
-    onClose()
+    if (embedded) {
+      const { categories, overrides, entries } = useGlobalResourceTable.getState()
+      setDraft(structuredClone({ categories, overrides, entries }))
+      setNewCatIds({})
+      setOvEdits({})
+      setError('')
+    } else onClose()
   }
 
   return (
-    <div className={modalStyles.overlay} role="presentation">
-      <div className={`${modalStyles.panel} ${styles['resource-registry__modal']}`} role="dialog" aria-modal="true">
-        <header className={modalStyles.header}>
+    <div className={embedded ? styles.embeddedHost : modalStyles.overlay} role="presentation">
+      <div className={`${embedded ? styles.embedded : modalStyles.panel} ${styles['resource-registry__modal']}`} role={embedded ? undefined : 'dialog'} aria-modal={embedded ? undefined : true}>
+        {error && <p role="alert">{translateDiagnostic(error)}</p>}
+        {!embedded && <header className={modalStyles.header}>
           <div>
-            <p className={modalStyles.eyebrow}>Global Settings</p>
-            <h3 className={styles['resource-registry__title']}>全局资源注册表</h3>
+            <p className={modalStyles.eyebrow}>{t('editor.globalSettings')}</p>
+            <h3 className={styles['resource-registry__title']}>{t('editor.registry')}</h3>
           </div>
-        </header>
+        </header>}
 
         <div className={styles['resource-registry__tabs']}>
           <button
             className={`${styles['resource-registry__tab']}${tab === 'categories' ? ` ${styles['resource-registry__tab--active']}` : ''}`}
             onClick={() => setTab('categories')}
           >
-            类别定义
+            {t('editor.categories')}
           </button>
           <button
             className={`${styles['resource-registry__tab']}${tab === 'overrides' ? ` ${styles['resource-registry__tab--active']}` : ''}`}
             onClick={() => setTab('overrides')}
           >
-            单位覆盖
+            {t('editor.overrides')}
           </button>
           <button
             className={`${styles['resource-registry__tab']}${tab === 'entries' ? ` ${styles['resource-registry__tab--active']}` : ''}`}
             onClick={() => setTab('entries')}
           >
-            全部已使用资源
+            {t('editor.usedResources')}
           </button>
         </div>
 
@@ -272,17 +273,17 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
           {tab === 'categories' && (
             <>
               <p className={styles['resource-registry__hint']}>
-                类别定义资源的默认单位、偏好基准与颜色标识。所有 <code>category:asset</code> 形式的资源继承此处的设定。
+                {t('editor.categoryHint')}
               </p>
 
               <div className={styles['resource-registry__list-section']}>
                 <div className={`${styles['resource-registry__table']} ${styles['resource-registry__table--cats']}`}>
                   <div className={`${styles['resource-registry__table-row']} ${styles['resource-registry__table-row--header']}`}>
-                    <span>类别 ID</span>
-                    <span>显示名</span>
-                    <span>默认单位</span>
-                    <span>偏好基准</span>
-                    <span>颜色</span>
+                    <span>{t('editor.categoryId')}</span>
+                    <span>{t('editor.displayName')}</span>
+                    <span>{t('editor.defaultUnit')}</span>
+                    <span>{t('editor.preferredBasis')}</span>
+                    <span>{t('editor.color')}</span>
                     <span></span>
                   </div>
                   {categoryEntries.map(([id, def]) => {
@@ -314,14 +315,12 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
                           onChange={(e) => updateCatDraft(id, { base_unit: e.target.value })}
                           className={styles['resource-registry__mono']}
                         />
-                        <select
+                        <Combobox
+                          aria-label={t('editor.preferredMeasure')}
                           value={def.preferred_time_base}
-                          onChange={(e) => updateCatDraft(id, { preferred_time_base: e.target.value as TimeBase })}
-                        >
-                          <option value="rate_per_sec">/秒</option>
-                          <option value="rate_per_tick">/tick</option>
-                          <option value="per_cycle">/配方</option>
-                        </select>
+                          onChange={value => updateCatDraft(id, { preferred_time_base: value as TimeBase })}
+                          options={[{ value: 'rate_per_sec', label: t('editor.perSecond') }, { value: 'rate_per_tick', label: t('editor.perTick') }, { value: 'per_cycle', label: t('editor.perCycle') }]}
+                        />
                         <input
                           type="color"
                           value={def.themeColor}
@@ -332,7 +331,7 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
                           className={`${styles['resource-registry__btn']} ${styles['resource-registry__btn--danger']}`}
                           onClick={() => removeCatDraft(id)}
                         >
-                          删除
+                          {t('editor.delete')}
                         </button>
                       </div>
                     )
@@ -343,7 +342,7 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
                     onClick={handleAddCategory}
                     style={{ justifySelf: 'start' }}
                   >
-                    + 添加类别
+                    <Icon name="plus" size={14} /> {t('editor.addCategory')}
                   </button>
                 </div>
               </div>
@@ -353,15 +352,15 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
           {tab === 'overrides' && (
             <>
               <p className={styles['resource-registry__hint']}>
-                为特定资源覆盖其类别的默认单位。例如 <code>energy:thermal_rf</code> 覆盖单位为 <code>RF</code>，表示不沿用 <code>energy</code> 类别的默认 EU。
+                {t('editor.overrideHint')}
               </p>
 
               <div className={styles['resource-registry__list-section']}>
                 <div className={`${styles['resource-registry__table']} ${styles['resource-registry__table--overrides']}`}>
                   <div className={`${styles['resource-registry__table-row']} ${styles['resource-registry__table-row--header']}`}>
-                    <span>类别</span>
-                    <span>资产 ID</span>
-                    <span>覆盖单位</span>
+                    <span>{t('editor.category')}</span>
+                    <span>{t('editor.assetId')}</span>
+                    <span>{t('editor.overrideUnit')}</span>
                     <span></span>
                   </div>
                   {overrideEntries.map(([fullId, ov]) => {
@@ -381,19 +380,10 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
 
                     return (
                       <div className={styles['resource-registry__table-row']} key={fullId}>
-                        <select
-                          value={displayCat}
-                          onChange={(e) => setEditCat(e.target.value)}
-                          onBlur={() => commitOverrideKey(fullId)}
-                        >
-                          <option value="">—</option>
-                          {categoryIds.map((cid) => (
-                            <option key={cid} value={cid}>{cid}</option>
-                          ))}
-                        </select>
+                        <Combobox value={displayCat} onChange={setEditCat} onBlur={() => commitOverrideKey(fullId)} aria-label={t('editor.overrideCategory')} options={[{ value: '', label: '—' }, ...categoryIds.map(cid => ({ value: cid, label: cid }))]} />
                         <input
                           type="text"
-                          placeholder="资产 ID"
+                          placeholder={t('editor.assetId')}
                           value={displayAsset}
                           onChange={(e) => setEditAsset(e.target.value)}
                           onBlur={() => commitOverrideKey(fullId)}
@@ -402,7 +392,7 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
                         />
                         <input
                           type="text"
-                          placeholder="(无覆盖)"
+                          placeholder={t('editor.noOverride')}
                           value={ov.unit_override ?? ''}
                           onChange={(e) => updateOvDraft(fullId, { unit_override: e.target.value || undefined })}
                           className={styles['resource-registry__mono']}
@@ -411,7 +401,7 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
                           className={`${styles['resource-registry__btn']} ${styles['resource-registry__btn--danger']}`}
                           onClick={() => removeOvDraft(fullId)}
                         >
-                          删除
+                          {t('editor.delete')}
                         </button>
                       </div>
                     )
@@ -422,7 +412,7 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
                     onClick={handleAddOverride}
                     style={{ justifySelf: 'start' }}
                   >
-                    + 添加覆盖
+                    <Icon name="plus" size={14} /> {t('editor.addOverride')}
                   </button>
                 </div>
               </div>
@@ -432,18 +422,18 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
           {tab === 'entries' && (
             <>
               <p className={styles['resource-registry__hint']}>
-                自动收录项目中出现过的所有资源。可在下方补充别名等信息。
+                {t('editor.entriesHint')}
               </p>
 
               <div className={styles['resource-registry__list-section']}>
-                <h4>已收录资源 ({entryList.length})</h4>
+                <h4>{t('editor.entryCount', { count: entryList.length })}</h4>
 
                 <div className={styles['resource-registry__table']}>
                   <div className={`${styles['resource-registry__table-row']} ${styles['resource-registry__table-row--header']}`}>
-                    <span>标识符</span>
-                    <span>别名</span>
-                    <span>类别</span>
-                    <span>操作</span>
+                    <span>{t('editor.identifier')}</span>
+                    <span>{t('editor.alias')}</span>
+                    <span>{t('editor.category')}</span>
+                    <span>{t('editor.actions')}</span>
                   </div>
                   {entryList.map(([fullId, def]) => {
                     const parsed = parseResourceId(fullId)
@@ -455,26 +445,26 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
                         <span className={styles['resource-registry__mono']}>{fullId}</span>
                         <input
                           type="text"
-                          placeholder="(无别名)"
+                          placeholder={t('editor.noAlias')}
                           value={def.displayName ?? ''}
                           onChange={(e) => updateEntryDraft(fullId, { displayName: e.target.value || undefined })}
                         />
                         <span style={{ fontSize: 12, opacity: 0.7 }}>
-                          {catDef?.displayName ?? catId}
+                          {categoryDisplayName(catId, catDef?.displayName ?? catId)}
                           {catDef ? ` (${catDef.base_unit})` : ''}
                         </span>
                         <button
                           className={`${styles['resource-registry__btn']} ${styles['resource-registry__btn--danger']}`}
                           onClick={() => removeEntryDraft(fullId)}
                         >
-                          删除
+                          {t('editor.delete')}
                         </button>
                       </div>
                     )
                   })}
                   {entryList.length === 0 && (
                     <p style={{ padding: 12, fontSize: 12, opacity: 0.5 }}>
-                      暂无资源。在配方中填写资源 ID 后会自动收录。
+                      {t('editor.registryEmpty')}
                     </p>
                   )}
                 </div>
@@ -485,14 +475,14 @@ export function ResourceRegistryPanel({ onClose }: ResourceRegistryPanelProps) {
 
         <footer className={styles['resource-registry__footer']}>
           <button className={styles['resource-registry__btn']} onClick={handleCancel}>
-            取消
+            {t(embedded ? 'settings.reset' : 'editor.cancel')}
           </button>
           <button className={styles['resource-registry__btn']} onClick={handleApply}>
-            应用
+            {t('editor.apply')}
           </button>
-          <button className={`${styles['resource-registry__btn']} ${styles['resource-registry__btn--primary']}`} onClick={handleConfirm}>
-            确定
-          </button>
+          {!embedded && <button className={`${styles['resource-registry__btn']} ${styles['resource-registry__btn--primary']}`} onClick={handleConfirm}>
+            {t('editor.confirm')}
+          </button>}
         </footer>
       </div>
     </div>

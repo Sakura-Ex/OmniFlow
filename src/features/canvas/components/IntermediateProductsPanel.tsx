@@ -1,3 +1,6 @@
+import { categoryDisplayName } from '@/common/i18n/resourceLabels'
+import { Icon } from '@/common/components/Icon'
+import { useTranslation } from '@/common/i18n'
 import { useState, useMemo, type CSSProperties } from 'react'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 import { resolveCategoryDef } from '@/features/recipe/recipe.endpointNorm'
@@ -44,7 +47,7 @@ function HUDResourceRow({ item, value, isGlobal }: { item: string; value: number
     <div className={`${styles['system-hud__row']}${isGlobal ? ` ${styles['system-hud__row--global']}` : ''}`}>
       <span className={styles['system-hud__item']}>
         <span className={styles['system-hud__badge']} style={{ '--resource-color': hexColor } as CSSProperties}>
-          {catDef.displayName}
+          {categoryDisplayName(catDef.id, catDef.displayName)}
         </span>
         <span className={styles['system-hud__name']}>{name}</span>
       </span>
@@ -67,6 +70,7 @@ export function IntermediateProductsPanel({
   systemInputs,
   systemOutputs,
 }: IntermediateProductsPanelProps) {
+  const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState(false)
   const recipes = useRecipeStore((state) => state.recipes)
   const nodes = useCanvasStore((state) => state.nodes)
@@ -120,16 +124,16 @@ export function IntermediateProductsPanel({
     <section className={`${styles['system-hud__panel']} ${styles['system-hud__panel--intermediate']}`}>
       <header className={`${styles['system-hud__header']} ${styles['system-hud__header--right']}`}>
         <span className={`${styles['system-hud__title']} ${styles['system-hud__title--intermediate']}`}>
-          🔗 INTERMEDIATE (s=0)
+          <Icon name="link" size={14} /> {t('canvas.intermediate')}
         </span>
         <button
           className={`${styles['system-hud__toggle']}${collapsed ? ` ${styles['system-hud__toggle--collapsed']}` : ''}`}
           type="button"
           onClick={() => setCollapsed((prev) => !prev)}
           aria-expanded={!collapsed}
-          aria-label="Toggle intermediate panel"
+          aria-label={t('canvas.toggleIntermediate')}
         >
-          ▾
+          <Icon name="chevronDown" size={14} />
         </button>
       </header>
       {!collapsed && (

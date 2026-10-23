@@ -1,3 +1,4 @@
+import { NetworkConfigurationSchema } from './network.schema'
 import { UnitSnapshotSchema } from './units.schema'
 import { z } from 'zod'
 
@@ -40,6 +41,7 @@ export const CanvasSchema = z.object({
   nodes: z.array(z.unknown()),
   edges: z.array(z.unknown()),
   viewport: ViewportSchema,
+  networkConfiguration: NetworkConfigurationSchema.optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })

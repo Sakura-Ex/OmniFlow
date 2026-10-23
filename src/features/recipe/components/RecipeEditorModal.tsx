@@ -1,16 +1,17 @@
-import { UnitSystem } from '@/common/units/UnitSystem'
+import { useTranslation } from '@/common/i18n'
+import { translateDiagnostic } from '@/common/i18n/translateDiagnostic'
+import { Icon } from '@/common/components/Icon'
 import { useSettingsStore } from '@/features/settings/settings.store'
 import { useMemo, useEffect } from 'react'
 import { useForm, useFieldArray, FormProvider, useWatch } from 'react-hook-form'
 import type { RecipeNodeData, ActiveModifier } from '@/common/types/recipe'
 import type { Resource } from '@/common/types/resource'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
-import { SettingsUI } from '@/features/canvas/components/SettingsUI'
+import { RecipeSettings } from '@/features/recipe/components/RecipeSettings'
 import { previewModifierPipeline } from '@/features/modifier/modifier.pipeline'
 import { ensureRecipeDataShape } from '@/features/modifier/modifier.normalize'
 import { generateId } from '@/common/utils/id'
 import { createDefaultModifierState } from '@/features/modifier/modifier.state'
-import { resolveRecipePowerProfile } from '@/features/modifier/modifiers/gregtech/utils'
 import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArchetype } from '@/data/archetypes/index'
 import modalStyles from '@/common/components/Modal.module.css'
 import styles from './RecipeEditorModal.module.css'
@@ -87,6 +88,7 @@ function buildFormDefaults(node: EditorTarget | null, stored?: RecipeNodeData): 
  * @returns Rendered JSX element for the recipe editor modal, or null when closed.
  */
 export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalProps) {
+  const { t } = useTranslation()
   const storedRecipe = useRecipeStore((state) => state.recipes[node?.id ?? ''])
 
   const methods = useForm<RecipeFormData>({
@@ -201,23 +203,10 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
     [livePayload]
   )
 
-  const livePowerPreview = useMemo(() => {
-    if (!liveData) {
-      return {
-        baseEuPerTick: 0,
-        actualEuPerTick: 0,
-        highestTier: 'N/A',
-        hasPowerSetting: false,
-      }
-    }
-
-    return resolveRecipePowerProfile(liveData, livePayload ? [...livePayload.recipe_inputs, ...livePayload.utility_inputs] as Resource[] : undefined, new UnitSystem(environment))
-  }, [liveData, livePayload, environment])
-
   const onSubmit = (formData: RecipeFormData) => {
     if (!node) return
 
-    const assembled = ensureRecipeDataShape({
+    const assembled: RecipeNodeData = {
       ...node.data,
       machine_name: formData.machine_name.trim() || 'Custom Machine',
       archetype_id: formData.archetype_id,
@@ -230,10 +219,10 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
       duration_seconds: Number(formData.base_duration_seconds) || 0,
       active_modifiers: formData.active_modifiers,
       hardware_specs: formData.hardware_specs,
-    })
+    }
 
     const preview = previewModifierPipeline(assembled, environment)
-    if (!preview.trace.length && !preview.eligibility.eligible) { alert(preview.eligibility.reasons.join('；')); return }
+    if (!preview.trace.length && !preview.eligibility.eligible) { alert(preview.eligibility.reasons.map(reason => translateDiagnostic(reason)).join('; ')); return }
     onSave(node.id, assembled)
   }
 
@@ -241,20 +230,19 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
 
   return (
     <div className={modalStyles.overlay} role="presentation">
-      <div className={`${modalStyles.panel} ${styles['recipe-editor__modal']}`} role="dialog" aria-modal="true">
+      <div className={`${modalStyles.panel} ${styles['recipe-editor__modal']}`} role="dialog" aria-modal="true" aria-labelledby="recipe-editor-title">
         <header className={modalStyles.header}>
           <div>
-            <p className={modalStyles.eyebrow}>Recipe Editor</p>
-            <h3 className={styles['recipe-editor__title']}>编辑配方</h3>
+            <h3 id="recipe-editor-title" className={styles['recipe-editor__title']}>{t('editor.editRecipe')}</h3>
           </div>
-          <button className={modalStyles.closeBtn} onClick={onClose} title="关闭">
-            ✕
+          <button className={modalStyles.closeBtn} onClick={onClose} title={t('editor.close')}>
+            <Icon name="close" />
           </button>
         </header>
 
         <div className={styles['recipe-editor__body']}>
           <FormProvider {...methods}>
-            <SettingsUI
+            <RecipeSettings
               inputFields={inputFields}
               outputFields={outputFields}
               utilityInputFields={utilityInputFields}
@@ -263,14 +251,13 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
               previewDurationSeconds={livePayload?.duration_seconds ?? (watchedBaseDuration ?? 0)}
               previewInputRates={allInputRates}
               previewOutputRates={allOutputRates}
-              previewPowerActualEu={livePowerPreview.actualEuPerTick}
             />
           </FormProvider>
         </div>
 
         <footer className={styles['recipe-editor__footer']}>
-          <button className={styles['recipe-editor__btn']} onClick={onClose}>取消</button>
-          <button className={`${styles['recipe-editor__btn']} ${styles['recipe-editor__btn--primary']}`} onClick={handleSubmit(onSubmit)}>保存</button>
+          <button type="button" className={styles['recipe-editor__btn']} onClick={onClose}>{t('editor.cancel')}</button>
+          <button type="button" className={`${styles['recipe-editor__btn']} ${styles['recipe-editor__btn--primary']}`} onClick={handleSubmit(onSubmit)}>{t('editor.saveRecipe')}</button>
         </footer>
       </div>
     </div>

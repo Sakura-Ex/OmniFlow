@@ -109,3 +109,25 @@ it('keeps GT capacity and overclock results invariant under input energy prefixe
   expect(prefixed.duration_seconds).toBe(base.duration_seconds)
   expect(prefixed.utility_inputs[0].amount).toBe(base.utility_inputs[0].amount)
 })
+
+
+it.each([false, true])('preserves equivalent energy declarations through perfect=%s overclocking', (perfectOverclock) => {
+  const declarations = [
+    { amount: 32, time_base: 'rate_per_tick' as const },
+    { amount: 640, time_base: 'rate_per_sec' as const },
+    { amount: 2560, time_base: 'per_cycle' as const },
+  ]
+  for (const declaration of declarations) {
+    const result = runModifierPipeline({ ...gt,
+      hardware_specs: { energyHatches: [{ tier: 'MV', amps: 1 }] },
+      base_utility_inputs: [{ category: 'energy', id: 'gt_eu', portId: 'power', _uid: 'utility-gt_energy', utility_type: 'energy:gt_eu', unit: [{ baseUnitId: 'EU', exponent: 1 }], ...declaration }],
+      active_modifiers: [{ instance_id: 'oc', definition_id: 'gt_overclocker', uiState: { perfectOverclock } }],
+    })
+    expect(result.duration_seconds).toBe(perfectOverclock ? 1 : 2)
+    expect(result.utility_inputs[0].amount).toBe(2560)
+  }
+})
+
+it.each(['', '   '])('rejects blank final resource identity %j', (id) => {
+  expect(() => runModifierPipeline({ ...recipe, outputs: [{ category: 'item', id, amount: 1 }] })).toThrow('must not be blank')
+})

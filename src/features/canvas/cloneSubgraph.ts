@@ -1,3 +1,5 @@
+import { stripCalculationResults } from '@/common/utils/calculationState'
+import { portKey } from '@/features/calculation/topology'
 import type { Node, Edge } from 'reactflow'
 import type { RecipeNodeData } from '@/common/types/recipe'
 import { generateId } from '@/common/utils/id'
@@ -11,7 +13,7 @@ import { normalizeGraph } from './graphDocument'
  * @param offset - Position offset applied to copied nodes.
  */
 export function cloneSubgraph(nodes: Node[], edges: Edge[], offset = 30) {
-  const graph = normalizeGraph(structuredClone(nodes), structuredClone(edges))
+  const graph = normalizeGraph(structuredClone(nodes).map(node => ({ ...node, data: stripCalculationResults(node.data) })), structuredClone(edges))
   const nodeIds = new Map(nodes.map((node) => [node.id, generateId()]))
   const handleMaps = new Map<string, Map<string, string>>()
   const instanceMaps = new Map<string, Map<string, string>>()
@@ -21,7 +23,13 @@ export function cloneSubgraph(nodes: Node[], edges: Edge[], offset = 30) {
     handleMaps.set(node.id, handles)
     instanceMaps.set(node.id, instances)
     const data = structuredClone(node.data)
-    for (const field of node.type === 'recipeNode' ? ['base_inputs', 'base_outputs', 'base_utility_inputs', 'base_utility_outputs', 'inputs', 'outputs'] : ['ports']) {
+    if (node.type === 'splitterNode') {
+      for (const port of [data.input, ...data.outputs]) handles.set(port.portId, generateId())
+      data.input = { ...data.input, portId: handles.get(data.input.portId) }
+      data.outputs = data.outputs.map((port: { portId: string }) => ({ ...port, portId: handles.get(port.portId) }))
+      delete data.port_throughputs
+    }
+    for (const field of node.type === 'recipeNode' ? ['base_inputs', 'base_outputs', 'base_utility_inputs', 'base_utility_outputs', 'inputs', 'outputs'] : node.type === 'splitterNode' ? [] : ['ports']) {
       data[field] = (data[field] ?? []).map((port: { portId?: string; _uid?: string }) => {
         if (port.portId && !handles.has(port.portId)) handles.set(port.portId, generateId())
         return { ...port, portId: port.portId ? handles.get(port.portId) : generateId(), _uid: port._uid?.startsWith('utility-') ? port._uid : generateId() }
@@ -52,5 +60,11 @@ export function cloneSubgraph(nodes: Node[], edges: Edge[], offset = 30) {
     return handle
   }
   const nextEdges = graph.edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target)).map((edge) => ({ ...edge, id: generateId(), source: nodeIds.get(edge.source)!, target: nodeIds.get(edge.target)!, sourceHandle: remap(edge.source, edge.sourceHandle), targetHandle: remap(edge.target, edge.targetHandle), selected: true }))
-  return { nodes: nextNodes, edges: nextEdges, recipes: Object.fromEntries(nextNodes.filter((n) => n.type === 'recipeNode').map((n) => [n.id, n.data as RecipeNodeData])) }
+  const portAddresses: Record<string, string> = {}
+  for (const node of graph.nodes) {
+    for (const port of node.type === 'recipeNode' ? [...node.data.base_inputs ?? [], ...node.data.base_outputs ?? [], ...node.data.base_utility_inputs ?? [], ...node.data.base_utility_outputs ?? []] : node.type === 'splitterNode' ? [node.data.input, ...node.data.outputs] : node.data.ports ?? []) {
+      portAddresses[portKey(node.id, port.portId)] = portKey(nodeIds.get(node.id)!, remap(node.id, port.portId)!)
+    }
+  }
+  return { nodeIds: Object.fromEntries(nodeIds), portAddresses, remapPort: remap, nodes: nextNodes, edges: nextEdges, recipes: Object.fromEntries(nextNodes.filter((n) => n.type === 'recipeNode').map((n) => [n.id, n.data as RecipeNodeData])) }
 }

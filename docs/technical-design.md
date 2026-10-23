@@ -1,5 +1,9 @@
 # OmniFlow 技术设计文档
 
+> 历史 v1 设计参考。下文中的扁平资源传输、可变 Context 修饰器及旧后端建模流程已由 v2 替代；当前计算语义以 [v2 设计](technical-design-v2-proposal.md) 和 [实现验证记录](validation/v2-completion/README.md) 为准。不要据本文旧接口新增实现。
+
+> 原有操作习惯仍是交互基准，不因计算接口更新而作废。调整功能入口、默认行为和布局前，参照[交互设计手册](interaction-design-handbook.md)并核对 v2 前实现。
+
 ***
 
 ## 1. 设计目标与范围
@@ -330,7 +334,7 @@ PipelineContext → [ M1 ] → [ M2 ] → [ M3 ] → ... → [ Mn ] → 归一�
 |---|---|---|
 | Step 1 | 初始化 | 深拷贝原始配方数据，按 `is_utility` 标志隔离为四个独立数组，创建 `PipelineContext` |
 | Step 2 | 遍历修饰器 | 按 `active_modifiers` 顺序逐一调用 `evaluate(ctx, uiState)`，将返回的 `ModifierEffect` 施加到 Context |
-| Step 3 | 归一化 | 对所有资源执行 `normalizeRate()`：根据各端口的 `measure_mode` 将 `amount` 转换为 Rate/s |
+| Step 3 | 归一化 | 对所有资源执行 `normalizeRate()`：根据各端口的 `time_base` 将 `amount` 转换为 Rate/s |
 | Step 4 | 结构化输出 | 产出 `ComputedNodePayload`，四维独立数组保持拆分 |
 
 ### 7.3 修饰器接口
@@ -360,11 +364,11 @@ interface IMachineModifier {
 | `chance_output` | 引擎内置（通用） | 概率副产物期望值缩放 |
 | （模组自定义） | 可插拔扩展 | 模组通过实现 `IMachineModifier` 注入特定逻辑 |
 
-### 7.4 measure_mode 归一化规则
+### 7.4 time_base 归一化规则
 
-管线末尾的 `normalizeRate()` 函数根据端口 `measure_mode` 将 `amount` 转换为 Rate/s：
+管线末尾的 `normalizeRate()` 函数根据端口 `time_base` 将 `amount` 转换为 Rate/s：
 
-| `measure_mode` | 归化公式 | 受 duration 缩放影响 |
+| `time_base` | 归化公式 | 受 duration 缩放影响 |
 |---|---|---|
 | `per_cycle` | `amount / duration` | 是 |
 | `rate_per_tick` | `amount × 20` | 否 |
@@ -727,9 +731,9 @@ CapEx BOM 独立于 OpEx 运营矩阵，实现建厂与运营的彻底分离。
 | Overflow | 0 | 0 | 来多少接多少，作为物料出口 |
 | Minimize | +100 | 0 | 压低此 Target 吞吐 |
 
-### A.3 measure_mode 归一化公式
+### A.3 time_base 归一化公式
 
-| `measure_mode` | 归化公式 | 受 duration 缩放影响 |
+| `time_base` | 归化公式 | 受 duration 缩放影响 |
 |---|---|---|
 | `per_cycle` | `amount / duration` | 是 |
 | `rate_per_tick` | `amount × 20` | 否 |

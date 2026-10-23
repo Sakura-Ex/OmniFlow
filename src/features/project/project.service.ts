@@ -1,3 +1,4 @@
+import { emptyNetworkConfiguration } from '@/common/schemas/network.schema'
 import type { UnitSnapshot } from '@/common/types/units'
 import { UnitSystem } from '@/common/units/UnitSystem'
 import { DEFAULT_UNIT_SNAPSHOT } from '@/common/units/defaults'
@@ -35,7 +36,7 @@ export class ProjectService {
       })
       await db.canvases.add({
         id: generateId(), projectId, parentId: null, name: '主画板',
-        nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 },
+        nodes: [], edges: [], networkConfiguration: emptyNetworkConfiguration(), viewport: { x: 0, y: 0, zoom: 1 },
         createdAt: now, updatedAt: now
       })
     })

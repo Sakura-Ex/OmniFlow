@@ -1,7 +1,14 @@
+import { stripCalculationResults } from '@/common/utils/calculationState'
+import { useCanvasStore } from '@/features/canvas/canvas.store'
+import type { NetworkConfiguration } from '@/common/schemas/network.schema'
+import { useSettingsStore } from '@/features/settings/settings.store'
+import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
+import type { UnitSnapshot } from '@/common/types/units'
+import type { GlobalResourceTableState } from '@/common/types/registry'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { normalizeGraph } from '@/features/canvas/graphDocument'
-import { useCallback, useState } from 'react'
-import type { MutableRefObject } from 'react'
+import { useState, useSyncExternalStore } from 'react'
+import { createHistory } from '@/common/utils/history'
 import type { Edge, Node } from 'reactflow'
 import { deepClone, stripState } from '@/features/canvas/canvas.utils'
 
@@ -9,12 +16,13 @@ import { deepClone, stripState } from '@/features/canvas/canvas.utils'
 type Snapshot = {
   nodes: Node[]
   edges: Edge[]
+  networkConfiguration: NetworkConfiguration
+  environment: UnitSnapshot
+  registry: Pick<GlobalResourceTableState, 'categories' | 'overrides' | 'entries'>
 }
 
 /** Parameters for the `useUndoRedo` hook. */
 type UseUndoRedoParams = {
-  nodesRef: MutableRefObject<Node[]>
-  edgesRef: MutableRefObject<Edge[]>
   setNodes: (nodes: Node[]) => void
   setEdges: (edges: Edge[]) => void
   historyLimit?: number
@@ -24,84 +32,32 @@ type UseUndoRedoParams = {
  * Provides undo/redo history tracking for canvas node/edge state.
  *
  * @param root0 - Hook parameters.
- * @param root0.nodesRef - Mutable ref holding the current node array.
- * @param root0.edgesRef - Mutable ref holding the current edge array.
  * @param root0.setNodes - State setter for nodes.
  * @param root0.setEdges - State setter for edges.
  * @param root0.historyLimit - Maximum number of snapshots kept in the undo stack (defaults to 20).
  * @returns An object with `takeSnapshot`, `undo` and `redo` functions.
  */
 export function useUndoRedo({
-  nodesRef,
-  edgesRef,
   setNodes,
   setEdges,
   historyLimit = 20,
 }: UseUndoRedoParams) {
-  const [past, setPast] = useState<Snapshot[]>([])
-  const [future, setFuture] = useState<Snapshot[]>([])
+  const [history] = useState(() => createHistory({
+    capture: () => captureSnapshot(useCanvasStore.getState().nodes, useCanvasStore.getState().edges),
+    restore: (snapshot: Snapshot) => {
+      const canvas = useCanvasStore.getState()
+      const selectedNodes = new Set(canvas.nodes.filter(node => node.selected).map(node => node.id))
+      const selectedEdges = new Set(canvas.edges.filter(edge => edge.selected).map(edge => edge.id))
+      restoreSnapshot(snapshot)
+      setNodes(snapshot.nodes.map(node => ({ ...node, selected: selectedNodes.has(node.id) })))
+      setEdges(snapshot.edges.map(edge => ({ ...edge, selected: selectedEdges.has(edge.id) })))
+    },
+    limit: historyLimit,
+  }))
+  useSyncExternalStore(history.subscribe, history.getRevision, history.getRevision)
+  return { canUndo: history.canUndo(), canRedo: history.canRedo(), takeSnapshot: history.takeSnapshot,
+    commitEdit: history.commit, clearHistory: history.clear, undo: history.undo, redo: history.redo }
 
-  const takeSnapshot = useCallback(() => {
-    const currentNodes = captureNodes(nodesRef.current)
-    const currentEdges = stripState(deepClone(edgesRef.current)) as Edge[]
-    setPast((p) => {
-
-      if (p.length > 0) {
-        const last = p[p.length - 1]
-        if (
-          JSON.stringify(last.nodes) === JSON.stringify(currentNodes) &&
-          JSON.stringify(last.edges) === JSON.stringify(currentEdges)
-        ) {
-          return p
-        }
-      }
-
-      setFuture([])
-      return [...p.slice(-(historyLimit - 1)), { nodes: currentNodes, edges: currentEdges }]
-    })
-  }, [edgesRef, historyLimit, nodesRef])
-
-  const undo = useCallback(() => {
-    if (past.length === 0) return
-    const previous = past[past.length - 1]
-    const current = {
-      nodes: captureNodes(nodesRef.current),
-      edges: stripState(deepClone(edgesRef.current)) as Edge[],
-    }
-    setPast((p) => p.slice(0, -1))
-    setFuture((f) => [current, ...f])
-
-    const selectedNodeIds = new Set(nodesRef.current.filter((n) => n.selected).map((n) => n.id))
-    const selectedEdgeIds = new Set(edgesRef.current.filter((e) => e.selected).map((e) => e.id))
-
-    restoreRecipes(previous.nodes)
-    setNodes(previous.nodes.map((n) => ({ ...n, selected: selectedNodeIds.has(n.id) })))
-    setEdges(previous.edges.map((e) => ({ ...e, selected: selectedEdgeIds.has(e.id) })))
-  }, [edgesRef, nodesRef, past, setEdges, setNodes])
-
-  const redo = useCallback(() => {
-    if (future.length === 0) return
-    const next = future[0]
-    const current = {
-      nodes: captureNodes(nodesRef.current),
-      edges: stripState(deepClone(edgesRef.current)) as Edge[],
-    }
-    setFuture((f) => f.slice(1))
-    setPast((p) => [...p, current])
-
-    const selectedNodeIds = new Set(nodesRef.current.filter((n) => n.selected).map((n) => n.id))
-    const selectedEdgeIds = new Set(edgesRef.current.filter((e) => e.selected).map((e) => e.id))
-
-    restoreRecipes(next.nodes)
-    setNodes(next.nodes.map((n) => ({ ...n, selected: selectedNodeIds.has(n.id) })))
-    setEdges(next.edges.map((e) => ({ ...e, selected: selectedEdgeIds.has(e.id) })))
-  }, [edgesRef, future, nodesRef, setEdges, setNodes])
-
-  return {
-    takeSnapshot,
-    undo,
-    redo,
-  }
 }
 
 /**
@@ -111,7 +67,7 @@ export function useUndoRedo({
  */
 export function captureNodes(nodes: Node[]): Node[] {
   const recipes = useRecipeStore.getState().dumpAll()
-  return stripState(deepClone(nodes.map((node) => node.type === 'recipeNode' ? { ...node, data: recipes[node.id] ?? node.data } : node))) as Node[]
+  return stripState(deepClone(nodes.map((node) => node.type === 'recipeNode' ? { ...node, data: stripCalculationResults(recipes[node.id] ?? node.data) } : { ...node, data: stripCalculationResults(node.data) }))) as Node[]
 }
 
 /**
@@ -122,4 +78,29 @@ export function restoreRecipes(nodes: Node[]): void {
   const graph = normalizeGraph(nodes, [])
   useRecipeStore.setState({ recipes: {} })
   useRecipeStore.getState().loadAll(graph.recipes)
+}
+
+/** Capture graph data and the environment that gives quantities their meaning.
+ * @param nodes - Current graph nodes.
+ * @param edges - Current graph edges.
+ * @returns Independent document snapshot.
+ */
+export function captureSnapshot(nodes: Node[], edges: Edge[]): Snapshot {
+  const { categories, overrides, entries } = useGlobalResourceTable.getState()
+  return { nodes: captureNodes(nodes), edges: stripState(deepClone(edges)) as Edge[],
+    networkConfiguration: structuredClone(useCanvasStore.getState().networkConfiguration),
+    environment: structuredClone(useSettingsStore.getState().units),
+    registry: structuredClone({ categories, overrides, entries }) }
+}
+
+/** Restore the environment before compiling the restored recipes.
+ * @param snapshot - Complete historical document.
+ */
+export function restoreSnapshot(snapshot: Snapshot): void {
+  useCanvasStore.getState().setNetworkConfiguration(structuredClone(snapshot.networkConfiguration))
+  useCanvasStore.getState().invalidateCalculation()
+  useRecipeStore.setState({ recipes: {} })
+  useGlobalResourceTable.getState().restore(structuredClone(snapshot.registry))
+  useSettingsStore.getState().setEnvironment(snapshot.environment)
+  restoreRecipes(snapshot.nodes)
 }

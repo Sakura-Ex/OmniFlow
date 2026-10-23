@@ -1,3 +1,7 @@
+import { stripCalculationResults } from '@/common/utils/calculationState'
+import { NetworkConfigurationSchema, type NetworkConfiguration } from '@/common/schemas/network.schema'
+import { SplitterNodeDataSchema } from '@/common/schemas/splitter.schema'
+import { migrateNetworkConfiguration } from './networkMigration'
 import { z } from 'zod'
 import type { Node, Edge } from 'reactflow'
 import type { RecipeNodeData } from '@/common/types/recipe'
@@ -12,9 +16,10 @@ import { DEFAULT_UNIT_SNAPSHOT, legacyUnit, defaultResourceUnit } from '@/common
 import { normalizeGraph } from '@/features/canvas/graphDocument'
 import { DEFAULT_RESOURCE_CATEGORIES, DEFAULT_OVERRIDES } from '@/features/resource-registry/registry.defaults'
 
-/** Reproducible file format: v3 introduced units; v4 adds persistent port identities. */
+/** Reproducible file format: v3 introduced units; v4 adds persistent port identities; v5 stores explicit network policies. */
 export interface CanvasDocument {
-  version: 4
+  version: 5
+  networkConfiguration: NetworkConfiguration
   pluginApiVersion: 2
   environment: UnitSnapshot
   registry: {
@@ -33,11 +38,12 @@ const RegistrySchema = z.object({
   entries: z.record(z.object({ fullId: z.string(), displayName: z.string().optional() })),
 })
 const IdentitySchema = z.string().refine((id) => id.trim().length > 0, 'Identity must not be blank')
-const NodeSchema = z.object({ id: IdentitySchema, type: z.enum(['recipeNode', 'sourceNode', 'targetNode']), position: z.object({ x: z.number().finite(), y: z.number().finite() }), data: z.record(z.unknown()) }).passthrough()
+const NodeSchema = z.object({ id: IdentitySchema, type: z.enum(['recipeNode', 'sourceNode', 'targetNode', 'splitterNode']), position: z.object({ x: z.number().finite(), y: z.number().finite() }), data: z.record(z.unknown()) }).passthrough()
 const EdgeSchema = z.object({ id: IdentitySchema, source: IdentitySchema, target: IdentitySchema, sourceHandle: z.string().nullable().optional(), targetHandle: z.string().nullable().optional() }).passthrough()
 const DocumentSchema = z.object({
-  version: z.union([z.literal(2), z.literal(3), z.literal(4)]),
+  version: z.union([z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
   pluginApiVersion: z.literal(2).optional(),
+  networkConfiguration: NetworkConfigurationSchema.optional(),
   environment: UnitSnapshotSchema.optional(),
   registry: RegistrySchema.optional(),
   ui: z.object({ nodes: z.array(NodeSchema), edges: z.array(EdgeSchema) }),
@@ -54,21 +60,23 @@ const DocumentSchema = z.object({
 
 /**
  * Validate first, migrate on copies, then let the caller commit the complete document.
- * @returns Validated v4 document and migration warnings.
+ * @returns Validated v5 document and migration warnings.
  * @param input - Untrusted parsed document data.
  */
 export function readCanvasDocument(input: unknown): { document: CanvasDocument; warnings: string[] } {
   const parsed = DocumentSchema.parse(input)
   if (parsed.version >= 3 && !parsed.environment) throw new Error('Missing saved environment')
-  if (parsed.version === 4 && parsed.pluginApiVersion !== 2) throw new Error('Unsupported modifier plugin API')
+  if (parsed.version >= 4 && parsed.pluginApiVersion !== 2) throw new Error('Unsupported modifier plugin API')
+  if (parsed.version === 5 && !parsed.networkConfiguration) throw new Error('Missing network configuration')
   const warnings: string[] = []
+  if (parsed.version < 5) warnings.push('已迁移可见 Source/Target。旧隐式 Global/Void 供给及自动排放不再生效：未连接输入需显式来源，未连接输出默认禁排。最大化目标按参考速率归一化加权；请检查边界与目标配置。')
   if (!parsed.environment) warnings.push('旧文件未保存环境，已采用默认 20 TPS。')
   if (parsed.version < 4) warnings.push('修饰器接口已升级至 v2；已按现有配置重新编译预览。')
   const registry = parsed.registry ?? { categories: Object.fromEntries(DEFAULT_RESOURCE_CATEGORIES.map((c) => [c.id, c])), overrides: DEFAULT_OVERRIDES, entries: {} }
   const environment = structuredClone(parsed.environment ?? DEFAULT_UNIT_SNAPSHOT) as UnitSnapshot
   const definitions = [...environment.definitions]
   const migrateResource = (resource: Resource): Resource => {
-    if (parsed.version === 4 && !resource.portId) throw new Error('Missing persisted port identity')
+    if (parsed.version >= 4 && !resource.portId) throw new Error('Missing persisted port identity')
     const label = registry.overrides[`${resource.category}:${resource.id}`]?.unit_override ?? registry.categories[resource.category]?.base_unit
     const unit = resource.unit ?? (label ? legacyUnit(label) : defaultResourceUnit(resource.category, resource.id))
     for (const factor of unit) {
@@ -87,6 +95,10 @@ export function readCanvasDocument(input: unknown): { document: CanvasDocument; 
     }
   }
   const nodes = parsed.ui.nodes.map((node) => {
+    if (node.type === 'splitterNode') {
+      const data = SplitterNodeDataSchema.parse(stripCalculationResults(node.data))
+      return { ...node, data: { ...data, input: migrateResource(data.input), outputs: data.outputs.map(output => ({ ...migrateResource(output), ratio: output.ratio })) } }
+    }
     if (node.type === 'recipeNode') {
       if (!recipes[node.id]) throw new Error(`Missing recipe: ${node.id}`)
       return node
@@ -106,10 +118,11 @@ export function readCanvasDocument(input: unknown): { document: CanvasDocument; 
     }
   }
   for (const node of nodes) {
-    if (node.type !== 'recipeNode') for (const port of node.data.ports) validateUnits(port)
+    if (node.type === 'splitterNode') for (const port of [node.data.input, ...node.data.outputs]) validateUnits(port)
+    else if (node.type !== 'recipeNode') for (const port of node.data.ports) validateUnits(port)
   }
   const graph = normalizeGraph(nodes, parsed.ui.edges as Edge[], recipes, parsed.version < 4)
   const issues = graph.edges.filter((edge) => edge.data?.portIssue)
   if (issues.length) warnings.push(...issues.map((edge) => `连线 ${edge.id} 待修复：${edge.data.portIssue}`))
-  return { document: { version: 4, pluginApiVersion: 2, environment: units.snapshot, registry, ui: { nodes: graph.nodes, edges: graph.edges }, domain: { recipes: graph.recipes } }, warnings }
+  return { document: { version: 5, networkConfiguration: parsed.networkConfiguration ?? migrateNetworkConfiguration(graph.nodes, units.snapshot), pluginApiVersion: 2, environment: units.snapshot, registry, ui: { nodes: graph.nodes, edges: graph.edges }, domain: { recipes: graph.recipes } }, warnings }
 }

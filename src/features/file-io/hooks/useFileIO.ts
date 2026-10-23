@@ -1,3 +1,6 @@
+import { captureDocument } from '../captureDocument'
+import { t } from '@/common/i18n'
+import { useCanvasStore } from '@/features/canvas/canvas.store'
 import { readCanvasDocument, type CanvasDocument } from '../canvasDocument'
 import { useSettingsStore } from '@/features/settings/settings.store'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
@@ -5,7 +8,6 @@ import { useCallback } from 'react'
 import type { ChangeEvent, MutableRefObject } from 'react'
 import type { Edge, Node } from 'reactflow'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
-import { stripState } from '@/features/canvas/canvas.utils'
 
 /** Parameters for the `useFileIO` hook. */
 type UseFileIOParams = {
@@ -15,7 +17,10 @@ type UseFileIOParams = {
   edgesRef: MutableRefObject<Edge[]>
   setNodes: (nodes: Node[]) => void
   setEdges: (edges: Edge[]) => void
-  takeSnapshot: () => void
+  commitEdit: (action: () => void) => void
+  confirmReplace: () => boolean
+  onLoaded: (snapshot: CanvasDocument) => void
+  onSaved: (snapshot: CanvasDocument) => void
   normalizeCanvasNode: (node: Node) => Node
   resetSystemStats: () => void
 }
@@ -30,7 +35,10 @@ type UseFileIOParams = {
  * @param root0.edgesRef - Mutable ref holding the current edge array.
  * @param root0.setNodes - State setter for nodes.
  * @param root0.setEdges - State setter for edges.
- * @param root0.takeSnapshot - Pushes the current state onto the undo stack.
+ * @param root0.commitEdit - Apply replacement atomically.
+ * @param root0.confirmReplace - Protect unsaved document content.
+ * @param root0.onLoaded - Establish the loaded baseline.
+ * @param root0.onSaved - Acknowledge a successful save.
  * @param root0.normalizeCanvasNode - Callback that normalises a deserialised node.
  * @param root0.resetSystemStats - Resets system-level statistics after loading.
  * @returns An object with {@link handleSaveCanvas}, {@link handleLoadCanvas},
@@ -44,74 +52,57 @@ export function useFileIO({
   edgesRef,
   setNodes,
   setEdges,
-  takeSnapshot,
+  commitEdit, confirmReplace, onLoaded, onSaved,
   normalizeCanvasNode,
   resetSystemStats,
 }: UseFileIOParams) {
-  const serializeGraph = useCallback((): CanvasDocument => {
-    return {
-      version: 4,
-      pluginApiVersion: 2,
-      environment: useSettingsStore.getState().units,
-      registry: (() => { const { categories, overrides, entries } = useGlobalResourceTable.getState(); return { categories, overrides, entries } })(),
-      ui: {
-        nodes: stripState(nodesRef.current.map((node) => {
-          const data = { ...node.data }
-          delete data._computed
-          delete data.machines_exact
-          delete data.machines_actual
-          delete data.utilization
-          delete data.actual_amounts
-          return { ...node, data: node.type === 'recipeNode' ? { label: useRecipeStore.getState().recipes[node.id]?.machine_name } : data }
-        })),
-        edges: stripState(JSON.parse(JSON.stringify(edgesRef.current))),
-      },
-      domain: {
-        recipes: useRecipeStore.getState().dumpAll(),
-      },
-    }
-  }, [edgesRef, nodesRef])
+  const serializeGraph = captureDocument
 
   const loadGraph = useCallback((payload: unknown) => {
     const { document, warnings } = readCanvasDocument(payload)
-    takeSnapshot()
-    useSettingsStore.getState().setEnvironment(document.environment)
-    useGlobalResourceTable.getState().restore(document.registry)
-    useRecipeStore.setState({ recipes: {} })
-    useRecipeStore.getState().loadAll(document.domain.recipes)
-    const normalizedNodes = document.ui.nodes.map(normalizeCanvasNode)
-    setNodes(normalizedNodes)
-    setEdges(document.ui.edges)
-    resetSystemStats()
-    nodesRef.current = normalizedNodes
-    edgesRef.current = document.ui.edges
+    if (!confirmReplace()) return
+    commitEdit(() => {
+      useCanvasStore.getState().setNetworkConfiguration(document.networkConfiguration)
+      useRecipeStore.setState({ recipes: {} })
+      useSettingsStore.getState().setEnvironment(document.environment)
+      useGlobalResourceTable.getState().restore(document.registry)
+      useRecipeStore.getState().loadAll(document.domain.recipes)
+      const normalizedNodes = document.ui.nodes.map(normalizeCanvasNode)
+      setNodes(normalizedNodes)
+      setEdges(document.ui.edges)
+      resetSystemStats()
+      nodesRef.current = normalizedNodes
+      edgesRef.current = document.ui.edges
+      })
+    onLoaded(captureDocument())
     if (warnings.length) alert(warnings.join('\n'))
 
-  }, [edgesRef, nodesRef, normalizeCanvasNode, resetSystemStats, setEdges, setNodes, takeSnapshot])
+  }, [edgesRef, nodesRef, normalizeCanvasNode, resetSystemStats, setEdges, setNodes, commitEdit, confirmReplace, onLoaded])
 
   const handleSaveCanvas = useCallback(() => {
     try {
       const payload = serializeGraph()
       localStorage.setItem(storageKey, JSON.stringify(payload))
-      alert('画布已保存到本地')
+      onSaved(payload)
+      alert(t('canvas.canvas_saved_locally'))
     } catch (error) {
       console.error('save canvas failed', error)
-      alert('保存失败，请检查浏览器存储权限')
+      alert(t('canvas.save_failed_check_browser_storage_permissions'))
     }
-  }, [serializeGraph, storageKey])
+  }, [serializeGraph, storageKey, onSaved])
 
   const handleLoadCanvas = useCallback(() => {
     try {
       const raw = localStorage.getItem(storageKey)
       if (!raw) {
-        alert('未找到已保存的画布')
+        alert(t('canvas.no_saved_canvas_found'))
         return
       }
       const payload = JSON.parse(raw)
       loadGraph(payload)
     } catch (error) {
       console.error('load canvas failed', error)
-      alert('读取失败，请检查保存的数据格式')
+      alert(t('canvas.load_failed_check_the_saved_data_format'))
     }
   }, [loadGraph, storageKey])
 
@@ -143,7 +134,7 @@ export function useFileIO({
         loadGraph(payload)
       } catch (error) {
         console.error('import canvas failed', error)
-        alert('导入失败，请检查 JSON 文件格式')
+        alert(t('canvas.import_failed_check_the_json_file_format'))
       }
     }
     reader.readAsText(file)

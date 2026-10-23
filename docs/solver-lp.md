@@ -1,6 +1,6 @@
-# PR-05：独立稀疏 LP 服务
+# 稀疏 LP 契约与执行服务
 
-`backend/solver/` 只处理标准连续 LP，不识别节点、配方、Source、Target、资源或画布。现有 `/api/calculate`、`/api/debug` 保持原入口，没有接入本模块或增加第二个用户计算入口。PR-06 编译数学模型，PR-07 再整体切换正式链路。
+`backend/solver/` 只处理标准连续 LP，不识别节点、配方、Source、Target、资源或画布。当前正式 `/api/calculate` 与 `/api/debug` 已统一接入该模块及有界运行池；旧业务节点请求、Void 跳过、自动 Spill 和大 M 建模已移除。前端 `networkCompiler.ts` 生成数学模型及保留在客户端的领域来源映射。本文的 PR-05 验证数字只描述历史独立阶段，当前集成验收见文末。
 
 ## 调用和契约
 
@@ -19,7 +19,7 @@ wire_data = response.model_dump(mode="json")
 - 共享数学模型：[`fixtures/lp/models.json`](../fixtures/lp/models.json)，由 pytest 真实求解、由 Vitest 校验契约。
 - 六状态响应：[`fixtures/lp/responses.json`](../fixtures/lp/responses.json)。真实模型使用 SciPy，T21 超时和执行异常使用确定性替身，计时归零。运行 `python -m fixtures.lp.generate_responses` 可刷新。
 
-协议版本 `omniflow.lp.v1`，显式携带 `request_id`、`document_revision`、`compiler_fingerprint`。解析成功则原样回传身份；结构解析失败时身份为 `null`。PR-07 客户端仍需核对当前修订号和指纹，本服务不拥有文档状态。
+协议版本 `omniflow.lp.v1`，显式携带 `request_id`、`document_revision`、`compiler_fingerprint`。解析成功则原样回传身份；结构解析失败时身份为 `null`。当前客户端运行时校验响应，核对请求 ID、修订号、指纹及变量身份，并由 CalculationSession 丢弃编辑或新请求之后到达的旧响应。本数学服务不拥有画布状态。
 
 变量必须提供 `lower`、`upper`，无界端为 JSON `null`；支持负下界、自由变量和小数。没有隐含巨大上界。等式为 `A_eq x = rhs`，不等式为 `A_ub x <= rhs`，稀疏索引从 0 开始。
 
@@ -65,13 +65,13 @@ g(x) <= z + abs_tolerance + rel_tolerance × |z|
 
 ## 预算、资源与迁移
 
-默认上限为 50,000 变量、100,000 总行、1,000,000 个提交矩阵及目标项、32 层、60,000 ms。重复项也计入提交规模。服务器 SolverLimits 可进一步降低限额，请求无权改写；Pydantic 还有固定 wire 上限。
+默认上限为 50,000 变量、100,000 总行、1,000,000 个提交矩阵及目标项、32 层、60,000 ms。重复项也计入提交规模。服务器 SolverLimits 可进一步降低限额，请求无权改写；Pydantic 还有固定 wire 上限。SolverLimits 的 max_threads 默认为 1，并显式传给 HiGHS 的 threads 选项；SciPy 提示该选项将原样转发，不仅依赖环境变量。
 
-计时从解析前开始，覆盖校验、稀疏构造、全部层和回代。每次 HiGHS 使用剩余秒数；solve_ms 累加优化器耗时，total_ms 为函数总耗时，queue_ms 当前为 0。
+直接调用 solve_lp 时，计时从模型解析前开始，覆盖校验、稀疏构造、全部层和回代，queue_ms 为 0。每次 HiGHS 使用剩余秒数；solve_ms 累加优化器耗时。HTTP 运行池从请求体解析前启动总预算，排队后只把剩余预算交给 solve_lp；响应 queue_ms 表示请求开始到派发（含解析/校验），total_ms 表示请求开始到运行结果完成。最终 HTTP 响应序列化及客户端收发不在服务器 total_ms 内。
 
 COO 直接转 CSR，目标锁通过稀疏 vstack 添加，无稠密矩阵中间态。SciPy 必需的一维目标向量及右端向量为稠密向量，长度随变量或行数线性增长。
 
-本模块是同步函数服务，未实现并发池、排队或强制进程终止。HiGHS 时间限制与层间检查不能保证 Python 预处理或原生调用被墙钟硬中止；超出预算会诚实返回 limit_reached。PR-11 才处理隔离、队列和并发；PR-12 才报告硬件性能。本 PR 不新增依赖，不迁移存档，不开放新 UI。
+数学核心 solve_lp 保持同步函数；backend/solver/runtime.py 负责有界执行，默认 2 个专用工作线程、8 个排队请求、每次求解 1 个 HiGHS 原生线程。排队时间计入请求总预算；队列满返回 HTTP 503/queue_full，重复活动 request_id 返回 HTTP 409/duplicate_request_id。DELETE /api/calculate/{request_id} 仅取消未派发任务，返回 cancelled；运行中的调用不会被伪装成已终止。超时 HTTP 可以先返回 limit_reached，但工作槽直到原生调用真实结束才释放。HiGHS 时间限制与层间检查不能保证 Python 预处理或原生调用被墙钟硬中止；本实现没有强制进程终止承诺。`/api/health` 可用于检查事件循环是否响应。
 
 ## 验证
 
@@ -88,4 +88,14 @@ node node_modules/eslint/bin/eslint.js src/common/types/lp.ts src/common/types/l
 
 本次独立验证结果：上述 pytest **89 passed**，LP 契约 Vitest **66 passed**，TypeScript 构建检查及上述两个文件 ESLint 均通过。在当前 Windows 环境中使用 `.venv\Scripts\python.exe` 运行 Python 命令；该解释器需要允许本地环境执行，Node 入口直接运行锁定依赖中的 runner。
 
-明确未执行的未来验收：PR-06 编译器集成、PR-07 HTTP/UI 切换及历史端到端场景、PR-11 并发/排队/强制中止、PR-12 性能。函数级测试不替代这些后续交付。
+以上 89/66 为 PR-05 历史独立测试结果，不是当前全仓测试总数。2026-10-23 协调 agent 的最终集成回归为前端 212、后端 163 全通过，无跳过；lint 零告警，build 通过且保留约 677 kB 主包大小告警。当前已增加 31 组编译器真实求解 fixtures（含 T07/T08/T10/T14/T18/T24）、版本化 HTTP、执行池及诊断测试，详见 [测试指南](testing.md) 与 [T01–T24 证据映射](validation/v2-completion/acceptance-matrix.md)。[后端性能实测](validation/v2-completion/performance-backend.md) 记录固定硬件与数据集的 P50/P95、队列和原生内存；函数级正确性测试不替代浏览器或性能验收。
+
+
+## 当前 HTTP、诊断与发布边界
+
+- 前后端共同部署 `omniflow.lp.v1`。旧 `{nodes, edges}` 请求明确失败，不降级到旧数学语义。文件 v5、插件 API v2 和 LP v1 是独立版本，不可互换。
+- 两条 POST 路由返回同一完整 LPResponse。数学终态通常为 HTTP 200，invalid_model 为 422，solver_error 为 500；503/409 的运行池失败同样保持 LP envelope。JSON 解析错误不回显输入内容。
+- `/api/debug` 当前执行同一次求解并返回阶段/残差证据，不是独立矩阵构建器，也不是无求解成本的 inspect 接口。
+- 前端 `diagnostics.ts` 通过同一 LP wire 构造独立、有限的弹性诊断请求。只放松明确允许的资源守恒/容量行，不放松未知行、固定比例、状态或原变量边界；按每行明确尺度惩罚假设缺口，并显示假设及解释的非唯一性。
+- 诊断使用原计算剩余总预算、独立 request_id 和指纹；客户端继续应用原模型修订检查。诊断失败保持原 infeasible，诊断向量不进入物流/BOM。满载只报告余量/活动约束，没有验证边际收益时不宣称增容有用。
+- 同级多目标的聚合、来源映射、固定安装/BOM、启动检查、Net 语义由前端领域模块拥有。数学后端不解释 portId 或资源身份。

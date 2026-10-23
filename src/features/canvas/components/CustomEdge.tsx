@@ -1,3 +1,6 @@
+import { t, useTranslation } from '@/common/i18n'
+import { stripCalculationResults } from '@/common/utils/calculationState'
+import { SplitterNodeDataSchema } from '@/common/schemas/splitter.schema'
 import { useCanvasStore } from '@/features/canvas/canvas.store'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { normalizeEndpointPorts } from '@/features/recipe/recipe.endpointNorm'
@@ -62,14 +65,17 @@ export function CustomEdge({
   targetHandleId,
   markerEnd,
 }: EdgeProps) {
+  useTranslation()
   const categories = useGlobalResourceTable((state) => state.categories)
   const edge = useCanvasStore((s) => s.edges.find((e) => e.id === id))
   const source = useCanvasStore((s) => s.nodes.find((n) => n.id === edge?.source))
   const recipe = useRecipeStore((s) => s.recipes[edge?.source ?? ''])
+  const splitter = source?.type === 'splitterNode' ? SplitterNodeDataSchema.safeParse(stripCalculationResults(source.data)) : undefined
   const port = source?.type === 'recipeNode'
     ? recipe?._computed?.final_ports.find((p) => p.direction === 'output' && p.port.portId === sourceHandleId)?.port
+    : splitter?.success ? splitter.data.outputs.find(p => p.portId === sourceHandleId)
     : source ? normalizeEndpointPorts(source.data).find((p) => p.portId === sourceHandleId) : undefined
-  const handleId = port ? buildResourceId(port.category, port.id) : `待修复端口 ${sourceHandleId ?? targetHandleId ?? ''}`
+  const handleId = port ? buildResourceId(port.category, port.id) : t('canvas.pending_port', { p0: sourceHandleId ?? targetHandleId ?? '' })
   const color = `color-mix(in srgb, ${resolveEdgeColor(categories, handleId)} var(--resource-ink-weight), var(--text-strong))`
 
   const [edgePath, labelX, labelY] = getBezierPath({

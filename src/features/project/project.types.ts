@@ -1,3 +1,4 @@
+import type { NetworkConfiguration } from '@/common/schemas/network.schema'
 import type { UnitSnapshot } from '@/common/types/units'
 import type { Node, Edge } from 'reactflow'
 import type { Resource } from '@/common/types/resource'
@@ -47,6 +48,7 @@ export interface CanvasDB {
   /** React Flow edges on the canvas. */
   edges: Edge[]
   /** Viewport state (pan & zoom). */
+  networkConfiguration?: NetworkConfiguration
   viewport: { x: number; y: number; zoom: number }
   /** ISO-8601 creation timestamp. */
   createdAt: string

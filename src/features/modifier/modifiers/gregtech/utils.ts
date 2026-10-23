@@ -2,7 +2,7 @@ import { gtEuPerTick } from './gtUnits'
 import type { UnitSystem } from '@/common/units/UnitSystem'
 import type { ActiveModifier } from '@/common/types/recipe'
 import type { Resource } from '@/common/types/resource'
-import { computePowerPool, normalizeGtHatches } from './gtOverclocker'
+import { computePowerPool, normalizeGtHatches } from './gtPower'
 
 /** Describes the resolved energy/power characteristics of a GregTech recipe. */
 export type ResolvedPowerProfile = {

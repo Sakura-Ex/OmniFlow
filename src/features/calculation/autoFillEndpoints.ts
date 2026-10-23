@@ -1,3 +1,6 @@
+import type { NetworkConfiguration } from './networkConfig'
+import { portKey } from './topology'
+import type { NormalizedResource } from '@/common/types/resource'
 import type { Node, Edge } from 'reactflow'
 import type { RecipeNodeData } from '@/common/types/recipe'
 import { portIdentity } from '@/common/utils/ports'
@@ -11,6 +14,7 @@ import { generateId } from '@/common/utils/id'
 /**
  * Parameters for {@link computeAutoFillEndpoints}.
  *
+ * @property configuration - Explicit document policies; existing boundaries and non-flow ports are preserved.
  * @property nodeId           - The recipe node ID to auto-fill endpoints for.
  * @property recipeNodeData   - The shaped recipe node data.
  * @property allNodes         - All canvas nodes (used to locate the recipe node's position).
@@ -20,6 +24,7 @@ import { generateId } from '@/common/utils/id'
  * @property makeId           - Factory function that produces unique IDs for new source/target nodes.
  */
 export type ComputeAutoFillParams = {
+  configuration?: NetworkConfiguration
   environment?: UnitSnapshot
   nodeId: string
   recipeNodeData: RecipeNodeData
@@ -43,7 +48,8 @@ export type AutoFillResult = {
 
 /**
  * Auto-create source and target nodes (with edges) for every input/output port
- * of a recipe node that is not yet connected on the canvas.
+ * of a recipe node that has no connection or explicit boundary policy.
+ * Inventory, zero-flow and non-flow mathematical ports are never auto-filled.
  *
  * Missing inputs get a new `sourceNode` placed to the left of the recipe node;
  * missing outputs get a new `targetNode` placed to the right. Cached amounts
@@ -66,8 +72,12 @@ export function computeAutoFillEndpoints(params: ComputeAutoFillParams): AutoFil
 
   const units = new UnitSystem(params.environment ?? DEFAULT_UNIT_SNAPSHOT)
   const computed = runModifierPipeline(recipeNodeData, params.environment ?? DEFAULT_UNIT_SNAPSHOT)
-  const inputs = [...computed.recipe_inputs, ...computed.utility_inputs].filter((p) => p.routing_mode !== 'global')
-  const outputs = [...computed.recipe_outputs, ...computed.utility_outputs].filter((p) => p.routing_mode !== 'global')
+  const canFill = (port: NormalizedResource) => {
+    const policy = params.configuration?.ports[portKey(nodeId, portIdentity(port))]
+    return port.routing_mode !== 'global' && port.amount > 0 && port.consumable !== false && port.probability !== 0 && !policy?.boundary && (policy?.semantics.kind ?? 'flow') === 'flow'
+  }
+  const inputs = [...computed.recipe_inputs, ...computed.utility_inputs].filter(canFill)
+  const outputs = [...computed.recipe_outputs, ...computed.utility_outputs].filter(canFill)
   const recipeNode = allNodes.find((node) => node.id === nodeId)
   const position = recipeNode?.position ?? { x: 0, y: 0 }
 

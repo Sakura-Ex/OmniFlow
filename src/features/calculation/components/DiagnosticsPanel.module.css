@@ -1,0 +1,6 @@
+.panel { position: absolute; left: 18px; bottom: 24px; z-index: 15; width: min(340px, calc(100vw - 110px)); box-sizing: border-box; padding: 12px 16px; max-height: 35vh; overflow-y: auto; background: var(--panel); color: var(--text-strong); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 24px var(--shadow-color); font-size: 12px; }
+.panel > summary { cursor: pointer; font-weight: 600; }
+.panel[open] > summary { margin-bottom: 14px; }
+.panel section { display: grid; gap: 10px; }
+.panel p { margin: 0; color: var(--muted); line-height: 1.6; }
+.panel button { text-align: left; padding: 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--text-strong); cursor: pointer; font: inherit; }

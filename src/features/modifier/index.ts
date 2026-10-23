@@ -1,31 +1,25 @@
 /** Core modifier type definitions. */
-export type { ModifierUIConfig, ModifierUIControlType, IMachineModifier, PipelineContext, ModifierCardRenderProps } from './modifier.types'
+export type { ModifierUIConfig, ModifierUIControlType, IMachineModifier, PipelineContext } from './modifier.types'
 /** GregTech-specific voltage tier and energy hatch data types. */
-export type { GtVoltageTier, GtEnergyHatch } from './modifiers/gregtech/gtOverclocker'
+export type { GtVoltageTier, GtEnergyHatch } from './modifiers/gregtech/gtPower'
 /** Resolved power profile type for GregTech recipes. */
 export type { ResolvedPowerProfile } from './modifiers/gregtech/utils'
 
 /** GregTech overclocker: voltage tier constants, evaluation logic, hatch utilities, and the modifier definition. */
 export {
   GT_VOLTAGE_TIERS,
-  evaluateGtOverclock,
   computePowerPool,
   normalizeGtHatches,
   toGtHatches,
   toFiniteNumber,
-  gtOverclockerModifier,
-} from './modifiers/gregtech/gtOverclocker'
+} from './modifiers/gregtech/gtPower'
+export { evaluateGtOverclock, gtOverclockerModifier } from './modifiers/gregtech/gtOverclocker'
 /** Resolve a recipe's power profile (base EU/t, actual EU/t, highest tier). */
 export { resolveRecipePowerProfile } from './modifiers/gregtech/utils'
 /** GregTech parallel processing modifier and evaluation function. */
 export { gtParallelModifier, evaluateGtParallel } from './modifiers/gregtech/gtParallel'
 /** GregTech probability output boost modifier. */
 export { gtProbabilityOutputModifier } from './modifiers/gregtech/gtProbabilityOutput'
-/** Custom card body components for GregTech modifier UIs. */
-export { ParallelCardBody } from './modifiers/gregtech/gtParallelCard'
-export { OverclockerCardBody } from './modifiers/gregtech/gtOverclockerCard'
-export { GtProbabilityOutputCardBody } from './modifiers/gregtech/gtProbabilityOutputCard'
-
 /** Generic energy multiplier modifier (scales GT EU consumption). */
 export { energyMultiplierModifier } from './modifiers/energyMultiplier'
 /** Generic time multiplier modifier (scales recipe duration). */

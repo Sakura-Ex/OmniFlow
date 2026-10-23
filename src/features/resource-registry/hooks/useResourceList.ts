@@ -1,7 +1,7 @@
 import { generateId } from '@/common/utils/id'
 import { useState, useCallback } from 'react'
 import type { RoutingMode } from '@/common/types/resource'
-import { toggleRouting } from '@/features/canvas/canvas.utils'
+import { toggleRouting } from '@/common/utils/routing'
 
 /**
  * Manages a mutable list of resource items with helpers for update, add, remove and routing toggle.

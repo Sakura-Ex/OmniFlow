@@ -1,0 +1,928 @@
+[
+  {
+    "id": "T13-explicit-spill-enables-branch",
+    "response": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "splitter-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:ad4a6c00",
+      "status": "success",
+      "solution": {
+        "variable_ids": [
+          "splitter:f",
+          "source:[\"s\",\"s\"]",
+          "delivery:[\"t\",\"t\"]",
+          "spill:[\"f\",\"b\"]"
+        ],
+        "values": [
+          10.0,
+          10.0,
+          4.0,
+          6.0
+        ],
+        "feasibility": {
+          "passed": true,
+          "absolute_tolerance": 1e-07,
+          "relative_tolerance": 1e-09,
+          "max_violation": 0.0,
+          "row_residuals": [
+            {
+              "row_id": "flow:0",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1.2e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "flow:1",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1.08e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "flow:2",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1.12e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "priority:0",
+              "kind": "objective_lock",
+              "activity": -4.0,
+              "rhs": -3.999999986,
+              "residual": -1.3999999826097564e-08,
+              "slack": 1.3999999826097564e-08,
+              "tolerance": 1.0399999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ],
+          "bound_slacks": [
+            {
+              "variable_id": "splitter:f",
+              "value": 10.0,
+              "lower_slack": 10.0,
+              "upper_slack": null,
+              "tolerance": 1.0999999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "source:[\"s\",\"s\"]",
+              "value": 10.0,
+              "lower_slack": 10.0,
+              "upper_slack": 0.0,
+              "tolerance": 1.0999999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "delivery:[\"t\",\"t\"]",
+              "value": 4.0,
+              "lower_slack": 4.0,
+              "upper_slack": null,
+              "tolerance": 1.0399999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "spill:[\"f\",\"b\"]",
+              "value": 6.0,
+              "lower_slack": 6.0,
+              "upper_slack": null,
+              "tolerance": 1.06e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ]
+        }
+      },
+      "objective_results": [
+        {
+          "objective_id": "priority:0",
+          "priority": 0,
+          "status": "optimal",
+          "proven_optimal": true,
+          "value": -4.0,
+          "normalized_value": -4.0,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 1e-08,
+          "rel_tolerance": 1e-09,
+          "lock_upper": -3.999999986,
+          "elapsed_ms": 2.6664999895729125,
+          "feasibility": {
+            "passed": true,
+            "absolute_tolerance": 1e-07,
+            "relative_tolerance": 1e-09,
+            "max_violation": 0.0,
+            "row_residuals": [
+              {
+                "row_id": "flow:0",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1.2e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "row_id": "flow:1",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1.08e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "row_id": "flow:2",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1.12e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ],
+            "bound_slacks": [
+              {
+                "variable_id": "splitter:f",
+                "value": 10.0,
+                "lower_slack": 10.0,
+                "upper_slack": null,
+                "tolerance": 1.0999999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "source:[\"s\",\"s\"]",
+                "value": 10.0,
+                "lower_slack": 10.0,
+                "upper_slack": 0.0,
+                "tolerance": 1.0999999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "delivery:[\"t\",\"t\"]",
+                "value": 4.0,
+                "lower_slack": 4.0,
+                "upper_slack": null,
+                "tolerance": 1.0399999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "spill:[\"f\",\"b\"]",
+                "value": 6.0,
+                "lower_slack": 6.0,
+                "upper_slack": null,
+                "tolerance": 1.06e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ]
+          }
+        }
+      ],
+      "diagnostics": [],
+      "model_stats": {
+        "variables": 4,
+        "equality_rows": 3,
+        "inequality_rows": 0,
+        "matrix_nonzeros": 6,
+        "objective_nonzeros": 1,
+        "objective_layers": 1
+      },
+      "timings": {
+        "queue_ms": 0.0,
+        "solve_ms": 2.428700012387708,
+        "total_ms": 3.6663000064436346
+      }
+    }
+  },
+  {
+    "id": "T14-fractional-operation-and-catalyst",
+    "response": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:1706ba59",
+      "status": "success",
+      "solution": {
+        "variable_ids": [
+          "operation:r",
+          "source:[\"s\",\"s\"]",
+          "delivery:[\"t\",\"t\"]"
+        ],
+        "values": [
+          1.2,
+          1.2,
+          1.2
+        ],
+        "feasibility": {
+          "passed": true,
+          "absolute_tolerance": 1e-07,
+          "relative_tolerance": 1e-09,
+          "max_violation": 0.0,
+          "row_residuals": [
+            {
+              "row_id": "flow:0",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1.0239999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "flow:1",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "flow:2",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1.0239999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "priority:10",
+              "kind": "objective_lock",
+              "activity": 1.2,
+              "rhs": 1.2000000112,
+              "residual": -1.1200000038513735e-08,
+              "slack": 1.1200000038513735e-08,
+              "tolerance": 1.0120000001119999e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ],
+          "bound_slacks": [
+            {
+              "variable_id": "operation:r",
+              "value": 1.2,
+              "lower_slack": 1.2,
+              "upper_slack": null,
+              "tolerance": 1.0119999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "source:[\"s\",\"s\"]",
+              "value": 1.2,
+              "lower_slack": 1.2,
+              "upper_slack": 8.8,
+              "tolerance": 1.0999999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "delivery:[\"t\",\"t\"]",
+              "value": 1.2,
+              "lower_slack": 0.0,
+              "upper_slack": 0.0,
+              "tolerance": 1.0119999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ]
+        }
+      },
+      "objective_results": [
+        {
+          "objective_id": "priority:10",
+          "priority": 10,
+          "status": "optimal",
+          "proven_optimal": true,
+          "value": 1.2,
+          "normalized_value": 1.2,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 1e-08,
+          "rel_tolerance": 1e-09,
+          "lock_upper": 1.2000000112,
+          "elapsed_ms": 1.9916000019293278,
+          "feasibility": {
+            "passed": true,
+            "absolute_tolerance": 1e-07,
+            "relative_tolerance": 1e-09,
+            "max_violation": 0.0,
+            "row_residuals": [
+              {
+                "row_id": "flow:0",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1.0239999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "row_id": "flow:1",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "row_id": "flow:2",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1.0239999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ],
+            "bound_slacks": [
+              {
+                "variable_id": "operation:r",
+                "value": 1.2,
+                "lower_slack": 1.2,
+                "upper_slack": null,
+                "tolerance": 1.0119999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "source:[\"s\",\"s\"]",
+                "value": 1.2,
+                "lower_slack": 1.2,
+                "upper_slack": 8.8,
+                "tolerance": 1.0999999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "delivery:[\"t\",\"t\"]",
+                "value": 1.2,
+                "lower_slack": 0.0,
+                "upper_slack": 0.0,
+                "tolerance": 1.0119999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ]
+          }
+        }
+      ],
+      "diagnostics": [],
+      "model_stats": {
+        "variables": 3,
+        "equality_rows": 3,
+        "inequality_rows": 0,
+        "matrix_nonzeros": 4,
+        "objective_nonzeros": 1,
+        "objective_layers": 1
+      },
+      "timings": {
+        "queue_ms": 0.0,
+        "solve_ms": 1.6983000095933676,
+        "total_ms": 2.4037999974098057
+      }
+    }
+  },
+  {
+    "id": "T24-idle-automatic-installation",
+    "response": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:c4ee9b4",
+      "status": "success",
+      "solution": {
+        "variable_ids": [
+          "operation:r",
+          "source:[\"s\",\"s\"]"
+        ],
+        "values": [
+          0.0,
+          -0.0
+        ],
+        "feasibility": {
+          "passed": true,
+          "absolute_tolerance": 1e-07,
+          "relative_tolerance": 1e-09,
+          "max_violation": 0.0,
+          "row_residuals": [
+            {
+              "row_id": "flow:0",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "flow:1",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "flow:2",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "priority:10",
+              "kind": "objective_lock",
+              "activity": 0.0,
+              "rhs": 1e-08,
+              "residual": -1e-08,
+              "slack": 1e-08,
+              "tolerance": 1.0000000001e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ],
+          "bound_slacks": [
+            {
+              "variable_id": "operation:r",
+              "value": 0.0,
+              "lower_slack": 0.0,
+              "upper_slack": null,
+              "tolerance": 1e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "source:[\"s\",\"s\"]",
+              "value": -0.0,
+              "lower_slack": -0.0,
+              "upper_slack": 10.0,
+              "tolerance": 1.0999999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ]
+        }
+      },
+      "objective_results": [
+        {
+          "objective_id": "priority:10",
+          "priority": 10,
+          "status": "optimal",
+          "proven_optimal": true,
+          "value": 0.0,
+          "normalized_value": 0.0,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 1e-08,
+          "rel_tolerance": 1e-09,
+          "lock_upper": 1e-08,
+          "elapsed_ms": 2.438399998936802,
+          "feasibility": {
+            "passed": true,
+            "absolute_tolerance": 1e-07,
+            "relative_tolerance": 1e-09,
+            "max_violation": 0.0,
+            "row_residuals": [
+              {
+                "row_id": "flow:0",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "row_id": "flow:1",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "row_id": "flow:2",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ],
+            "bound_slacks": [
+              {
+                "variable_id": "operation:r",
+                "value": 0.0,
+                "lower_slack": 0.0,
+                "upper_slack": null,
+                "tolerance": 1e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "source:[\"s\",\"s\"]",
+                "value": -0.0,
+                "lower_slack": -0.0,
+                "upper_slack": 10.0,
+                "tolerance": 1.0999999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ]
+          }
+        }
+      ],
+      "diagnostics": [],
+      "model_stats": {
+        "variables": 2,
+        "equality_rows": 3,
+        "inequality_rows": 0,
+        "matrix_nonzeros": 3,
+        "objective_nonzeros": 1,
+        "objective_layers": 1
+      },
+      "timings": {
+        "queue_ms": 0.0,
+        "solve_ms": 2.2560000070370734,
+        "total_ms": 2.88030001684092
+      }
+    }
+  },
+  {
+    "id": "T24-idle-fixed-installation",
+    "response": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:e234d781",
+      "status": "success",
+      "solution": {
+        "variable_ids": [
+          "operation:r",
+          "source:[\"s\",\"s\"]"
+        ],
+        "values": [
+          0.0,
+          -0.0
+        ],
+        "feasibility": {
+          "passed": true,
+          "absolute_tolerance": 1e-07,
+          "relative_tolerance": 1e-09,
+          "max_violation": 0.0,
+          "row_residuals": [
+            {
+              "row_id": "flow:0",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "flow:1",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "flow:2",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 1e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "priority:10",
+              "kind": "objective_lock",
+              "activity": 0.0,
+              "rhs": 1e-08,
+              "residual": -1e-08,
+              "slack": 1e-08,
+              "tolerance": 1.0000000001e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ],
+          "bound_slacks": [
+            {
+              "variable_id": "operation:r",
+              "value": 0.0,
+              "lower_slack": 0.0,
+              "upper_slack": 3.0,
+              "tolerance": 1.03e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "source:[\"s\",\"s\"]",
+              "value": -0.0,
+              "lower_slack": -0.0,
+              "upper_slack": 10.0,
+              "tolerance": 1.0999999999999999e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ]
+        }
+      },
+      "objective_results": [
+        {
+          "objective_id": "priority:10",
+          "priority": 10,
+          "status": "optimal",
+          "proven_optimal": true,
+          "value": 0.0,
+          "normalized_value": 0.0,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 1e-08,
+          "rel_tolerance": 1e-09,
+          "lock_upper": 1e-08,
+          "elapsed_ms": 1.2897000124212354,
+          "feasibility": {
+            "passed": true,
+            "absolute_tolerance": 1e-07,
+            "relative_tolerance": 1e-09,
+            "max_violation": 0.0,
+            "row_residuals": [
+              {
+                "row_id": "flow:0",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "row_id": "flow:1",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "row_id": "flow:2",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 1e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ],
+            "bound_slacks": [
+              {
+                "variable_id": "operation:r",
+                "value": 0.0,
+                "lower_slack": 0.0,
+                "upper_slack": 3.0,
+                "tolerance": 1.03e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "source:[\"s\",\"s\"]",
+                "value": -0.0,
+                "lower_slack": -0.0,
+                "upper_slack": 10.0,
+                "tolerance": 1.0999999999999999e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ]
+          }
+        }
+      ],
+      "diagnostics": [],
+      "model_stats": {
+        "variables": 2,
+        "equality_rows": 3,
+        "inequality_rows": 0,
+        "matrix_nonzeros": 3,
+        "objective_nonzeros": 1,
+        "objective_layers": 1
+      },
+      "timings": {
+        "queue_ms": 0.0,
+        "solve_ms": 1.1559000122360885,
+        "total_ms": 1.7037999932654202
+      }
+    }
+  },
+  {
+    "id": "T18-dispatchable-power-100-capacity-60-load",
+    "response": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:26b1830c",
+      "status": "success",
+      "solution": {
+        "variable_ids": [
+          "operation:r",
+          "delivery:[\"t\",\"t\"]"
+        ],
+        "values": [
+          60.0,
+          60.0
+        ],
+        "feasibility": {
+          "passed": true,
+          "absolute_tolerance": 1e-07,
+          "relative_tolerance": 1e-09,
+          "max_violation": 0.0,
+          "row_residuals": [
+            {
+              "row_id": "flow:0",
+              "kind": "equality",
+              "activity": 0.0,
+              "rhs": 0.0,
+              "residual": 0.0,
+              "slack": null,
+              "tolerance": 2.2e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "row_id": "priority:10",
+              "kind": "objective_lock",
+              "activity": 60.0,
+              "rhs": 60.00000007,
+              "residual": -6.999999868639861e-08,
+              "slack": 6.999999868639861e-08,
+              "tolerance": 1.6000000007e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ],
+          "bound_slacks": [
+            {
+              "variable_id": "operation:r",
+              "value": 60.0,
+              "lower_slack": 60.0,
+              "upper_slack": 40.0,
+              "tolerance": 2e-07,
+              "violation": 0.0,
+              "passed": true
+            },
+            {
+              "variable_id": "delivery:[\"t\",\"t\"]",
+              "value": 60.0,
+              "lower_slack": 0.0,
+              "upper_slack": 0.0,
+              "tolerance": 1.6e-07,
+              "violation": 0.0,
+              "passed": true
+            }
+          ]
+        }
+      },
+      "objective_results": [
+        {
+          "objective_id": "priority:10",
+          "priority": 10,
+          "status": "optimal",
+          "proven_optimal": true,
+          "value": 60.0,
+          "normalized_value": 60.0,
+          "normalization_scale": 1.0,
+          "abs_tolerance": 1e-08,
+          "rel_tolerance": 1e-09,
+          "lock_upper": 60.00000007,
+          "elapsed_ms": 2.584100002422929,
+          "feasibility": {
+            "passed": true,
+            "absolute_tolerance": 1e-07,
+            "relative_tolerance": 1e-09,
+            "max_violation": 0.0,
+            "row_residuals": [
+              {
+                "row_id": "flow:0",
+                "kind": "equality",
+                "activity": 0.0,
+                "rhs": 0.0,
+                "residual": 0.0,
+                "slack": null,
+                "tolerance": 2.2e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ],
+            "bound_slacks": [
+              {
+                "variable_id": "operation:r",
+                "value": 60.0,
+                "lower_slack": 60.0,
+                "upper_slack": 40.0,
+                "tolerance": 2e-07,
+                "violation": 0.0,
+                "passed": true
+              },
+              {
+                "variable_id": "delivery:[\"t\",\"t\"]",
+                "value": 60.0,
+                "lower_slack": 0.0,
+                "upper_slack": 0.0,
+                "tolerance": 1.6e-07,
+                "violation": 0.0,
+                "passed": true
+              }
+            ]
+          }
+        }
+      ],
+      "diagnostics": [],
+      "model_stats": {
+        "variables": 2,
+        "equality_rows": 1,
+        "inequality_rows": 0,
+        "matrix_nonzeros": 2,
+        "objective_nonzeros": 1,
+        "objective_layers": 1
+      },
+      "timings": {
+        "queue_ms": 0.0,
+        "solve_ms": 2.389100001892075,
+        "total_ms": 2.9508000006899238
+      }
+    }
+  }
+]

@@ -1,7 +1,9 @@
 import { beforeEach, expect, it } from 'vitest'
 import type { Node } from 'reactflow'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
-import { captureNodes, restoreRecipes } from './hooks/useUndoRedo'
+import { useSettingsStore } from '@/features/settings/settings.store'
+import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
+import { captureSnapshot, restoreSnapshot, captureNodes, restoreRecipes } from './hooks/useUndoRedo'
 import { useCanvasStore } from './canvas.store'
 
 beforeEach(() => useRecipeStore.setState({ recipes: {} }))
@@ -41,4 +43,35 @@ it('migrates database graph handles using authoritative recipes and replaces the
   expect(graph.edges[0].sourceHandle).toBe(graph.nodes[1].data.ports[0].portId)
   expect(graph.edges[0].targetHandle).toBe(useRecipeStore.getState().recipes.r.base_inputs![0].portId)
   expect(graph.isDirty).toBe(false)
+})
+
+
+it('restores imported unit environments and registry through undo and redo', () => {
+  const before = captureSnapshot([], [])
+  try {
+    useSettingsStore.getState().setTps(40)
+    useGlobalResourceTable.getState().addCategory({ id: 'custom', displayName: 'Custom', base_unit: 'custom-unit', themeColor: 'blue', preferred_time_base: 'rate_per_tick' })
+    const after = captureSnapshot([], [])
+    restoreSnapshot(before)
+    expect(useSettingsStore.getState().units).toEqual(before.environment)
+    expect(useGlobalResourceTable.getState().categories).toEqual(before.registry.categories)
+    restoreSnapshot(after)
+    expect(useSettingsStore.getState().tps).toBe(40)
+    expect(useSettingsStore.getState().units.definitions.some((d) => d.symbol === 'custom-unit')).toBe(true)
+    expect(useGlobalResourceTable.getState().categories.custom.base_unit).toBe('custom-unit')
+  } finally { restoreSnapshot(before) }
+})
+
+
+it('undo and redo restore network assumptions together with the graph', () => {
+  const before = captureSnapshot([], [])
+  const configuration = { version: 1 as const, ports: {}, machines: { r: { installed: 3, operatingUpper: 1.2 } } }
+  try {
+    useCanvasStore.getState().setNetworkConfiguration(configuration)
+    const after = captureSnapshot([], [])
+    restoreSnapshot(before)
+    expect(useCanvasStore.getState().networkConfiguration).toEqual(before.networkConfiguration)
+    restoreSnapshot(after)
+    expect(useCanvasStore.getState().networkConfiguration).toEqual(configuration)
+  } finally { restoreSnapshot(before) }
 })

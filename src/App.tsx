@@ -1,9 +1,22 @@
+import { useTranslation } from '@/common/i18n'
+import { DocumentEditProvider } from '@/common/components/DocumentEditContext'
+import { useDocumentSession } from '@/app/document/useDocumentSession'
+import { translateDiagnostic } from '@/common/i18n/translateDiagnostic'
+import { Icon } from '@/common/components/Icon'
+import { PlanningEditorProvider, BoundaryCommitProvider, BoundaryBatchCommitProvider } from '@/features/calculation/contexts/PlanningEditorContext'
+import { replaceEndpointBoundaries } from '@/features/calculation/endpointBoundary'
+import type { Boundary } from '@/features/calculation/networkConfig'
+import { DiagnosticsPanel } from '@/features/calculation/components/DiagnosticsPanel'
+import { NetworkConfigurationEditor } from '@/features/calculation/components/NetworkConfigurationEditor'
 import { GraphIssuesPanel } from '@/features/canvas/components/GraphIssuesPanel'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactFlow, {
   Background,
   BackgroundVariant,
   Controls,
+  ControlButton,
+  useReactFlow,
+  useStore,
   useUpdateNodeInternals,
   type ReactFlowInstance,
   type Node as RFNode,
@@ -13,8 +26,6 @@ import { nodeTypes, edgeTypes } from '@/features/canvas/canvas.flowConfig'
 import { RecipeEditorModal } from '@/features/recipe/components/RecipeEditorModal'
 import { EndpointEditorModal } from '@/features/endpoint/components/EndpointEditorModal'
 import { SystemHUD } from '@/features/canvas/components/SystemHUD'
-import { ResourceRegistryPanel } from '@/features/resource-registry/components/ResourceRegistryPanel'
-import { TpsSettingsPanel } from '@/features/endpoint/components/TpsSettingsPanel'
 import { RecipeEditorProvider } from '@/features/recipe/contexts/RecipeEditorContext'
 import { EndpointEditorProvider } from '@/features/canvas/contexts/EndpointEditorContext'
 import { NodeDataProvider } from '@/features/canvas/contexts/NodeDataContext'
@@ -23,7 +34,7 @@ import { useUndoRedo } from '@/features/canvas/hooks/useUndoRedo'
 import { useTheme } from '@/hooks/useTheme'
 import { useClickOutside } from '@/hooks/useClickOutside'
 import { useCanvasOperations } from '@/features/canvas/hooks/useCanvasOperations'
-import { useClipboard } from '@/features/canvas/hooks/useClipboard'
+import { useClipboard } from '@/features/file-io/hooks/useClipboard'
 import { useFileIO } from '@/features/file-io/hooks/useFileIO'
 import { useKeyboardShortcuts } from '@/features/canvas/hooks/useKeyboardShortcuts'
 import { useNodeEditor } from '@/features/recipe/hooks/useNodeEditor'
@@ -32,8 +43,10 @@ import { useNodeOperations } from '@/features/recipe/hooks/useNodeOperations'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { useCanvasStore } from '@/features/canvas/canvas.store'
 import type { RecipeNodeData } from '@/common/types/recipe'
-import { MenuBar } from '@/features/canvas/components/MenuBar'
-import { initialNodes, initialEdges } from '@/features/canvas/canvas.initialState'
+import { MenuBar } from '@/app/components/MenuBar'
+import { SettingsPage } from '@/app/components/SettingsPage'
+import { ShortcutHelp } from '@/app/components/ShortcutHelp'
+import { initialNodes, initialEdges, initialConfiguration, initialEnvironment } from '@/features/canvas/canvas.initialState'
 import { normalizeCanvasNode } from '@/features/canvas/canvas.validators'
 import './App.css'
 
@@ -45,6 +58,21 @@ const defaultEdgeOptions = {
 const fitViewOptions = { padding: 0.2 }
 const proOptions = { hideAttribution: true }
 const STORAGE_KEY = 'omniflow.canvas.v1'
+
+/** Localize v11 controls while preserving ReactFlow zoom-limit behavior.
+ * @returns Canvas controls subscribed to the current viewport and UI language.
+ */
+function LocalizedFlowControls() {
+  const { t } = useTranslation()
+  const { zoomIn, zoomOut, fitView } = useReactFlow()
+  const minZoomReached = useStore(state => state.transform[2] <= state.minZoom)
+  const maxZoomReached = useStore(state => state.transform[2] >= state.maxZoom)
+  return <Controls position="bottom-right" showZoom={false} showFitView={false} showInteractive={false}>
+    <ControlButton className="react-flow__controls-zoomin" title={t('shell.zoomIn')} aria-label={t('shell.zoomIn')} disabled={maxZoomReached} onClick={() => { void zoomIn() }}><Icon name="plus" /></ControlButton>
+    <ControlButton className="react-flow__controls-zoomout" title={t('shell.zoomOut')} aria-label={t('shell.zoomOut')} disabled={minZoomReached} onClick={() => { void zoomOut() }}><Icon name="minus" /></ControlButton>
+    <ControlButton className="react-flow__controls-fitview" title={t('action.fitView')} aria-label={t('action.fitView')} onClick={() => { void fitView() }}><Icon name="fitView" /></ControlButton>
+  </Controls>
+}
 
 /**
  * Bridge component that exposes the ReactFlow `updateNodeInternals` function
@@ -71,6 +99,7 @@ function UpdateInternalsBridge({ onReady }: { onReady: (fn: (nodeId: string) => 
  * @returns Rendered JSX element for the entire application shell.
  */
 export default function App() {
+  const { t } = useTranslation()
   const {
     nodes,
     setNodes: _setNodes,
@@ -80,13 +109,19 @@ export default function App() {
     onEdgesChange,
     nodesRef,
     edgesRef,
-  } = useCanvasState(initialNodes, initialEdges)
+  } = useCanvasState(initialNodes, initialEdges, initialConfiguration, initialEnvironment)
   const setNodes = useCallback((value: RFNode[]) => _setNodes(value), [_setNodes])
   const setEdges = useCallback((value: RFEdge[]) => _setEdges(value), [_setEdges])
   const [openMenu, setOpenMenu] = useState<string | null>(null)
+  const [showShortcuts, setShowShortcuts] = useState(false)
+  const [showResults, setShowResults] = useState(true)
+  const calculationStatus = useCanvasStore(state => state.calculationStatus)
+  const isDirty = useCanvasStore(state => state.isDirty)
   const { theme, toggleTheme } = useTheme()
-  const [showRegistry, setShowRegistry] = useState(false)
-  const [showTpsSettings, setShowTpsSettings] = useState(false)
+  const [showNetworkConfiguration, setShowNetworkConfiguration] = useState(false)
+  const [planningNodeId, setPlanningNodeId] = useState<string | undefined>()
+  const openPlanning = useCallback((nodeId?: string) => { setPlanningNodeId(nodeId); setShowNetworkConfiguration(true) }, [])
+  const [showSettings, setShowSettings] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const reactFlowRef = useRef<ReactFlowInstance | null>(null)
   const menuRef = useRef<HTMLDivElement | null>(null)
@@ -95,7 +130,19 @@ export default function App() {
     updateNodeInternalsRef.current?.(nodeId)
   }, [])
 
-  const { takeSnapshot, undo, redo } = useUndoRedo({ nodesRef, edgesRef, setNodes, setEdges })
+  const { takeSnapshot, commitEdit, clearHistory, undo, redo, canUndo, canRedo } = useUndoRedo({ setNodes, setEdges })
+  const commitBoundaries = useCallback((nodeId: string, boundaries: Record<string, Boundary>) => {
+    const canvas = useCanvasStore.getState()
+    if (!canvas.nodes.some(node => node.id === nodeId)) return
+    const next = replaceEndpointBoundaries(canvas.networkConfiguration, nodeId, boundaries)
+    if (JSON.stringify(next) === JSON.stringify(canvas.networkConfiguration)) return
+    takeSnapshot()
+    canvas.setNetworkConfiguration(next)
+  }, [takeSnapshot])
+
+  const commitBoundary = useCallback((nodeId: string, portId: string, boundary: Boundary) => {
+    commitBoundaries(nodeId, { [portId]: boundary })
+  }, [commitBoundaries])
 
   const seededRef = useRef(false)
   useEffect(() => {
@@ -133,6 +180,17 @@ export default function App() {
     handleCalculate,
   } = useCalculation()
 
+  const starterCalculation = useRef(false)
+  useEffect(() => {
+    if (starterCalculation.current) return
+    const timer = window.setTimeout(() => {
+      starterCalculation.current = true
+      if (useCanvasStore.getState().canvasId !== null) return
+      void handleCalculate()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [handleCalculate])
+
   const getViewportCenter = useCallback((): { x: number; y: number } => {
     const instance = reactFlowRef.current
     if (!instance) return { x: 300, y: 200 }
@@ -149,7 +207,7 @@ export default function App() {
     isValidConnection,
     onConnect,
     onEdgeDoubleClick,
-    handleAddSource,
+    handleAddSource, handleAddSplitter,
     handleAddFurnace,
     handleAddCustomRecipe,
     handleAddTarget,
@@ -198,6 +256,11 @@ export default function App() {
     lastSystemOutputs,
   })
 
+  const { markSaved, confirmReplace } = useDocumentSession()
+  const onLoaded = useCallback((snapshot: Parameters<typeof markSaved>[0]) => {
+    markSaved(snapshot)
+    clearHistory()
+  }, [markSaved, clearHistory])
   const {
     handleSaveCanvas,
     handleLoadCanvas,
@@ -211,7 +274,7 @@ export default function App() {
     edgesRef,
     setNodes,
     setEdges,
-    takeSnapshot,
+    commitEdit, confirmReplace, onLoaded, onSaved: markSaved,
     normalizeCanvasNode,
     resetSystemStats,
   })
@@ -227,7 +290,7 @@ export default function App() {
     handlePaste,
     handleDuplicate,
     onDelete: handleDeleteSelected,
-    isEditing: editingNode !== null || editingEndpoint !== null,
+    isEditing: editingNode !== null || editingEndpoint !== null || showSettings || showNetworkConfiguration || showShortcuts || openMenu !== null,
   })
 
   const handleFitView = useCallback(() => {
@@ -245,11 +308,22 @@ export default function App() {
 
   useClickOutside(menuRef, () => setOpenMenu(null))
 
+  const diagnosticReport = useCanvasStore(state => state.diagnosticReport)
+  const activeLimits = useCanvasStore(state => state.activeLimits)
+  const locateDiagnostic = (nodeIds: string[]) => {
+    const ids = new Set(nodeIds)
+    const canvas = useCanvasStore.getState()
+    canvas.setNodes(canvas.nodes.map(node => ({ ...node, selected: ids.has(node.id) })))
+    void reactFlowRef.current?.fitView({ nodes: canvas.nodes.filter(node => ids.has(node.id)), padding: 0.5 })
+  }
+  const calculationIssues = useCanvasStore(state => state.calculationIssues)
+
   const dismissError = useCallback(() => {
     useCanvasStore.getState().setError(null)
   }, [])
 
   return (
+    <DocumentEditProvider value={commitEdit}>
     <main className="app-shell" data-theme={theme}>
       <section className="canvas-shell">
         <RecipeEditorModal
@@ -264,23 +338,33 @@ export default function App() {
           onClose={handleCloseEndpointEditor}
           onSave={handleSaveEndpoint}
         />
-        {showRegistry && <ResourceRegistryPanel onClose={() => setShowRegistry(false)} />}
-        {showTpsSettings && <TpsSettingsPanel onClose={() => setShowTpsSettings(false)} />}
+        {showSettings && <SettingsPage theme={theme} toggleTheme={toggleTheme} takeSnapshot={takeSnapshot} onClose={() => setShowSettings(false)} />}
 
         {error && (
           <div className="toast-error" onClick={dismissError}>
-            {error}
+              <span className="toast-error__icon"><Icon name="warning" size={18} /></span>
+            {translateDiagnostic(error)}
+            {calculationIssues.map((issue, index) => <button key={index} onClick={event => {
+              event.stopPropagation()
+              const ids = new Set(issue.node_id ? [issue.node_id] : issue.path.flatMap(path => { try { const address: unknown = JSON.parse(String(path)); return Array.isArray(address) && typeof address[0] === 'string' ? [address[0]] : [] } catch { return [] } }))
+              const canvas = useCanvasStore.getState()
+              canvas.setNodes(canvas.nodes.map(node => ({ ...node, selected: ids.has(node.id) })))
+              void reactFlowRef.current?.fitView({ nodes: canvas.nodes.filter(node => ids.has(node.id)), padding: 0.5 })
+            }}>{t('shell.locate')} {issue.path.join(' / ')}</button>)}
           </div>
         )}
 
+        {showNetworkConfiguration && <NetworkConfigurationEditor nodeId={planningNodeId} onClose={() => setShowNetworkConfiguration(false)} takeSnapshot={takeSnapshot} />}
         <GraphIssuesPanel />
-        <SystemHUD
+        <DiagnosticsPanel report={diagnosticReport} limits={activeLimits} onLocate={locateDiagnostic} />
+        {showShortcuts && <ShortcutHelp onClose={() => setShowShortcuts(false)} />}
+        {showResults && <SystemHUD
           systemInputs={systemInputs}
           systemOutputs={systemOutputs}
           globalInputIds={globalInputIds}
           globalOutputIds={globalOutputIds}
           capexList={capexList}
-        />
+        />}
         <input
           ref={fileInputRef}
           type="file"
@@ -289,12 +373,33 @@ export default function App() {
           style={{ display: 'none' }}
         />
         <MenuBar
+          isDirty={isDirty}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          hasCanvasContent={nodes.length > 0}
+          hasSelection={nodes.some(node => node.selected) || edges.some(edge => edge.selected)}
+          hasSelectedNodes={nodes.some(node => node.selected)}
+          hasSelectedEdges={edges.some(edge => edge.selected)}
+          hasSelectedRecipes={nodes.some(node => node.selected && node.type === 'recipeNode')}
+          isCalculating={calculationStatus === 'running'}
+          status={{ kind: calculationStatus }}
+          showResults={showResults}
+          onToggleResults={() => setShowResults(value => !value)}
+          onOpenShortcuts={() => setShowShortcuts(true)}
+          handleInvertSelection={() => {
+            setNodes(nodes.map(node => ({ ...node, selected: !node.selected })))
+            setEdges(edges.map(edge => ({ ...edge, selected: !edge.selected })))
+          }}
+          handleFocusSelection={() => {
+            const selected = new Set(nodes.filter(node => node.selected).map(node => node.id))
+            edges.filter(edge => edge.selected).forEach(edge => { selected.add(edge.source); selected.add(edge.target) })
+            void reactFlowRef.current?.fitView({ nodes: nodes.filter(node => selected.has(node.id)), padding: 0.3 })
+          }}
+          handleZoom100={() => { void reactFlowRef.current?.zoomTo(1) }}
           menuRef={menuRef}
           openMenu={openMenu}
           setOpenMenu={setOpenMenu}
           handleMenuAction={handleMenuAction}
-          theme={theme}
-          toggleTheme={toggleTheme}
           handleSaveCanvas={handleSaveCanvas}
           handleLoadCanvas={handleLoadCanvas}
           handleExportJson={handleExportJson}
@@ -310,7 +415,8 @@ export default function App() {
           handleDeleteSelected={handleDeleteSelected}
           handleDeleteSelectedNodes={handleDeleteSelectedNodes}
           handleDeleteSelectedEdges={handleDeleteSelectedEdges}
-          handleClear={handleClear}
+          handleClear={() => { if (confirmReplace()) handleClear() }}
+          handleAddSplitter={handleAddSplitter}
           handleAddSource={handleAddSource}
           handleAddFurnace={handleAddFurnace}
           handleAddTarget={handleAddTarget}
@@ -318,16 +424,19 @@ export default function App() {
           handleAutoFillSelected={handleAutoFillSelected}
           handleFitView={handleFitView}
           handleCalculate={handleCalculate}
-          onOpenRegistry={() => setShowRegistry(true)}
-          onOpenTpsSettings={() => setShowTpsSettings(true)}
+          onOpenSettings={() => setShowSettings(true)}
         />
 
+        <PlanningEditorProvider value={openPlanning}>
+        <BoundaryCommitProvider value={commitBoundary}>
+        <BoundaryBatchCommitProvider value={commitBoundaries}>
         <RecipeEditorProvider value={{ onEdit: handleEditNode, onAutoFill: autoFillEndpoints }}>
           <EndpointEditorProvider value={{ onEdit: handleEditEndpoint }}>
           <NodeDataProvider value={{ updateNodeData }}>
             <ReactFlow
+              deleteKeyCode={null}
               nodes={nodes}
-              edges={edges}
+              edges={edges.map(edge => ({ ...edge, ariaLabel: edge.ariaLabel ?? t('shell.edgeFromTo', { source: edge.source, target: edge.target }) }))}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               minZoom={0.08}
@@ -351,12 +460,16 @@ export default function App() {
             >
               <UpdateInternalsBridge onReady={(fn) => { updateNodeInternalsRef.current = fn }} />
               <Background variant={BackgroundVariant.Dots} gap={24} size={1} color={backgroundDotColor} />
-              <Controls position="bottom-right" showInteractive={false} />
+              <LocalizedFlowControls />
             </ReactFlow>
           </NodeDataProvider>
           </EndpointEditorProvider>
         </RecipeEditorProvider>
+        </BoundaryBatchCommitProvider>
+        </BoundaryCommitProvider>
+        </PlanningEditorProvider>
       </section>
     </main>
+    </DocumentEditProvider>
   )
 }

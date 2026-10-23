@@ -4,7 +4,9 @@ import type { RecipeNodeData } from '@/common/types/recipe'
 import { normalizeGraph } from '@/features/canvas/graphDocument'
 import { cloneSubgraph } from '@/features/canvas/cloneSubgraph'
 import { buildTopologicalNets, portKey } from './topology'
-import { buildCalculationPayload, endpointSubNodeId } from './payloadBuilder'
+import { compileNetwork } from './networkCompiler'
+import { emptyNetworkConfiguration } from './networkConfig'
+import { configureEndpointPorts } from './endpointConfiguration'
 import { connectionIssue, graphPorts } from './graphPorts'
 import { modifierRegistry } from '@/features/modifier/modifier.registry'
 import { DEFAULT_UNIT_SNAPSHOT } from '@/common/units/defaults'
@@ -25,6 +27,12 @@ const edges: Edge[] = [
   { id: 'a-r', source: 'a', sourceHandle: 'source-a', target: 'r', targetHandle: 'process' },
   { id: 'b-r', source: 'b', sourceHandle: 'source-b', target: 'r', targetHandle: 'cooling' },
 ]
+const compile = (nodes: Node[], edges: Edge[], recipes: Record<string, RecipeNodeData>, environment = DEFAULT_UNIT_SNAPSHOT) => {
+  let configuration = emptyNetworkConfiguration()
+  for (const node of nodes) configuration = configureEndpointPorts(configuration, node, environment)
+  return compileNetwork({ nodes, edges, recipes, environment, configuration, requestId: 'ports-test', documentRevision: 1 })
+}
+
 afterEach(() => { delete modifierRegistry.dynamic })
 
 describe('independent persistent port identities (T07/T08/T22)', () => {
@@ -35,17 +43,18 @@ describe('independent persistent port identities (T07/T08/T22)', () => {
     const cooling = topology.lookup.get(portKey('r', 'cooling'))!
     expect(process).not.toBe(cooling)
     expect(topology.lookup.get(portKey('r', 'return'))).not.toBe(process)
-    const payload = buildCalculationPayload(nodes, edges, recipes)
-    expect(payload.payloadNodes[0].data.inputs).toEqual({ [process]: 2, [cooling]: 3 })
+    const model = compile(nodes, edges, recipes)
+    expect(model.ports.filter(port => port.nodeId === 'r' && port.direction === 'input').map(port => port.coefficient)).toEqual([2, 3])
+    expect(new Set(model.ports.filter(port => port.nodeId === 'r').map(port => port.netId)).size).toBe(3)
   })
   it('aggregates same-resource input/output only when explicitly wired to the same net', () => {
     const { recipes } = normalizeGraph(nodes, edges)
     const wiring = [...edges, { id: 'return', source: 'r', sourceHandle: 'return', target: 'r', targetHandle: 'process' }]
-    const payload = buildCalculationPayload(nodes, wiring, recipes).payloadNodes[0].data
-    const outputs = payload.outputs as Record<string, number>
-    const inputs = payload.inputs as Record<string, number>
-    expect(Object.keys(outputs)).toHaveLength(1)
-    expect(inputs[Object.keys(outputs)[0]] - outputs[Object.keys(outputs)[0]]).toBe(1)
+    const model = compile(nodes, wiring, recipes)
+    const input = model.ports.find(port => port.portId === 'process')!
+    const output = model.ports.find(port => port.portId === 'return')!
+    expect(input.netId).toBe(output.netId)
+    expect(input.coefficient - output.coefficient).toBe(1)
   })
   it('keeps identity and deterministic nets through reorder and JSON round trips', () => {
     const graph = normalizeGraph(nodes, edges)
@@ -63,7 +72,7 @@ describe('independent persistent port identities (T07/T08/T22)', () => {
     expect(connectionIssue({ ...edges[0], targetHandle: 'deleted' }, ports)).toContain('Missing input')
     const incompatible = ports.map((p) => p.portId === 'process' ? { ...p, resourceId: 'fluid:oil' } : p)
     expect(connectionIssue(edges[0], incompatible)).toContain('Incompatible resources')
-    expect(() => buildCalculationPayload(nodes, [{ ...edges[0], targetHandle: 'deleted' }], graph.recipes)).toThrow('a-r')
+    expect(() => compile(nodes, [{ ...edges[0], targetHandle: 'deleted' }], graph.recipes)).toThrow('a-r')
   })
   it('migrates unique legacy handles and preserves ambiguous data for repair', () => {
     const legacy = [{ ...edges[0], sourceHandle: 'fluid:water', targetHandle: 'fluid:water' }]
@@ -96,29 +105,31 @@ describe('independent persistent port identities (T07/T08/T22)', () => {
     const dynamic = { ...recipe, active_modifiers: [{ definition_id: 'dynamic', instance_id: 'dyn', uiState: {} }] }
     const graph = normalizeGraph([{ ...nodes[0], data: dynamic }, ...nodes.slice(1)], [])
     const wiring = [{ id: 'dyn', source: 'r', sourceHandle: 'dynamic:dyn:water', target: 'r', targetHandle: 'process' }]
-    expect(buildCalculationPayload(graph.nodes, wiring, graph.recipes).payloadNodes[0].data.outputs).toEqual(expect.objectContaining({ [Object.keys(buildCalculationPayload(graph.nodes, wiring, graph.recipes).payloadNodes[0].data.inputs as object)[0]]: 7 }))
-    expect(() => buildCalculationPayload(graph.nodes, [{ ...wiring[0], sourceHandle: 'return' }], graph.recipes)).toThrow('Missing output')
+    const model = compile(graph.nodes, [...edges, ...wiring], graph.recipes)
+    expect(model.ports.find(port => port.portId === 'dynamic:dyn:water')?.coefficient).toBe(7)
+    expect(() => compile(graph.nodes, [{ ...wiring[0], sourceHandle: 'return' }], graph.recipes)).toThrow('Missing output')
   })
   it('rejects incompatible quantities for the same resource even on disconnected nets', () => {
     const graph = normalizeGraph(nodes, edges)
     graph.recipes.r.base_inputs![0].unit = [{ baseUnitId: 'g', exponent: 1 }]
-    expect(() => buildCalculationPayload(nodes, edges, graph.recipes)).toThrow('Incompatible units')
+    expect(() => compile(nodes, edges, graph.recipes)).toThrow('Incompatible units')
   })
-  it('normalizes endpoint quantities and uses stable subnode IDs after reorder', () => {
+  it('normalizes explicit endpoint capacities and preserves identities after reorder', () => {
     const source = { ...nodes[1], data: { mode: 'limit', ports: [
       { category: 'item', id: 'powder', portId: 'mass', amount: 1, unit: [{ baseUnitId: 'g', prefixId: 'k', exponent: 1 }] },
       { category: 'item', id: 'ore', portId: 'fraction', amount: 0.25 },
     ] } }
-    const result = buildCalculationPayload([source], [], {})
-    expect(result.payloadNodes.map((p) => p.data.amount)).toEqual([1000, 0.25])
-    const reversed = buildCalculationPayload([{ ...source, data: { ...source.data, ports: [...source.data.ports].reverse() } }], [], {})
-    expect(result.payloadNodes.find((p) => p.id === endpointSubNodeId('a', 'mass'))).toEqual(reversed.payloadNodes.find((p) => p.id === endpointSubNodeId('a', 'mass')))
+    const result = compile([source], [], {})
+    expect(result.request.variables.map(variable => variable.upper)).toEqual([1000, 0.25])
+    const reversed = compile([{ ...source, data: { ...source.data, ports: [...source.data.ports].reverse() } }], [], {})
+    expect(Object.fromEntries(result.request.variables.map(variable => [variable.id, variable.upper]))).toEqual(Object.fromEntries(reversed.request.variables.map(variable => [variable.id, variable.upper])))
   })
   it('recompiles with explicit TPS and ignores stale preview caches', () => {
     const graph = normalizeGraph([{ ...nodes[0], data: { ...recipe, inputs: [{ category: 'energy', id: 'gt_eu', amount: 32, time_base: 'rate_per_tick' }] } }], [])
-    const twenty = buildCalculationPayload(graph.nodes, [], graph.recipes)
-    const forty = buildCalculationPayload(graph.nodes, [], graph.recipes, { ...DEFAULT_UNIT_SNAPSHOT, ticksPerSecond: 40 })
-    expect(Object.values(twenty.payloadNodes[0].data.inputs as object)).toEqual([640])
-    expect(Object.values(forty.payloadNodes[0].data.inputs as object)).toEqual([1280])
+    const energy = graph.recipes.r.base_inputs![0]
+    const twenty = graphPorts(graph.nodes, graph.recipes).find(port => port.portId === energy.portId)!
+    const forty = graphPorts(graph.nodes, graph.recipes, { ...DEFAULT_UNIT_SNAPSHOT, ticksPerSecond: 40 }).find(port => port.portId === energy.portId)!
+    expect(twenty.port.amount).toBe(640)
+    expect(forty.port.amount).toBe(1280)
   })
 })

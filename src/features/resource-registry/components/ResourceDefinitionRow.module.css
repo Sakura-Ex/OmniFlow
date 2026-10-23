@@ -19,12 +19,14 @@
 }
 
 .row-header-item {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 10px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  display: flex;
-  align-items: flex-end;
+  display: block;
   white-space: nowrap;
 }
 
@@ -37,15 +39,24 @@
 }
 
 .row-rate {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--accent);
   display: flex;
   align-items: center;
   white-space: nowrap;
-  justify-self: end;
+  justify-content: flex-end;
+  min-width: 0;
+  height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
-.row input {
+.row input:not([type='checkbox']) {
   min-width: 0;
   height: 32px;
   padding: 4px 6px;
@@ -57,21 +68,6 @@
   font-size: 12px;
 }
 
-.row select {
-  min-width: 0;
-  width: 100%;
-  height: 32px;
-  padding: 4px 4px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--input-bg);
-  color: var(--text-strong);
-  font-family: var(--mono);
-  font-size: 11px;
-  cursor: pointer;
-  text-align: center;
-  appearance: none;
-}
 
 .route-btn,
 .icon-action {
@@ -86,17 +82,6 @@
   cursor: pointer;
 }
 
-.route-btn {
-  composes: button from '@/common/styles/primitives.module.css';
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-strong);
-}
-
-.is-global {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-  background: var(--accent-soft);
-}
 
 .io-btn {
   composes: button from '@/common/styles/primitives.module.css';
@@ -137,11 +122,67 @@
   font-size: 14px;
 }
 
-.icon-action--danger {
-  background: var(--danger-soft);
-  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
-  color: var(--danger);
+.icon-action.icon-action--danger {
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #fca5a5;
 }
+
+.routingCell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  cursor: pointer;
+}
+
+.row .routingCheckbox {
+  appearance: none;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--input-bg);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
+}
+
+.routingMark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--accent-strong);
+  pointer-events: none;
+  display: flex;
+}
+
+.row .routingCheckbox:checked {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.routingCell:hover .routingCheckbox:not(:disabled) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.routingCheckbox:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.routingCell:has(:disabled),
+.row .routingCheckbox:disabled { cursor: not-allowed; }
+
+.row .routingCheckbox:disabled { opacity: 0.45; }
+.routingCheckbox:disabled + .routingMark { opacity: 0.45; }
 
 .empty {
   margin: 0;
@@ -204,7 +245,7 @@
     grid-template-columns: 1fr;
   }
 
-  .row input,
+  .row input:not([type='checkbox']),
   .row select,
   .btn,
   .route-btn,
@@ -214,27 +255,6 @@
   }
 }
 
-.suggestions {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 2px;
-  min-width: 100%;
-  width: 280px;
-  background-color: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  max-height: 160px;
-  overflow-y: auto;
-  z-index: 20;
-}
-
-.suggestion {
-  padding: 6px 10px;
-  cursor: pointer;
-  font-size: 12px;
-  border-bottom: 1px solid var(--border);
-}
 .tableViewport {
   min-width: 0;
   overflow-x: auto;

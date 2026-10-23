@@ -1,0 +1,484 @@
+{
+  "version": 5,
+  "networkConfiguration": {
+    "version": 1,
+    "ports": {
+      "[\"s\",\"s\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 10
+        }
+      },
+      "[\"t\",\"t\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "delivery",
+          "mode": "exact",
+          "amount": 1,
+          "capacity": null
+        }
+      }
+    },
+    "machines": {},
+    "minimizeMachines": {
+      "priority": 10,
+      "weight": 1,
+      "scale": 1
+    }
+  },
+  "pluginApiVersion": 2,
+  "environment": {
+    "ticksPerSecond": 20,
+    "definitions": [
+      {
+        "id": "s",
+        "symbol": "s"
+      },
+      {
+        "id": "g",
+        "symbol": "g"
+      },
+      {
+        "id": "m",
+        "symbol": "m"
+      },
+      {
+        "id": "L",
+        "symbol": "L"
+      },
+      {
+        "id": "J",
+        "symbol": "J"
+      },
+      {
+        "id": "EU",
+        "symbol": "EU"
+      },
+      {
+        "id": "RF",
+        "symbol": "RF"
+      },
+      {
+        "id": "HU",
+        "symbol": "HU"
+      },
+      {
+        "id": "su",
+        "symbol": "su"
+      },
+      {
+        "id": "RPM",
+        "symbol": "RPM"
+      },
+      {
+        "id": "mB",
+        "symbol": "mB"
+      },
+      {
+        "id": "item",
+        "symbol": "个"
+      },
+      {
+        "id": "tick",
+        "symbol": "t",
+        "scale": 0.05,
+        "derived": [
+          {
+            "baseUnitId": "s",
+            "exponent": 1
+          }
+        ]
+      },
+      {
+        "id": "W",
+        "symbol": "W",
+        "nativeRate": true,
+        "derived": [
+          {
+            "baseUnitId": "J",
+            "exponent": 1
+          },
+          {
+            "baseUnitId": "s",
+            "exponent": -1
+          }
+        ]
+      }
+    ],
+    "prefixes": [
+      {
+        "id": "k",
+        "symbol": "k",
+        "scale": 1000
+      },
+      {
+        "id": "milli",
+        "symbol": "m",
+        "scale": 0.001
+      },
+      {
+        "id": "micro",
+        "symbol": "µ",
+        "scale": 0.000001
+      },
+      {
+        "id": "mega",
+        "symbol": "M",
+        "scale": 1000000
+      }
+    ]
+  },
+  "registry": {
+    "categories": {
+      "item": {
+        "id": "item",
+        "displayName": "物品",
+        "base_unit": "个",
+        "themeColor": "#e5e7eb",
+        "preferred_time_base": "per_cycle"
+      },
+      "fluid": {
+        "id": "fluid",
+        "displayName": "流体",
+        "base_unit": "mB",
+        "themeColor": "#4ddcff",
+        "preferred_time_base": "per_cycle"
+      },
+      "energy": {
+        "id": "energy",
+        "displayName": "能源",
+        "base_unit": "EU",
+        "themeColor": "#f59e0b",
+        "preferred_time_base": "rate_per_tick"
+      },
+      "stress": {
+        "id": "stress",
+        "displayName": "应力",
+        "base_unit": "su",
+        "themeColor": "#c084fc",
+        "preferred_time_base": "per_cycle"
+      },
+      "heat": {
+        "id": "heat",
+        "displayName": "热能",
+        "base_unit": "HU",
+        "themeColor": "#fb7185",
+        "preferred_time_base": "rate_per_tick"
+      }
+    },
+    "overrides": {
+      "stress:create_su": {
+        "unit_override": "RPM"
+      },
+      "energy:thermal_rf": {
+        "unit_override": "RF"
+      }
+    },
+    "entries": {}
+  },
+  "ui": {
+    "nodes": [
+      {
+        "id": "r",
+        "type": "recipeNode",
+        "position": {
+          "x": 330,
+          "y": 100
+        },
+        "data": {
+          "recipe_id": "r",
+          "machine_name": "Regression production",
+          "system": "vanilla",
+          "duration_seconds": 1,
+          "inputs": [
+            {
+              "portId": "in",
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "category": "item",
+              "id": "ore",
+              "amount": 1,
+              "routing_mode": "wired",
+              "routing_locked": false,
+              "is_utility": false
+            }
+          ],
+          "outputs": [
+            {
+              "portId": "out",
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "category": "item",
+              "id": "plate",
+              "amount": 1,
+              "routing_mode": "wired",
+              "routing_locked": false,
+              "is_utility": false
+            },
+            {
+              "category": "item",
+              "id": "waste",
+              "portId": "waste",
+              "amount": 1,
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ]
+            }
+          ],
+          "metadata": {},
+          "archetype_id": "custom_generic",
+          "base_inputs": [
+            {
+              "portId": "in",
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "category": "item",
+              "id": "ore",
+              "amount": 1,
+              "routing_mode": "wired",
+              "routing_locked": false,
+              "is_utility": false
+            }
+          ],
+          "base_outputs": [
+            {
+              "portId": "out",
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "category": "item",
+              "id": "plate",
+              "amount": 1,
+              "routing_mode": "wired",
+              "routing_locked": false,
+              "is_utility": false
+            },
+            {
+              "category": "item",
+              "id": "waste",
+              "portId": "waste",
+              "amount": 1,
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ]
+            }
+          ],
+          "base_utility_inputs": [],
+          "base_utility_outputs": [],
+          "base_duration_seconds": 1,
+          "active_modifiers": [],
+          "hardware_specs": {},
+          "mode": "auto"
+        }
+      },
+      {
+        "id": "s",
+        "type": "sourceNode",
+        "position": {
+          "x": 0,
+          "y": 100
+        },
+        "data": {
+          "ports": [
+            {
+              "portId": "s",
+              "category": "item",
+              "id": "ore",
+              "amount": 10,
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ]
+            }
+          ],
+          "mode": "infinite"
+        }
+      },
+      {
+        "id": "t",
+        "type": "targetNode",
+        "position": {
+          "x": 880,
+          "y": 100
+        },
+        "data": {
+          "ports": [
+            {
+              "portId": "t",
+              "category": "item",
+              "id": "plate",
+              "amount": 10,
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ]
+            }
+          ],
+          "mode": "maximize"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "a",
+        "source": "s",
+        "target": "r",
+        "sourceHandle": "s",
+        "targetHandle": "in",
+        "data": {}
+      },
+      {
+        "id": "b",
+        "source": "r",
+        "target": "t",
+        "sourceHandle": "out",
+        "targetHandle": "t",
+        "data": {}
+      }
+    ]
+  },
+  "domain": {
+    "recipes": {
+      "r": {
+        "recipe_id": "r",
+        "machine_name": "Regression production",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "ore",
+            "amount": 1,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "plate",
+            "amount": 1,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          },
+          {
+            "category": "item",
+            "id": "waste",
+            "portId": "waste",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ]
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "ore",
+            "amount": 1,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "category": "item",
+            "id": "plate",
+            "amount": 1,
+            "routing_mode": "wired",
+            "routing_locked": false,
+            "is_utility": false
+          },
+          {
+            "category": "item",
+            "id": "waste",
+            "portId": "waste",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ]
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      }
+    }
+  }
+}

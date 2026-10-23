@@ -438,9 +438,9 @@ PipelineContext → [ M1 ] → [ M2 ] → [ M3 ] → ... → [ Mn ] → 归一�
 
 #### 6.2.4 时间缩放与设施消耗的精确规则
 
-超频等修饰器对 `duration` 的缩放是否影响设施 IO 的最终 Rate/s，取决于该设施端口的 `measure_mode`——而非作用于"所有东西"：
+超频等修饰器对 `duration` 的缩放是否影响设施 IO 的最终 Rate/s，取决于该设施端口的 `time_base`——而非作用于"所有东西"：
 
-| `measure_mode`  | 归化公式                | 受 duration 缩放影响？ | 物理直觉                     |
+| `time_base`  | 归化公式                | 受 duration 缩放影响？ | 物理直觉                     |
 | --------------- | ------------------- | ---------------- | ------------------------ |
 | `per_cycle`     | `amount / duration` | **是**            | 配方原料/产物：配方跑得快，每秒吞吐自然高    |
 | `rate_per_tick` | `amount × 20`       | **否**            | 持续效用（J/t）：消耗本质是每 Tick 计量 |
@@ -460,14 +460,14 @@ PipelineContext → [ M1 ] → [ M2 ] → [ M3 ] → ... → [ Mn ] → 归一�
 | ---------- | ----- | ---------------------------------------------------------------------------------------------------------- |
 | **Step 1** | 初始化   | 深拷贝原始配方数据，按 `is_utility` 标志隔离为四个独立数组，创建 `PipelineContext`                                                  |
 | **Step 2** | 遍历修饰器 | 按 `active_modifiers` 数组顺序逐一调用 `evaluate(ctx, uiState)`，将返回的 `ModifierEffect` 立即施加到 `PipelineContext` 的对应字段 |
-| **Step 3** | 归一化   | 对所有资源执行 `normalizeRate()`：根据各端口的 `measure_mode` 将 `amount` 转换为统一速率 Rate/s                                  |
+| **Step 3** | 归一化   | 对所有资源执行 `normalizeRate()`：根据各端口的 `time_base` 将 `amount` 转换为统一速率 Rate/s                                  |
 | **Step 4** | 结构化输出 | 产出 `ComputedNodePayload`，四维独立数组保持拆分                                                                        |
 
 `evaluate()` 接收的是调用时刻已由前面所有修饰器修改过的 Context。当修饰器需要基于"当前状态"做决策时（如"并行后的能耗是多少 → 能否超频"），它读到的就是前面所有工序结算后的最新值。
 
 ***
 
-#### 6.3.2 `measure_mode` 在归一化中的角色
+#### 6.3.2 `time_base` 在归一化中的角色
 
 Step 3 的 `normalizeRate()` 函数是管线中的核心防御逻辑：
 

@@ -1,330 +1,103 @@
 # OmniFlow
 
-<div align="center">
-
 [English](../README.md) | 中文
 
-**游戏无关的工业产线求解器 — 可视化节点编辑器 × SciPy 线性规划**
+[开发与设计文档导航](README.md)
 
-[![React](https://img.shields.io/badge/React-19.2-61DAFB?logo=react)](https://react.dev/)
-[![React Flow](https://img.shields.io/badge/React_Flow-11.11-ff0072?logo=reactflow)](https://reactflow.dev/)
-[![Zustand](https://img.shields.io/badge/Zustand-5.0-433e38)](https://zustand.docs.pmnd.rs/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-8.0-646CFF?logo=vite)](https://vite.dev/)
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-latest-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
-[![SciPy](https://img.shields.io/badge/SciPy-linprog-8CAAE6?logo=scipy)](https://scipy.org/)
-[![Pydantic](https://img.shields.io/badge/Pydantic-2.x-E92063?logo=pydantic)](https://docs.pydantic.dev/)
-[![Pure CSS](https://img.shields.io/badge/CSS-Dark_Industrial-1a1a2e)]()
+[开发与设计文档导航](README.md)
 
-</div>
+**用于工业产线规划的可视化节点编辑器，采用确定性配方编译和稀疏线性规划。**
 
----
+OmniFlow 使用 React Flow 连接配方、来源、交付目标与固定比例分流器。资源身份、持久端口身份及单位分别建模，因此同一资源可以属于独立的加工和基建网络。格雷科技并行、超频等游戏规则由修饰器插件负责。
 
-## 简介
+## 当前计算流程
 
-工业自动化游戏的复杂度早已超出人类心算的极限。当你的《我的世界》格雷科技产线包含 40+ 台多方块机器、跨维度流体供应、复数能源舱并行与定向超频时，任何电子表格或专用计算器都会在以下困境中崩溃：
-
-> **硬编码地狱** — 现有工具深绑定特定模组版本，无法适应自定义整合包或跨游戏场景。
->
-> **上下文歧义** — 同一资源（如水）在配方中是按次消耗的原料，在机器底座中却是按 Tick 持续消耗的冷却液。传统单维度数据模型无法表达这种本体与用法的正交关系。
->
-> **算力瓶颈** — 手动穷举或迭代逼近面对非线性超频、概率副产、全局总线共享等多目标耦合时，要么发散，要么精度不可接受。
-
-**OmniFlow** 将运筹学中的单纯形矩阵求解与工业控制台的节点图范式相结合，提供一个所见即所得、游戏无关、数学驱动的工业产线排程引擎。
-
----
-
-## 核心设计理念
-
-### 1. 游戏无关性
-
-OmniFlow 的底层 **不包含任何硬编码的游戏逻辑**。系统通过可配置的 **全局资源注册表（Global Resource Registry，基于 Zustand）** 映射一切物理实体。从《我的世界》切换到《异星工厂》或《戴森球计划》，只需更换资源配置，核心求解管线无需任何代码修改。
-
-```
-Resource Registry  →  Category: 'gt:eu'  |  DisplayName: '格雷电力'  |  Unit: 'EU/t'  |  Routing: global
-                    →  Category: 'item'   |  DisplayName: '物品'      |  Unit: '个'     |  Routing: wired
-                    →  Category: 'fluid'  |  DisplayName: '流体'      |  Unit: 'mB'     |  Routing: wired
+```mermaid
+flowchart TD
+  S[文档快照：配方、图、单位、环境与策略] --> M[独立修饰器计算：只读 Context 到 Effect]
+  M --> P[最终端口、标准速率、资格与占用]
+  P --> N[确定的有线或全局 Net 及显式边界]
+  N --> L[版本化稀疏 LP：守恒、容量、比例与目标]
+  L --> B[有界后端队列与分层 HiGHS 求解]
+  B --> V[已验证解、残差、边界与逐层证据]
+  V --> I[同一快照的运行量、安装、BOM 与启动清单]
+  I --> U[只接受当前文档修订的 UI 结果]
+  B --> D[独立且共享预算的不可行诊断]
+  D --> U
 ```
 
-### 2. 本体与上下文的正交解耦
+修饰器计算注册表和管线不导入 React、store 或卡片组件。每次编译使用显式环境快照，每个配方只运行一次管线。插件返回 Effect，由管线按已校验的依赖顺序应用。格雷科技计算插件与独立注册的 UI 卡片共享纯规则；并行配置影响后续超频，不支持的执行顺序会明确报错。
 
-这是 OmniFlow 最核心的数据建模突破：
+前端负责业务编译。后端只接收 `omniflow.lp.v1` 数学请求，包含稀疏等式/不等式、显式变量边界和优先级目标层；不再分类 Recipe/Source/Target 节点或自动补排放变量。每个可公开的解都回代检查原约束、变量边界和先前目标锁。
 
-| 维度 | 存储位置 | 描述 |
-|------|----------|------|
-| **本体（Nature）** | `ResourceRegistry` 全局字典 | 物质的物理身份：水、EU 电力、铁锭；UI 颜色与基础单位 |
-| **上下文（Context）** | 机器 Archetype 的 `fixed_utilities` 与配方端口的 `measure_mode` | 该资源在当前业务流程中的**度量方式**：按次（`per_cycle`）、按 Tick（`rate_per_tick`）、按秒（`rate_per_sec`），以及是否为只读催化剂（`consumable: false`） |
+### 网络与目标语义
 
-这一设计彻底解决了"同一种水既是配方原料又是冷却液"的行业建模痛点——物质本体仅定义一次，用法语义附着于机器底座与配方插槽，二者正交解耦。
+- `wired` 端口仅共享明确连接的网络；`global` 按 scope、resource、bus 共享池，全局路由本身不供应物料或能量。
+- 外供、交付和排放需要显式边界。每个内部 flow Net 守恒；未接输入不会免费生产，封闭副产物可能阻止生产。
+- 交付支持至少、恰好和最大化。同优先级目标采用显式参考尺度与权重或固定配比，分层优先级不使用大 M 系数。
+- 容量使用上限约束；可调度发电的未用能力是余量，不是废能排放。状态要求在选定工况下校验。
+- 分流器保证分配比例，包含堵塞和零比例支路；其吞吐为连续变量，不计机器台数或取整。
+- 单位支持注册前缀、乘除与整数次幂。TPS 和周期显式输入；只改变显示单位不会改变物理量。
 
-### 3. 数学优先
+### 结果与能力边界
 
-前端承载全部业务逻辑（超频级联、并行度、阈值判断、概率产出）。在请求发送给后端前，通过 **预编译管线（Pre-compilation Pipeline）** 将所有离散的周期量和连续的速率量归一化为纯净的 **Rate/s（每秒速率）**，后端仅需以 `scipy.optimize.linprog` 求解标准形式的线性规划问题：
+结果区分 `operating_equivalent`、`recommended_installed`、固定/计划/已有安装数及利用率。物流使用连续运行量；最终工况的催化剂/占用 BOM 使用选定安装方案。稳态循环和声明的预热/催化剂条件作为待确认启动清单展示，不证明动态可启动。
 
-```
-minimize  c^T x
-subject to  A_ub x ≤ b_ub
-            A_eq x = b_eq
-            x ≥ 0
-```
+请求与响应关联 request identity、document revision 和 compiler fingerprint。运行时校验和 calculation session 拒绝过期或不匹配的结果。`limit_reached` 可以携带已验证可行方案，但不表示所有目标层已证明最优。弹性诊断向量独立于正常物流和 BOM；满载本身不证明增容有收益。
 
-> 后端无状态、无模组知识，仅接收归一化后的向量与矩阵，30ms 内返回最优解。
-
----
-
-## 关键架构
-
-### 机器底座与插槽分离
-
-将**机器固有属性**（能源类型、冷却介质、路由锁定）与**配方 I/O** 彻底分离：
-
-```typescript
-// gtElectric.ts — 格雷电力机器底座
-{
-  id: 'gt_electric',
-  fixed_utilities: {
-    'gt:eu': {
-      type: 'gt:eu',
-      routing_mode: 'global',      // 电力走全局总线，无需手动连线
-      routing_locked: true,        // 用户不可更改路由类型
-      measure_mode: 'rate_per_tick' // EU 按 Tick 消耗
-    }
-  },
-  default_modifiers: ['gt_overclocker']  // 默认激活超频修饰器
-}
-```
-
-固定 utility 通过外键引用 `ResourceRegistry`，实现 UI 中**动态后缀拼接**（如 `EU/t`、`mB/s`）与**视觉降噪**（全局路由端口自动隐藏连线）。
-
-### 智能拓扑与隐式路由
-
-废弃繁琐的全手动连线，支持两种路由范式：
-
-| 路由模式 | 语义 | 示例 |
-|----------|------|------|
-| `wired` | 必须建立物理拓扑连线 | 物品、流体管道 |
-| `global` | 全局隐式共享网络 | 电力总线（gt:eu）、应力网络（create:su） |
-
-计算引擎在构建拓扑网络时，自动为 `global` 路由的资源生成虚拟源节点（`Virtual_Global_Source`）与虚拟汇节点（`Virtual_Global_Target`），用户无需手动创建电力输入节点，大幅降低画布复杂度。
-
-### 定向修饰器管线
-
-实现严格的多阶段修饰器作用域隔离，完美兼容跨模组混合动力机器：
-
-```
-Phase 1: Collect Effects     — 遍历已激活的修饰器，收集各自的 ModifierEffect
-Phase 2: Parallel             — 无损并行优先：统一乘以 parallelMultiplier
-Phase 3: Targeted Overclock   — 定向指数超频在后：仅匹配 utility_type 的 utility 倍乘
-          例：同时消耗 gt:eu 与 create:su 的混合机器
-              • gt:eu 被超频倍乘（×4^n）
-              • create:su 不受超频影响
-Phase 4: Output Probability   — 概率产出（如副产物 5% 概率）
-Phase 5: Duration & Rate      — 归一化到 Rate/s
-```
-
-以格雷科技多方块为例，`gt_overclocker` 修饰器严格执行：
-1. 根据能源舱配置计算总输入 EU/t
-2. 无损并行 = `min(floor(total_eu / recipe_eu), parallelLimit)`
-3. 若剩余功率充足，执行超频（电压 ×4，完美超频时持续时间 ÷4，普通超频 ÷2）
-
-### Zustand 驱动的资源注册表
-
-全局资源分类注册表使用 Zustand 实现细粒度订阅，React 组件仅在其引用的特定资源分类变化时重渲染，避免 React Context 的全量更新灾难。配合 React Flow 内置的 `useNodesState` / `useEdgesState` 管理画布状态，保障 60fps 丝滑拖拽体验。
-
-### 确定性预编译
-
-每次请求前执行全量数据规范化流水线：
-
-1. **`normalizeCanvasNode`** — 兼容旧字段迁移（`is_virtual` → `is_auto`），填充默认 mode
-2. **`ensureRecipeDataShape`** — 应用 Archetype、过滤不兼容修饰器、填充默认 UI 状态
-3. **`buildTopologicalNets`** — 构建拓扑网络，分离 wired/global 边，生成隐式路由
-4. **`getCalculatedRates`** — 执行修饰器管线，将所有资源归一化到 Rate/s
-
----
-
-## 工作原理
-
-```
-┌─────────────────────────────────────────────────┐
-│                  React Flow 画布                  │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐   │
-│  │ Source   │───▶│ Recipe   │───▶│ Target   │   │
-│  │ 水 ∞     │    │ 电解机   │    │ 氢气 1.0 │   │
-│  └──────────┘    └──────────┘    └──────────┘   │
-│       │               │                           │
-│  物理连线          全局总线（gt:eu）               │
-└───────┼───────────────┼───────────────────────────┘
-        │               │
-        ▼               ▼
-┌─────────────────────────────────────────────────┐
-│                 预编译管线                        │
-│  normalizeCanvasNode → ensureRecipeDataShape     │
-│  → buildTopologicalNets → getCalculatedRates     │
-│                                                  │
-│  所有数据 → Rate/s（纯浮点向量）                   │
-└──────────────────────┬──────────────────────────┘
-                       │ POST /api/calculate
-                       ▼
-┌─────────────────────────────────────────────────┐
-│          FastAPI + SciPy 线性规划求解器            │
-│                                                  │
-│  Pydantic 校验 → 节点分类                         │
-│  → 化学计量矩阵 A 构建                             │
-│  → 约束 c、bounds 构建                            │
-│  → scipy.optimize.linprog（highs 方法）          │
-│  → 结果聚合与取整                                  │
-└──────────────────────┬──────────────────────────┘
-                       │ 计算结果
-                       ▼
-┌─────────────────────────────────────────────────┐
-│               结果映射与 UI 更新                   │
-│                                                  │
-│  machines_exact / machines_actual / utilization  │
-│  actual_amounts per node / per port              │
-│  system_inputs / system_outputs summary          │
-│  total_eu_tick                                   │
-└─────────────────────────────────────────────────┘
-```
-
-### 后端线性规划建模
-
-**变量向量**: `x = [x_recipes | x_sources | x_sinks]`
-
-**化学计量矩阵**: 列 = 配方，行 = 物品；产出为正，消耗为负。
-
-**目标模式**:
-
-| 目标模式 | 目标系数 | 约束 |
-|----------|----------|------|
-| `demand` | `c = 0` | `b_eq = amount`（精确需求） |
-| `maximize` | `c = -10000` | `b_ub ≥ 0`（强力最大化） |
-| `overflow` | `c = 0.001` | `b_eq = 0`（溢出排放） |
-
-**约束**: 非目标物品满足 `Ax >= b`（允许副产物溢出）。目标物品严格遵循质量守恒。
-
----
+后端限制工作线程、排队长度和原生求解线程；排队共享总请求预算。取消接口只能移除尚未执行的任务，浏览器 abort 不会终止已运行的原生求解。当前为连续 LP，不包含整数安装优化、库存时序或自动工况选择。
 
 ## 开发与配置
 
-### 环境要求
+锁定的 Vite 要求 Node `^20.19.0 || >=22.12.0`，固定版本 NumPy/SciPy 要求 Python 3.11 及以上。当前验证环境使用 Node 24.13.0、Python 3.14.0。
 
-- **Node.js** >= 18
-- **Python** >= 3.10
+在仓库根目录执行：
 
-### 前端
+```powershell
+npm ci
+python -m venv .venv
+.venv/Scripts/python.exe -m pip install -r backend/requirements-dev.txt
+.venv/Scripts/python.exe -m uvicorn backend.main:app --reload --port 7998
+```
 
-```bash
-# 安装依赖
-npm install
+另开终端执行 `npm run dev`，Vite 使用 5173 端口。按 `.env.example` 设置 `VITE_BACKEND_URL` 匹配后端；仅运行时依赖使用 `backend/requirements.txt`。接口文档：[http://localhost:7998/docs](http://localhost:7998/docs)。
 
-# 启动开发服务器（http://localhost:5173）
-npm run dev
-
-# 类型检查与构建
+```powershell
+npm test
+.venv/Scripts/python.exe -m pytest backend/tests -q
 npm run build
-
-# 代码检查
 npm run lint
-
-# 预览生产构建
 npm run preview
 ```
 
-### 后端
+`/api/calculate` 与 `/api/debug` 共用 LP 运行池；debug 当前同样执行求解并返回阶段和残差证据。旧图节点 payload 明确拒绝，详见[求解器契约](solver-lp.md)和[测试指南](testing.md)。
 
-```bash
-cd backend
+## 持久化与验证
 
-# 创建并激活虚拟环境（Windows）
-python -m venv venv
-venv\Scripts\activate
+文件格式 v5 保存权威配方、持久端口、单位/环境、资源注册表与显式网络策略。旧文件经统一读取器迁移，并展示假设变化和待修复信息；剪贴板、撤销/重做、数据库画布路径保留相应配置。迁移后只使用一套严格编译器，不保留旧数学回退。局部画布保存键仍为 `omniflow.canvas.v1`，该键名与文件格式版本独立。
 
-# 安装依赖
-pip install fastapi uvicorn numpy scipy pydantic
-
-# 启动后端（http://localhost:8000）
-uvicorn main:app --reload
-```
-
-API 文档可访问 [http://localhost:8000/docs](http://localhost:8000/docs)（Swagger UI）。
-
-### 数据持久化
-
-画布数据通过 `localStorage` 持久化，key 为 `omniflow.canvas.v1`。支持通过文件 I/O 控件导出/导入为 `.json` 文件。
-
----
+最新收尾检查和保留告警见[测试记录](testing.md)；历史验收数量仅代表当时快照。浏览器观察和每项验收边界见 [T01–T24 矩阵](validation/v2-completion/acceptance-matrix.md)与[验证记录](validation/v2-completion/README.md)。性能报告按硬件和固定数据集记录实测，不承诺通用固定耗时或帧率。
 
 ## 项目结构
 
-```
-OmniFlow/
-├── src/
-│   ├── App.tsx                     # 根组件 — React Flow 画布
-│   ├── main.tsx                    # 入口文件
-│   ├── index.css                   # 深色工业风全局样式（纯 CSS）
-│   ├── flowConfig.ts               # 节点类型注册（recipeNode / sourceNode / targetNode）
-│   ├── components/                 # React UI 组件
-│   │   ├── RecipeNode.tsx          # 多态配方节点（gregtech / vanilla / enderio）
-│   │   ├── SourceNode.tsx          # 输入源节点
-│   │   ├── TargetNode.tsx          # 输出目标节点
-│   │   ├── RecipeEditorModal.tsx   # 配方编辑弹窗
-│   │   ├── EndpointEditorModal.tsx # 端点编辑弹窗
-│   │   ├── SystemHUD.tsx           # 系统状态 HUD
-│   │   ├── MenuBar.tsx             # 顶部菜单栏
-│   │   └── SegmentedControl.tsx    # 分段控制器
-│   ├── hooks/                      # 自定义 React Hooks
-│   │   ├── useCanvasState.ts       # 节点/边状态（React Flow）
-│   │   ├── useCanvasOperations.ts  # 添加/删除/连接操作
-│   │   ├── useCalculation.ts       # 预编译 → POST → 结果映射管线
-│   │   ├── useClipboard.ts         # 复制/粘贴/复制节点
-│   │   ├── useFileIO.ts            # 文件导入/导出 + localStorage
-│   │   ├── useKeyboardShortcuts.ts # 全局键盘快捷键
-│   │   ├── useNodeEditor.ts        # 节点编辑弹窗状态
-│   │   ├── useNodeOperations.ts    # 自动填充端点、节点数据更新
-│   │   ├── useUndoRedo.ts          # 基于快照的撤销/重做（最多 20 步）
-│   │   └── useTheme.ts             # 深色/浅色主题切换
-│   ├── domain/canvas/
-│   │   ├── initialState.ts         # 演示画布（格雷科技钢铁产线）
-│   │   └── validators.ts           # 数据规范化与迁移
-│   ├── modifiers/                  # 修饰器引擎
-│   │   ├── calculate.ts            # 核心 5 阶段修饰器管线 + 速率归一化
-│   │   ├── gtOverclocker.ts       # GT 超频逻辑
-│   │   ├── chanceOutput.ts         # 概率产出修饰器
-│   │   ├── registry.ts             # 修饰器注册表（ID → IMachineModifier）
-│   │   ├── state.ts                # 默认 UI 状态工厂
-│   │   ├── types.ts                # IMachineModifier 与 ModifierEffect 接口
-│   │   └── index.ts                # 统一导出
-│   ├── data/archetypes/            # 机器底座定义
-│   │   ├── index.ts                # 注册表 + applyArchetypeToInputs
-│   │   ├── gtElectric.ts           # GT 电力（固定 gt:eu utility + 全局路由）
-│   │   ├── fluidNetworked.ts       # 流体冷却（utility:water 按秒）
-│   │   ├── customGeneric.ts        # 空白底座
-│   │   └── shared.ts               # Utility 数量推导辅助函数
-│   ├── registry/                   # 全局资源分类注册表
-│   │   ├── resourceRegistry.ts     # Zustand 存储（分类 CRUD + localStorage）
-│   │   ├── defaults.ts             # 内置分类（item / fluid / energy / gt:eu / create:su …）
-│   │   ├── types.ts                # ResourceCategoryDef 类型
-│   │   ├── units.ts                # 单位定义
-│   │   └── index.ts                # 统一导出
-│   ├── types/
-│   │   ├── recipe.ts               # RecipeNodeData / SourceNodeData / TargetNodeData
-│   │   ├── api.ts                  # CalculateResponse 类型
-│   │   └── types.ts                # Resource / MachineArchetype / UtilityDef / RoutingMode
-│   └── utils/
-│       └── topologicalNets.ts      # 拓扑网络分析 + 全局路由
-├── backend/
-│   └── main.py                     # FastAPI 应用 + Pydantic 模型 + SciPy LP 求解器
-├── public/                         # 静态资源
-├── vite.config.ts
-├── tsconfig.json                   # TypeScript 项目引用根配置
-├── tsconfig.app.json               # 前端 TS 配置
-├── tsconfig.node.json              # Node 端 TS 配置（vite.config）
-├── eslint.config.js                # ESLint 10 扁平配置
-└── package.json
+```text
+src/common/                 共享类型、Zod schema、单位代数、工具和数据库
+src/data/archetypes/        机器模板
+src/features/calculation/  最终端口 Net 编译、结果投影、安装与诊断
+src/features/modifier/     纯计算定义与独立注册的 UI 卡片
+src/features/canvas/       画布状态、节点、分流器与历史
+src/features/recipe/       权威可编辑配方及编辑器
+src/features/file-io/      版本化文档、剪贴板与迁移
+src/features/project/      项目及画布持久化
+backend/main.py            版本化 HTTP 路由与运行池生命周期
+backend/solver/            Pydantic LP schema、稀疏求解与有界执行
+backend/benchmarks/        可重复后端测量脚本及原始样本
+fixtures/                  跨语言 LP、编译器及诊断证据
 ```
 
----
+[v2 设计](technical-design-v2-proposal.md)、[实施计划](v2-implementation-plan.md)与验收矩阵区分当前实现与历史提案。
+
+[交互设计手册](interaction-design-handbook.md)记录 v2 前操作基准、功能入口归属、局部产线建模及后续 UI 改动约定。修改交互时先核对手册与历史实现。
 
 ## 许可证
 

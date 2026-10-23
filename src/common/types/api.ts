@@ -1,42 +1,31 @@
-/**
- * Result of a single node in the calculation response.
- * 
- * Contains the solver's output for each node in the production flow,
- * including machine counts, utilization, and actual throughput.
- */
+/** Node presentation derived from an already verified compiled LP solution. */
 export type CalculationNodeResult = {
-  /** Exact (floating-point) machine count required */
-  machines_exact?: number
-  /** Integer machine count (ceiling of exact) */
-  machines_actual?: number
-  /** Machine utilization rate (0.0 to 1.0) */
-  utilization?: number
-  /** Actual throughput per resource for source/target nodes */
+  operating_equivalent?: number
+  recommended_installed?: number
+  fixed_installed?: number | null
+  planned_installed?: number
+  existing_installed?: number | null
+  additional_installed?: number | null
+  utilization?: number | null
+  port_throughputs?: Record<string, number>
+  /** Standard per-second endpoint throughput indexed by persistent port ID. */
   actual_amounts?: Record<string, number>
 }
-
-/**
- * Response from the /api/calculate endpoint.
- * 
- * Contains the complete solver result including per-node results,
- * system-level material balance, and status information.
- */
+/** Separate gross boundary totals on one conserved Net. */
+export type NetSummary = { id: string; resourceId: string; portKeys: string[]; source: number; delivery: number; spill: number }
+/** Startup evidence is separate from steady-state feasibility. */
+export type StartupChecklist = { status: 'needs_confirmation' | 'not_assessed'; catalysts: Array<{ nodeId: string; resourceId: string; amount: number }>; cycles: string[][]; preheat: Array<{ nodeId: string; requirement: string }> }
+/** Internal view model; HTTP transport uses LPResponse exclusively. */
 export type CalculateResponse = {
-  /** Outcome of validation or solver execution. */
   status: 'success' | 'invalid_model' | 'unbounded' | 'infeasible' | 'limit_reached' | 'solver_error'
-  /** Per-node calculation results, keyed by node ID */
+  startup?: StartupChecklist
+  bom?: Record<string, number>
+  has_verified_solution?: boolean
   node_results?: Record<string, CalculationNodeResult>
-  /** Total system input rates (items/s) */
   system_inputs?: Record<string, number>
-  /** Total system output rates (items/s) */
   system_outputs?: Record<string, number>
-  /** Error or status message from the solver */
+  system_spills?: Record<string, number>
+  net_summaries?: NetSummary[]
   message?: string
-  /** Field-level validation issues with graph identities. */
-  errors?: Array<{
-    node_id?: string | null
-    path: Array<string | number>
-    code: string
-    message: string
-  }>
+  errors?: Array<{ node_id?: string | null; path: Array<string | number>; code: string; message: string }>
 }

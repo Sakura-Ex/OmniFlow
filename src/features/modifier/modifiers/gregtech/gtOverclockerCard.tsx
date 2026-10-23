@@ -1,4 +1,5 @@
-import type { ModifierCardRenderProps } from '../../modifier.types'
+import { useTranslation } from '@/common/i18n'
+import type { ModifierCardRenderProps } from '../../modifier.ui.types'
 
 /**
  * Card body for the GT Overclocker modifier.
@@ -11,10 +12,11 @@ import type { ModifierCardRenderProps } from '../../modifier.types'
  * @returns Rendered JSX for the overclocker card body.
  */
 export function OverclockerCardBody({ state, onChange, Toggle }: ModifierCardRenderProps) {
+  const { t } = useTranslation()
   return (
     <>
       <Toggle
-        label="完美超频"
+        label={t('editor.perfectOverclock')}
         checked={Boolean(state.perfectOverclock)}
         onChange={(v) => onChange('perfectOverclock', v)}
       />

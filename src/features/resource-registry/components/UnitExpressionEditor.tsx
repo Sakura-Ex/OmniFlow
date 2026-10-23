@@ -1,3 +1,6 @@
+import { useTranslation } from '@/common/i18n'
+import { Icon } from '@/common/components/Icon'
+import { Combobox } from '@/common/components/Combobox'
 import { useId, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { UnitExpression } from '@/common/types/units'
 import { UnitSystem, Quantity } from '@/common/units/UnitSystem'
@@ -54,6 +57,7 @@ function compatibleOptions(units: UnitSystem, expression: UnitExpression): UnitO
  * @returns A unit selector with optional custom expression editing.
  */
 export function UnitExpressionEditor(props: UnitExpressionEditorProps) {
+  const { t } = useTranslation()
   const { expression, amount, onChange, displayExpression, onDisplayChange } = props
   const snapshot = useSettingsStore((s) => s.units)
   const units = useMemo(() => new UnitSystem(snapshot), [snapshot])
@@ -67,7 +71,7 @@ export function UnitExpressionEditor(props: UnitExpressionEditorProps) {
     [displayExpression, expression, units],
   )
   const [error, setError] = useState('')
-  const label = (() => { try { return units.expression(expression).toString() } catch { return '未知单位' } })()
+  const label = (() => { try { return units.expression(expression).toString() } catch { return t('editor.unknownUnit') } })()
   const changeMode = (next: 'input' | 'display') => {
     setMode(next)
     setDraft(next === 'input' ? expression : displayUnit)
@@ -91,11 +95,11 @@ export function UnitExpressionEditor(props: UnitExpressionEditorProps) {
       }
       setError('')
       panelRef.current?.hidePopover()
-    } catch { setError('单位无法换算，请检查单位和指数。') }
+    } catch { setError(t('editor.conversionError')) }
   }
 
   return <div className={styles.editor}>
-    <button className={styles.trigger} type="button" popoverTarget={popoverId} aria-label="编辑单位" title={label} onClick={(event) => {
+    <button className={styles.trigger} type="button" popoverTarget={popoverId} aria-label={t('editor.editUnit')} title={label} onClick={(event) => {
       changeMode('input')
       const bounds = event.currentTarget.getBoundingClientRect()
       setPosition({
@@ -103,44 +107,38 @@ export function UnitExpressionEditor(props: UnitExpressionEditorProps) {
         top: Math.max(12, Math.min(bounds.bottom + 4, window.innerHeight - 260)),
       })
     }}>
-      <span className={styles.label}>{label}</span><span aria-hidden="true">▾</span>
+      <span className={styles.label}>{label}</span><Icon name="chevronDown" size={14} />
     </button>
     <div ref={panelRef} id={popoverId} popover="auto" className={styles.panel} style={{
       '--unit-popover-left': `${position.left}px`,
       '--unit-popover-top': `${position.top}px`,
     } as CSSProperties}>
       <header className={styles.header}>
-        <span>单位</span>
-        <button className={styles.close} type="button" popoverTarget={popoverId} popoverTargetAction="hide" aria-label="关闭单位选择">×</button>
+        <span>{t('editor.unit')}</span>
+        <button className={styles.close} type="button" popoverTarget={popoverId} popoverTargetAction="hide" aria-label={t('editor.closeUnit')}><Icon name="close" /></button>
       </header>
       {onDisplayChange && <div className={styles.modes}>
-        <button className={`${styles.button} ${mode === 'input' ? styles.active : ''}`} aria-pressed={mode === 'input'} type="button" onClick={() => changeMode('input')}>输入单位</button>
-        <button className={`${styles.button} ${mode === 'display' ? styles.active : ''}`} aria-pressed={mode === 'display'} type="button" onClick={() => changeMode('display')}>显示单位</button>
+        <button className={`${styles.button} ${mode === 'input' ? styles.active : ''}`} aria-pressed={mode === 'input'} type="button" onClick={() => changeMode('input')}>{t('editor.inputUnit')}</button>
+        <button className={`${styles.button} ${mode === 'display' ? styles.active : ''}`} aria-pressed={mode === 'display'} type="button" onClick={() => changeMode('display')}>{t('editor.displayUnit')}</button>
       </div>}
-      <select className={styles.control} aria-label={mode === 'input' ? '选择输入单位' : '选择显示单位'} value={draftValue} onChange={(event) => {
-        const option = options.find((item) => item.value === event.target.value)
-        if (option) setDraft(JSON.parse(option.value) as UnitExpression)
-        setError('')
-      }}>
-        {!options.some((option) => option.value === draftValue) && <option value={draftValue}>自定义单位</option>}
-        {options.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}
-      </select>
+      <Combobox className={styles.control} aria-label={mode === 'input' ? t('editor.selectInputUnit') : t('editor.selectDisplayUnit')} value={draftValue}
+        options={options.some(option => option.value === draftValue) ? options : [{ value: draftValue, label: t('editor.customUnit') }, ...options]}
+        onChange={value => { setDraft(JSON.parse(value) as UnitExpression); setError('') }} />
       <details className={styles.advanced} key={mode}>
-        <summary>自定义单位</summary>
+        <summary>{t('editor.customUnit')}</summary>
         {draft.map((factor, index) => <div className={styles.factor} key={index}>
-          <select className={styles.control} aria-label="基本单位" value={factor.baseUnitId} onChange={(event) => setDraft(draft.map((entry, i) => i === index ? { ...entry, baseUnitId: event.target.value } : entry))}>
-            {snapshot.definitions.map((definition) => <option key={definition.id} value={definition.id}>{definition.symbol}</option>)}
-          </select>
-          <select className={styles.control} aria-label="尺度前缀" value={factor.prefixId ?? ''} onChange={(event) => setDraft(draft.map((entry, i) => i === index ? { ...entry, prefixId: event.target.value || undefined } : entry))}>
-            <option value="">无前缀</option>
-            {snapshot.prefixes.map((prefix) => <option key={prefix.id} value={prefix.id}>{prefix.symbol}</option>)}
-          </select>
-          <input className={styles.control} aria-label="整数指数" type="number" step={1} value={factor.exponent} onChange={(event) => setDraft(draft.map((entry, i) => i === index ? { ...entry, exponent: Number(event.target.value) } : entry))} />
-          <button className={styles.button} type="button" aria-label="删除单位因子" onClick={() => setDraft(draft.filter((_, i) => i !== index))}>×</button>
+          <Combobox className={styles.control} aria-label={t('editor.baseUnit')} value={factor.baseUnitId}
+            options={snapshot.definitions.map(definition => ({ value: definition.id, label: definition.symbol }))}
+            onChange={value => setDraft(draft.map((entry, i) => i === index ? { ...entry, baseUnitId: value } : entry))} />
+          <Combobox className={styles.control} aria-label={t('editor.prefix')} value={factor.prefixId ?? ''}
+            options={[{ value: '', label: t('editor.noPrefix') }, ...snapshot.prefixes.map(prefix => ({ value: prefix.id, label: prefix.symbol }))]}
+            onChange={value => setDraft(draft.map((entry, i) => i === index ? { ...entry, prefixId: value || undefined } : entry))} />
+          <input className={styles.control} aria-label={t('editor.exponent')} type="number" step={1} value={factor.exponent} onChange={(event) => setDraft(draft.map((entry, i) => i === index ? { ...entry, exponent: Number(event.target.value) } : entry))} />
+          <button className={styles.button} type="button" aria-label={t('editor.removeFactor')} onClick={() => setDraft(draft.filter((_, i) => i !== index))}><Icon name="close" /></button>
         </div>)}
-        <button className={styles.button} type="button" onClick={() => setDraft([...draft, { baseUnitId: 's', exponent: -1 }])}>添加因子</button>
+        <button className={styles.button} type="button" onClick={() => setDraft([...draft, { baseUnitId: 's', exponent: -1 }])}>{t('editor.addFactor')}</button>
       </details>
-      <button className={`${styles.button} ${styles.active}`} type="button" onClick={apply}>{mode === 'display' ? '应用显示单位' : '应用输入单位'}</button>
+      <button className={`${styles.button} ${styles.active}`} type="button" onClick={apply}>{mode === 'display' ? t('editor.applyDisplayUnit') : t('editor.applyInputUnit')}</button>
       {error && <p className={styles.error} role="alert">{error}</p>}
     </div>
   </div>

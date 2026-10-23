@@ -7,7 +7,7 @@ import { ensureRecipeDataShape, previewModifierPipeline, computationKey } from '
 import { applyArchetypeToInputs } from '@/data/archetypes/index'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 import { buildResourceId } from '@/common/utils/resourceId'
-import { flattenRecipeResources } from '@/features/canvas/canvas.utils'
+import { flattenRecipeResources } from '@/common/utils/recipeResources'
 
 /** State shape for the recipe store. */
 export type RecipeStore = {

@@ -1,0 +1,477 @@
+[
+  {
+    "id": "T03",
+    "original": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:2d92a378",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 5
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 10,
+          "upper": 10
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "diagnostic-T03",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:2d92a378:diagnostic",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 5
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 10,
+          "upper": 10
+        },
+        {
+          "id": "diagnostic:flow:0:missing_supply",
+          "lower": 0,
+          "upper": 1000000
+        },
+        {
+          "id": "diagnostic:flow:1:missing_outlet",
+          "lower": 0,
+          "upper": 1000000
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1"
+        ],
+        "rhs": [
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 3,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 4,
+            "value": -1
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "diagnostic:normalized-deficit",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 3,
+              "value": 1
+            },
+            {
+              "col": 4,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 0,
+          "rel_tolerance": 0
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 1000
+      }
+    },
+    "relaxations": [
+      {
+        "col": 3,
+        "rowId": "flow:0",
+        "scale": 1,
+        "kind": "missing_supply",
+        "origin": {
+          "kind": "conservation",
+          "netId": "[\"wired\",\"item:ore\",\"[\\\"r\\\",\\\"in\\\"]\"]",
+          "portKeys": [
+            "[\"r\",\"in\"]",
+            "[\"s\",\"s\"]"
+          ]
+        }
+      },
+      {
+        "col": 4,
+        "rowId": "flow:1",
+        "scale": 1,
+        "kind": "missing_outlet",
+        "origin": {
+          "kind": "conservation",
+          "netId": "[\"wired\",\"item:plate\",\"[\\\"r\\\",\\\"out\\\"]\"]",
+          "portKeys": [
+            "[\"r\",\"out\"]",
+            "[\"t\",\"t\"]"
+          ]
+        }
+      }
+    ],
+    "expected": {
+      "kind": "missing_supply",
+      "amount": 5
+    }
+  },
+  {
+    "id": "T04",
+    "original": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "compiler-test",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:2b612729",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 10,
+          "upper": 10
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 2
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "priority:10",
+          "priority": 10,
+          "coefficients": [
+            {
+              "col": 0,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 1e-8,
+          "rel_tolerance": 1e-9
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 10000
+      }
+    },
+    "request": {
+      "schema_version": "omniflow.lp.v1",
+      "request_id": "diagnostic-T04",
+      "document_revision": 1,
+      "compiler_fingerprint": "network-v1:2b612729:diagnostic",
+      "variables": [
+        {
+          "id": "operation:r",
+          "lower": 0,
+          "upper": null
+        },
+        {
+          "id": "source:[\"s\",\"s\"]",
+          "lower": 0,
+          "upper": 10
+        },
+        {
+          "id": "delivery:[\"t\",\"t\"]",
+          "lower": 10,
+          "upper": 10
+        },
+        {
+          "id": "diagnostic:flow:0:missing_supply",
+          "lower": 0,
+          "upper": 1000000
+        },
+        {
+          "id": "diagnostic:flow:1:missing_outlet",
+          "lower": 0,
+          "upper": 1000000
+        },
+        {
+          "id": "diagnostic:flow:2:missing_outlet",
+          "lower": 0,
+          "upper": 1000000
+        }
+      ],
+      "equalities": {
+        "row_ids": [
+          "flow:0",
+          "flow:1",
+          "flow:2"
+        ],
+        "rhs": [
+          0,
+          0,
+          0
+        ],
+        "entries": [
+          {
+            "row": 0,
+            "col": 0,
+            "value": -1
+          },
+          {
+            "row": 0,
+            "col": 1,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 0,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 2,
+            "value": -1
+          },
+          {
+            "row": 2,
+            "col": 0,
+            "value": 2
+          },
+          {
+            "row": 0,
+            "col": 3,
+            "value": 1
+          },
+          {
+            "row": 1,
+            "col": 4,
+            "value": -1
+          },
+          {
+            "row": 2,
+            "col": 5,
+            "value": -2
+          }
+        ]
+      },
+      "inequalities": {
+        "row_ids": [],
+        "rhs": [],
+        "entries": []
+      },
+      "objectives": [
+        {
+          "id": "diagnostic:normalized-deficit",
+          "priority": 0,
+          "coefficients": [
+            {
+              "col": 3,
+              "value": 1
+            },
+            {
+              "col": 4,
+              "value": 1
+            },
+            {
+              "col": 5,
+              "value": 1
+            }
+          ],
+          "normalization_scale": 1,
+          "abs_tolerance": 0,
+          "rel_tolerance": 0
+        }
+      ],
+      "solver_options": {
+        "time_limit_ms": 1000
+      }
+    },
+    "relaxations": [
+      {
+        "col": 3,
+        "rowId": "flow:0",
+        "scale": 1,
+        "kind": "missing_supply",
+        "origin": {
+          "kind": "conservation",
+          "netId": "[\"wired\",\"item:ore\",\"[\\\"r\\\",\\\"in\\\"]\"]",
+          "portKeys": [
+            "[\"r\",\"in\"]",
+            "[\"s\",\"s\"]"
+          ]
+        }
+      },
+      {
+        "col": 4,
+        "rowId": "flow:1",
+        "scale": 1,
+        "kind": "missing_outlet",
+        "origin": {
+          "kind": "conservation",
+          "netId": "[\"wired\",\"item:plate\",\"[\\\"r\\\",\\\"out\\\"]\"]",
+          "portKeys": [
+            "[\"r\",\"out\"]",
+            "[\"t\",\"t\"]"
+          ]
+        }
+      },
+      {
+        "col": 5,
+        "rowId": "flow:2",
+        "scale": 2,
+        "kind": "missing_outlet",
+        "origin": {
+          "kind": "conservation",
+          "netId": "[\"wired\",\"item:waste\",\"[\\\"r\\\",\\\"waste\\\"]\"]",
+          "portKeys": [
+            "[\"r\",\"waste\"]"
+          ]
+        }
+      }
+    ],
+    "expected": {
+      "kind": "missing_outlet",
+      "amount": 20
+    }
+  }
+]

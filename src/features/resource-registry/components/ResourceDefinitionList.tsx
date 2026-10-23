@@ -1,3 +1,5 @@
+import { useTranslation } from '@/common/i18n'
+import { Icon } from '@/common/components/Icon'
 import { useMemo } from 'react'
 import { ResourceDefinitionRow, type ResourceDefinitionRowProps } from './ResourceDefinitionRow'
 import type { ColumnDef } from './ResourceDefinitionRow.config'
@@ -78,8 +80,8 @@ function formatRate(value: number | undefined): string {
 export function ResourceDefinitionList<T extends Record<string, unknown> & { _uid?: string }>({
   items,
   columns,
-  emptyMessage = '暂无资源',
-  addLabel = '添加',
+  emptyMessage,
+  addLabel,
   onUpdateItem,
   onAddItem,
   onRemoveItem,
@@ -100,6 +102,7 @@ export function ResourceDefinitionList<T extends Record<string, unknown> & { _ui
   getProbabilityLocked,
   getIoToggleLocked,
 }: ResourceDefinitionListProps<T>) {
+  const { t } = useTranslation()
   const gridTemplate = useMemo(
     () => columns.map((c) => c.width ?? 'auto').join(' '),
     [columns],
@@ -112,13 +115,13 @@ export function ResourceDefinitionList<T extends Record<string, unknown> & { _ui
         style={{ gridTemplateColumns: gridTemplate }}
       >
         {columns.map((col) => (
-          <span className={styles['row-header-item']} key={col.id}>
-            {col.header}
+          <span className={styles['row-header-item']} key={col.id} title={col.headerKey ? t(col.headerKey) : undefined}>
+            {col.headerKey ? t(col.headerKey) : ''}
           </span>
         ))}
       </div>
 
-      {items.length === 0 && <p className={styles.empty}>{emptyMessage}</p>}
+      {items.length === 0 && <p className={styles.empty}>{emptyMessage ?? t('editor.emptyResources')}</p>}
 
       {items.map((item, index) => {
         const rowProps: ResourceDefinitionRowProps = {
@@ -156,7 +159,7 @@ export function ResourceDefinitionList<T extends Record<string, unknown> & { _ui
         style={{ marginTop: items.length > 0 ? 4 : 0 }}
         type="button"
       >
-        + {addLabel}
+        <Icon name="plus" size={14} /> {addLabel ?? t('editor.add')}
       </button>
     </div>
   )

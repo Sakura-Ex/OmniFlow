@@ -1,8 +1,7 @@
 import { gtEuPerTick } from './gtUnits'
 import type { IMachineModifier, PipelineContext } from '../../modifier.types'
 import type { Resource } from '@/common/types/resource'
-import { computePowerPool, toGtHatches, toFiniteNumber } from './gtOverclocker'
-import { ParallelCardBody } from './gtParallelCard'
+import { computePowerPool, toGtHatches, toFiniteNumber } from './gtPower'
 
 /**
  * Evaluate how many parallel operations are possible given the machine's energy pool.
@@ -57,7 +56,6 @@ export const gtParallelModifier: IMachineModifier = {
       defaultValue: '4',
     },
   ],
-  renderBody: ParallelCardBody,
   evaluate: (ctx: PipelineContext, uiState: Record<string, unknown>) => {
     const baseEu = gtEuPerTick(ctx.baseline.utilityInputs, ctx.baseline.durationSeconds, ctx.units)
     const result = evaluateGtParallel({ ...uiState, energyHatches: ctx.hardwareSpecs.energyHatches }, baseEu)
@@ -70,7 +68,7 @@ export const gtParallelModifier: IMachineModifier = {
 
     const p = result.actualParallel
     const mul = (r: Resource) =>
-      r.scaling === 'per_running_machine' || r.scaling === 'per_installed_machine' || (r.consumable === false && r.scaling !== 'per_parallel_slot') ? { ...r } : { ...r, amount: r.amount * p }
+      r.scaling === 'per_running_machine' || r.scaling === 'per_installed_machine' || (r.consumable === false && r.occupancy_basis !== 'per_parallel_slot' && r.scaling !== 'per_parallel_slot') ? { ...r } : { ...r, amount: r.amount * p }
 
     return {
       actualParallel: p,
