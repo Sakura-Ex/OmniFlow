@@ -5,6 +5,8 @@ import { useSettingsStore } from '@/features/settings/settings.store'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 import { captureDocument } from '@/features/file-io/captureDocument'
 import { useDocumentSession as createDocumentSession } from './useDocumentSession'
+import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
+import { captureSnapshot, restoreSnapshot } from '@/features/canvas/hooks/useUndoRedo'
 
 const lifecycle = vi.hoisted(() => ({ cleanups: [] as (() => void)[] }))
 vi.mock('react', async (original) => ({
@@ -24,6 +26,7 @@ const confirm = vi.fn(() => false)
 beforeEach(() => {
   useCanvasStore.getState().resetCanvas()
   useRecipeStore.setState({ recipes: {} })
+  useNodeDisplayStore.setState({ mode: 'compact' })
   events.clear()
   confirm.mockReset().mockReturnValue(false)
   vi.stubGlobal('window', {
@@ -87,6 +90,24 @@ it('does not clear newer edits when an earlier captured save finishes', () => {
   session.markSaved(savedSnapshot)
   expect(useCanvasStore.getState().isDirty).toBe(true)
   expect(session.confirmReplace()).toBe(false)
+})
+
+it('tracks display preferences as unsaved without changing model history or retained results', () => {
+  const session = createDocumentSession()
+  useCanvasStore.setState({ calculationStatus: 'success', systemInputs: { ore: 10 } })
+  const modelBefore = captureSnapshot([], [])
+  const canvasBefore = useCanvasStore.getState()
+  useNodeDisplayStore.getState().selectMode('detailed')
+  expect(useCanvasStore.getState()).toEqual({ ...canvasBefore, isDirty: true })
+  expect(captureSnapshot([], [])).toEqual(modelBefore)
+  session.markSaved(captureDocument())
+  expect(useCanvasStore.getState().isDirty).toBe(false)
+  useNodeDisplayStore.getState().selectMode('standard')
+  restoreSnapshot(modelBefore)
+  expect(useNodeDisplayStore.getState().mode).toBe('standard')
+  expect(useCanvasStore.getState().isDirty).toBe(true)
+  useNodeDisplayStore.getState().selectMode('detailed')
+  expect(useCanvasStore.getState().isDirty).toBe(false)
 })
 
 it('removes leave listeners and document subscriptions when the session ends', () => {

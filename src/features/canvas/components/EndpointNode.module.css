@@ -3,27 +3,42 @@
 .demand { --endpoint-color: var(--target); }
 :global(.react-flow__node.selected) .card { border-color: var(--endpoint-color); box-shadow: 0 0 0 2px color-mix(in srgb, var(--endpoint-color) 15%, transparent); }
 .header { composes: header from './node-chrome.module.css'; border-bottom-color: color-mix(in srgb, var(--endpoint-color) 20%, var(--border)); }
-.title { flex: 0 0 auto; margin-right: auto; font-size: 11px; font-weight: 600; color: var(--endpoint-color); }
+.title { flex: 0 0 42px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: auto; font-size: 11px; font-weight: 600; color: var(--endpoint-color); }
 .mode { width: 126px; min-width: 0; }
 .iconButton { composes: iconButton from './node-chrome.module.css'; }
 .iconButton:hover { border-color: var(--endpoint-color); color: var(--endpoint-color); }
 .ports { list-style: none; padding: 3px 0 7px; margin: 0; }
 .categoryHeading { composes: categoryHeading from './shared-port.module.css'; }
 .categoryStart { margin-top: 4px; }
-.port { position: relative; display: flex; align-items: center; gap: 10px; height: 46px; box-sizing: border-box; padding: 3px 12px; }
+.port { position: relative; display: flex; align-items: center; gap: 10px; height: 70px; box-sizing: border-box; padding: 3px 12px; }
+.card[data-display-mode='compact'].supply .port { height: 46px; }
+.card[data-display-mode='detailed'] .port { height: 84px; }
+.header { gap: 5px; }
+.nameArea { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 3px; }
+.nameArea .name { display: block; flex: none; min-width: 0; max-width: 100%; }
+.identity { font-size: 9px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sourceRow .nameArea { order: 2; text-align: right; }
+.targetRow .nameArea { order: 1; }
 .name { flex: 1 1 auto; min-width: 32px; max-width: 200px; font-size: 12px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sourceRow .name { order: 2; text-align: right; }
 .sourceRow .quantity { order: 1; }
 .targetRow .name { order: 1; }
 .targetRow .quantity { order: 2; }
-.quantity { display: grid; grid-template-columns: 70px 42px; grid-template-rows: 26px 12px; align-items: center; gap: 0 4px; flex: 0 0 116px; font-variant-numeric: tabular-nums; }
+.quantity { display: grid; grid-template-columns: 98px 42px; grid-template-rows: 26px 12px; align-items: center; gap: 0 4px; flex: 0 0 144px; font-variant-numeric: tabular-nums; }
+.field { display: grid; grid-template-columns: 24px 70px; gap: 4px; align-items: center; }
+.field > span { font-size: 9px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.withActual { grid-template-rows: 18px 26px 12px; }
+.actual { grid-column: 1 / -1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; font-weight: 650; text-align: right; }
 .quantity input { width: 70px; min-width: 48px; height: 26px; padding: 2px 5px; border: 1px solid var(--border-strong); border-radius: 5px; background: var(--input-bg); color: var(--text-strong); font: inherit; font-size: 12px; text-align: right; }
 .quantity input[readonly] { border-style: dashed; background: var(--panel-soft); color: var(--muted); }
+.demand .quantity input[readonly] { font-size: 14px; font-weight: 650; color: var(--text-strong); }
 .quantity input:focus-visible { outline: 2px solid var(--endpoint-color); outline-offset: 2px; }
 .unit { max-width: 76px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; color: var(--muted); }
-.shortage { grid-column: 1 / -1; overflow: hidden; text-overflow: ellipsis; color: var(--danger); font-size: 10px; white-space: nowrap; }
+.shortage { grid-column: 1 / -1; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: 10px; white-space: nowrap; }
+.shortage[data-outcome='met'] { color: var(--success); }
+.shortage[data-outcome='unmet'] { color: var(--danger); }
 .insufficient input { border-color: var(--danger); }
 .handle { background: var(--port-color) !important; border: 2px solid var(--panel) !important; width: 10px !important; height: 10px !important; top: 50% !important; }
 
-.mode { flex: 0 0 126px; }
+.mode { flex: 0 1 126px; }
 .quantity input { box-sizing: border-box; }

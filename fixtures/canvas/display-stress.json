@@ -1,0 +1,4789 @@
+{
+  "version": 5,
+  "networkConfiguration": {
+    "version": 1,
+    "ports": {
+      "[\"line-source\",\"s\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 8
+        }
+      },
+      "[\"line-target\",\"t\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "delivery",
+          "mode": "maximize",
+          "amount": 0,
+          "capacity": null,
+          "objective": {
+            "priority": 0,
+            "weight": 1,
+            "scale": 1
+          }
+        }
+      },
+      "[\"dense\",\"in-1\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-1\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      },
+      "[\"dense\",\"in-2\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-2\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": 50
+        }
+      },
+      "[\"dense\",\"in-3\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-3\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      },
+      "[\"dense\",\"in-4\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-4\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": 50
+        }
+      },
+      "[\"dense\",\"in-5\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-5\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      },
+      "[\"dense\",\"in-6\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-6\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": 50
+        }
+      },
+      "[\"dense\",\"in-7\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-7\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      },
+      "[\"dense\",\"in-8\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-8\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": 50
+        }
+      },
+      "[\"dense\",\"in-9\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-9\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      },
+      "[\"dense\",\"in-10\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-10\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": 50
+        }
+      },
+      "[\"dense\",\"in-11\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-11\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      },
+      "[\"dense\",\"in-12\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-12\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": 50
+        }
+      },
+      "[\"dense\",\"in-13\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-13\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      },
+      "[\"dense\",\"utility-in\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"utility-out\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      },
+      "[\"dense-source\",\"feed\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 10
+        }
+      },
+      "[\"dense-source\",\"state\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "state",
+          "actual": 500,
+          "minimum": 400,
+          "maximum": 600
+        }
+      },
+      "[\"dense-target\",\"product\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "delivery",
+          "mode": "exact",
+          "amount": 2,
+          "capacity": null
+        }
+      },
+      "[\"dense-target\",\"state\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "state",
+          "actual": 500,
+          "minimum": 400,
+          "maximum": 600
+        }
+      },
+      "[\"split-s\",\"s\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 10
+        }
+      },
+      "[\"split-t\",\"t\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "delivery",
+          "mode": "maximize",
+          "amount": 0,
+          "capacity": null,
+          "objective": {
+            "priority": 0,
+            "weight": 1,
+            "scale": 1
+          }
+        }
+      },
+      "[\"split-u\",\"u\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "delivery",
+          "mode": "maximize",
+          "amount": 0,
+          "capacity": null,
+          "objective": {
+            "priority": 0,
+            "weight": 1,
+            "scale": 1
+          }
+        }
+      },
+      "[\"dense\",\"capacity\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "capacity",
+          "available": 100
+        }
+      }
+    },
+    "machines": {
+      "dense": {
+        "installed": 4,
+        "operatingUpper": 3,
+        "existing": 1
+      }
+    },
+    "minimizeMachines": {
+      "priority": 10,
+      "weight": 1,
+      "scale": 1
+    }
+  },
+  "pluginApiVersion": 2,
+  "environment": {
+    "ticksPerSecond": 20,
+    "definitions": [
+      {
+        "id": "s",
+        "symbol": "s"
+      },
+      {
+        "id": "g",
+        "symbol": "g"
+      },
+      {
+        "id": "m",
+        "symbol": "m"
+      },
+      {
+        "id": "L",
+        "symbol": "L"
+      },
+      {
+        "id": "J",
+        "symbol": "J"
+      },
+      {
+        "id": "EU",
+        "symbol": "EU"
+      },
+      {
+        "id": "RF",
+        "symbol": "RF"
+      },
+      {
+        "id": "HU",
+        "symbol": "HU"
+      },
+      {
+        "id": "su",
+        "symbol": "su"
+      },
+      {
+        "id": "RPM",
+        "symbol": "RPM"
+      },
+      {
+        "id": "mB",
+        "symbol": "mB"
+      },
+      {
+        "id": "item",
+        "symbol": "个"
+      },
+      {
+        "id": "tick",
+        "symbol": "t",
+        "scale": 0.05,
+        "derived": [
+          {
+            "baseUnitId": "s",
+            "exponent": 1
+          }
+        ]
+      },
+      {
+        "id": "W",
+        "symbol": "W",
+        "nativeRate": true,
+        "derived": [
+          {
+            "baseUnitId": "J",
+            "exponent": 1
+          },
+          {
+            "baseUnitId": "s",
+            "exponent": -1
+          }
+        ]
+      }
+    ],
+    "prefixes": [
+      {
+        "id": "k",
+        "symbol": "k",
+        "scale": 1000
+      },
+      {
+        "id": "milli",
+        "symbol": "m",
+        "scale": 0.001
+      },
+      {
+        "id": "micro",
+        "symbol": "µ",
+        "scale": 0.000001
+      },
+      {
+        "id": "mega",
+        "symbol": "M",
+        "scale": 1000000
+      }
+    ]
+  },
+  "registry": {
+    "categories": {
+      "item": {
+        "id": "item",
+        "displayName": "物品",
+        "base_unit": "个",
+        "themeColor": "#e5e7eb",
+        "preferred_time_base": "per_cycle"
+      },
+      "fluid": {
+        "id": "fluid",
+        "displayName": "流体",
+        "base_unit": "mB",
+        "themeColor": "#4ddcff",
+        "preferred_time_base": "per_cycle"
+      },
+      "energy": {
+        "id": "energy",
+        "displayName": "能源",
+        "base_unit": "EU",
+        "themeColor": "#f59e0b",
+        "preferred_time_base": "rate_per_tick"
+      },
+      "stress": {
+        "id": "stress",
+        "displayName": "应力",
+        "base_unit": "su",
+        "themeColor": "#c084fc",
+        "preferred_time_base": "per_cycle"
+      },
+      "heat": {
+        "id": "heat",
+        "displayName": "热能",
+        "base_unit": "HU",
+        "themeColor": "#fb7185",
+        "preferred_time_base": "rate_per_tick"
+      }
+    },
+    "overrides": {
+      "stress:create_su": {
+        "unit_override": "RPM"
+      },
+      "energy:thermal_rf": {
+        "unit_override": "RF"
+      }
+    },
+    "entries": {
+      "item:精密输入-0-ultra-long-feedstock-name": {
+        "fullId": "item:精密输入-0-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 0 / Precision feedstock with multilingual label"
+      },
+      "item:最终产品-0-extended-product-description": {
+        "fullId": "item:最终产品-0-extended-product-description",
+        "displayName": "多类别产出 0 / High-purity engineered product"
+      },
+      "item:精密输入-1-ultra-long-feedstock-name": {
+        "fullId": "item:精密输入-1-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 1 / Precision feedstock with multilingual label"
+      },
+      "item:最终产品-1-extended-product-description": {
+        "fullId": "item:最终产品-1-extended-product-description",
+        "displayName": "多类别产出 1 / High-purity engineered product"
+      },
+      "item:精密输入-2-ultra-long-feedstock-name": {
+        "fullId": "item:精密输入-2-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 2 / Precision feedstock with multilingual label"
+      },
+      "item:最终产品-2-extended-product-description": {
+        "fullId": "item:最终产品-2-extended-product-description",
+        "displayName": "多类别产出 2 / High-purity engineered product"
+      },
+      "item:精密输入-3-ultra-long-feedstock-name": {
+        "fullId": "item:精密输入-3-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 3 / Precision feedstock with multilingual label"
+      },
+      "item:最终产品-3-extended-product-description": {
+        "fullId": "item:最终产品-3-extended-product-description",
+        "displayName": "多类别产出 3 / High-purity engineered product"
+      },
+      "item:精密输入-4-ultra-long-feedstock-name": {
+        "fullId": "item:精密输入-4-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 4 / Precision feedstock with multilingual label"
+      },
+      "item:最终产品-4-extended-product-description": {
+        "fullId": "item:最终产品-4-extended-product-description",
+        "displayName": "多类别产出 4 / High-purity engineered product"
+      },
+      "item:精密输入-5-ultra-long-feedstock-name": {
+        "fullId": "item:精密输入-5-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 5 / Precision feedstock with multilingual label"
+      },
+      "item:最终产品-5-extended-product-description": {
+        "fullId": "item:最终产品-5-extended-product-description",
+        "displayName": "多类别产出 5 / High-purity engineered product"
+      },
+      "fluid:精密输入-6-ultra-long-feedstock-name": {
+        "fullId": "fluid:精密输入-6-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 6 / Precision feedstock with multilingual label"
+      },
+      "fluid:最终产品-6-extended-product-description": {
+        "fullId": "fluid:最终产品-6-extended-product-description",
+        "displayName": "多类别产出 6 / High-purity engineered product"
+      },
+      "fluid:精密输入-7-ultra-long-feedstock-name": {
+        "fullId": "fluid:精密输入-7-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 7 / Precision feedstock with multilingual label"
+      },
+      "fluid:最终产品-7-extended-product-description": {
+        "fullId": "fluid:最终产品-7-extended-product-description",
+        "displayName": "多类别产出 7 / High-purity engineered product"
+      },
+      "fluid:精密输入-8-ultra-long-feedstock-name": {
+        "fullId": "fluid:精密输入-8-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 8 / Precision feedstock with multilingual label"
+      },
+      "fluid:最终产品-8-extended-product-description": {
+        "fullId": "fluid:最终产品-8-extended-product-description",
+        "displayName": "多类别产出 8 / High-purity engineered product"
+      },
+      "fluid:精密输入-9-ultra-long-feedstock-name": {
+        "fullId": "fluid:精密输入-9-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 9 / Precision feedstock with multilingual label"
+      },
+      "fluid:最终产品-9-extended-product-description": {
+        "fullId": "fluid:最终产品-9-extended-product-description",
+        "displayName": "多类别产出 9 / High-purity engineered product"
+      },
+      "fluid:精密输入-10-ultra-long-feedstock-name": {
+        "fullId": "fluid:精密输入-10-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 10 / Precision feedstock with multilingual label"
+      },
+      "fluid:最终产品-10-extended-product-description": {
+        "fullId": "fluid:最终产品-10-extended-product-description",
+        "displayName": "多类别产出 10 / High-purity engineered product"
+      },
+      "energy:精密输入-11-ultra-long-feedstock-name": {
+        "fullId": "energy:精密输入-11-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 11 / Precision feedstock with multilingual label"
+      },
+      "energy:最终产品-11-extended-product-description": {
+        "fullId": "energy:最终产品-11-extended-product-description",
+        "displayName": "多类别产出 11 / High-purity engineered product"
+      },
+      "energy:精密输入-12-ultra-long-feedstock-name": {
+        "fullId": "energy:精密输入-12-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 12 / Precision feedstock with multilingual label"
+      },
+      "energy:最终产品-12-extended-product-description": {
+        "fullId": "energy:最终产品-12-extended-product-description",
+        "displayName": "多类别产出 12 / High-purity engineered product"
+      },
+      "energy:精密输入-13-ultra-long-feedstock-name": {
+        "fullId": "energy:精密输入-13-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 13 / Precision feedstock with multilingual label"
+      },
+      "energy:最终产品-13-extended-product-description": {
+        "fullId": "energy:最终产品-13-extended-product-description",
+        "displayName": "多类别产出 13 / High-purity engineered product"
+      }
+    }
+  },
+  "ui": {
+    "nodes": [
+      {
+        "id": "line-source",
+        "type": "sourceNode",
+        "position": {
+          "x": 0,
+          "y": 1900
+        },
+        "data": {
+          "ports": [
+            {
+              "portId": "s",
+              "id": "stage-0",
+              "category": "item",
+              "amount": 8,
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "routing_mode": "wired"
+            }
+          ],
+          "mode": "limit"
+        }
+      },
+      {
+        "id": "line-0",
+        "type": "recipeNode",
+        "position": {
+          "x": 420,
+          "y": 1900
+        },
+        "data": {
+          "label": "Continuous precision production stage 1 — long machine name"
+        }
+      },
+      {
+        "id": "line-1",
+        "type": "recipeNode",
+        "position": {
+          "x": 850,
+          "y": 1900
+        },
+        "data": {
+          "label": "精密连续制造工序 2 · 长名称检查"
+        }
+      },
+      {
+        "id": "line-2",
+        "type": "recipeNode",
+        "position": {
+          "x": 1280,
+          "y": 1900
+        },
+        "data": {
+          "label": "Continuous precision production stage 3 — long machine name"
+        }
+      },
+      {
+        "id": "line-3",
+        "type": "recipeNode",
+        "position": {
+          "x": 1710,
+          "y": 1900
+        },
+        "data": {
+          "label": "精密连续制造工序 4 · 长名称检查"
+        }
+      },
+      {
+        "id": "line-4",
+        "type": "recipeNode",
+        "position": {
+          "x": 2140,
+          "y": 1900
+        },
+        "data": {
+          "label": "Continuous precision production stage 5 — long machine name"
+        }
+      },
+      {
+        "id": "line-5",
+        "type": "recipeNode",
+        "position": {
+          "x": 2570,
+          "y": 1900
+        },
+        "data": {
+          "label": "精密连续制造工序 6 · 长名称检查"
+        }
+      },
+      {
+        "id": "line-6",
+        "type": "recipeNode",
+        "position": {
+          "x": 3000,
+          "y": 1900
+        },
+        "data": {
+          "label": "Continuous precision production stage 7 — long machine name"
+        }
+      },
+      {
+        "id": "line-7",
+        "type": "recipeNode",
+        "position": {
+          "x": 3430,
+          "y": 1900
+        },
+        "data": {
+          "label": "精密连续制造工序 8 · 长名称检查"
+        }
+      },
+      {
+        "id": "line-8",
+        "type": "recipeNode",
+        "position": {
+          "x": 3430,
+          "y": 2340
+        },
+        "data": {
+          "label": "Continuous precision production stage 9 — long machine name"
+        }
+      },
+      {
+        "id": "line-9",
+        "type": "recipeNode",
+        "position": {
+          "x": 3000,
+          "y": 2340
+        },
+        "data": {
+          "label": "精密连续制造工序 10 · 长名称检查"
+        }
+      },
+      {
+        "id": "line-10",
+        "type": "recipeNode",
+        "position": {
+          "x": 2570,
+          "y": 2340
+        },
+        "data": {
+          "label": "Continuous precision production stage 11 — long machine name"
+        }
+      },
+      {
+        "id": "line-11",
+        "type": "recipeNode",
+        "position": {
+          "x": 2140,
+          "y": 2340
+        },
+        "data": {
+          "label": "精密连续制造工序 12 · 长名称检查"
+        }
+      },
+      {
+        "id": "line-12",
+        "type": "recipeNode",
+        "position": {
+          "x": 1710,
+          "y": 2340
+        },
+        "data": {
+          "label": "Continuous precision production stage 13 — long machine name"
+        }
+      },
+      {
+        "id": "line-13",
+        "type": "recipeNode",
+        "position": {
+          "x": 1280,
+          "y": 2340
+        },
+        "data": {
+          "label": "精密连续制造工序 14 · 长名称检查"
+        }
+      },
+      {
+        "id": "line-14",
+        "type": "recipeNode",
+        "position": {
+          "x": 850,
+          "y": 2340
+        },
+        "data": {
+          "label": "Continuous precision production stage 15 — long machine name"
+        }
+      },
+      {
+        "id": "line-15",
+        "type": "recipeNode",
+        "position": {
+          "x": 420,
+          "y": 2340
+        },
+        "data": {
+          "label": "精密连续制造工序 16 · 长名称检查"
+        }
+      },
+      {
+        "id": "line-16",
+        "type": "recipeNode",
+        "position": {
+          "x": 420,
+          "y": 2780
+        },
+        "data": {
+          "label": "Continuous precision production stage 17 — long machine name"
+        }
+      },
+      {
+        "id": "line-17",
+        "type": "recipeNode",
+        "position": {
+          "x": 850,
+          "y": 2780
+        },
+        "data": {
+          "label": "精密连续制造工序 18 · 长名称检查"
+        }
+      },
+      {
+        "id": "line-18",
+        "type": "recipeNode",
+        "position": {
+          "x": 1280,
+          "y": 2780
+        },
+        "data": {
+          "label": "Continuous precision production stage 19 — long machine name"
+        }
+      },
+      {
+        "id": "line-19",
+        "type": "recipeNode",
+        "position": {
+          "x": 1710,
+          "y": 2780
+        },
+        "data": {
+          "label": "精密连续制造工序 20 · 长名称检查"
+        }
+      },
+      {
+        "id": "line-20",
+        "type": "recipeNode",
+        "position": {
+          "x": 2140,
+          "y": 2780
+        },
+        "data": {
+          "label": "Continuous precision production stage 21 — long machine name"
+        }
+      },
+      {
+        "id": "line-21",
+        "type": "recipeNode",
+        "position": {
+          "x": 2570,
+          "y": 2780
+        },
+        "data": {
+          "label": "精密连续制造工序 22 · 长名称检查"
+        }
+      },
+      {
+        "id": "line-22",
+        "type": "recipeNode",
+        "position": {
+          "x": 3000,
+          "y": 2780
+        },
+        "data": {
+          "label": "Continuous precision production stage 23 — long machine name"
+        }
+      },
+      {
+        "id": "line-23",
+        "type": "recipeNode",
+        "position": {
+          "x": 3430,
+          "y": 2780
+        },
+        "data": {
+          "label": "精密连续制造工序 24 · 长名称检查"
+        }
+      },
+      {
+        "id": "line-24",
+        "type": "recipeNode",
+        "position": {
+          "x": 3430,
+          "y": 3220
+        },
+        "data": {
+          "label": "Continuous precision production stage 25 — long machine name"
+        }
+      },
+      {
+        "id": "line-25",
+        "type": "recipeNode",
+        "position": {
+          "x": 3000,
+          "y": 3220
+        },
+        "data": {
+          "label": "精密连续制造工序 26 · 长名称检查"
+        }
+      },
+      {
+        "id": "line-26",
+        "type": "recipeNode",
+        "position": {
+          "x": 2570,
+          "y": 3220
+        },
+        "data": {
+          "label": "Continuous precision production stage 27 — long machine name"
+        }
+      },
+      {
+        "id": "line-27",
+        "type": "recipeNode",
+        "position": {
+          "x": 2140,
+          "y": 3220
+        },
+        "data": {
+          "label": "精密连续制造工序 28 · 长名称检查"
+        }
+      },
+      {
+        "id": "line-28",
+        "type": "recipeNode",
+        "position": {
+          "x": 1710,
+          "y": 3220
+        },
+        "data": {
+          "label": "Continuous precision production stage 29 — long machine name"
+        }
+      },
+      {
+        "id": "line-29",
+        "type": "recipeNode",
+        "position": {
+          "x": 1280,
+          "y": 3220
+        },
+        "data": {
+          "label": "精密连续制造工序 30 · 长名称检查"
+        }
+      },
+      {
+        "id": "line-30",
+        "type": "recipeNode",
+        "position": {
+          "x": 850,
+          "y": 3220
+        },
+        "data": {
+          "label": "Continuous precision production stage 31 — long machine name"
+        }
+      },
+      {
+        "id": "line-31",
+        "type": "recipeNode",
+        "position": {
+          "x": 420,
+          "y": 3220
+        },
+        "data": {
+          "label": "精密连续制造工序 32 · 长名称检查"
+        }
+      },
+      {
+        "id": "line-target",
+        "type": "targetNode",
+        "position": {
+          "x": 0,
+          "y": 3220
+        },
+        "data": {
+          "ports": [
+            {
+              "portId": "t",
+              "id": "stage-32",
+              "category": "item",
+              "amount": 8,
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "routing_mode": "wired"
+            }
+          ],
+          "mode": "maximize"
+        }
+      },
+      {
+        "id": "dense",
+        "type": "recipeNode",
+        "position": {
+          "x": 600,
+          "y": 0
+        },
+        "data": {
+          "label": "多资源联合制造机 · Integrated multi-resource manufacturing / extended machine name"
+        }
+      },
+      {
+        "id": "dense-source",
+        "type": "sourceNode",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "data": {
+          "ports": [
+            {
+              "portId": "feed",
+              "id": "精密输入-0-ultra-long-feedstock-name",
+              "category": "item",
+              "amount": 10,
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "routing_mode": "wired"
+            },
+            {
+              "portId": "state",
+              "id": "温度状态 / Qualified temperature",
+              "category": "item",
+              "amount": 500,
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "routing_mode": "wired"
+            }
+          ],
+          "mode": "limit"
+        }
+      },
+      {
+        "id": "dense-target",
+        "type": "targetNode",
+        "position": {
+          "x": 1200,
+          "y": 0
+        },
+        "data": {
+          "ports": [
+            {
+              "portId": "product",
+              "id": "最终产品-0-extended-product-description",
+              "category": "item",
+              "amount": 2,
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "routing_mode": "wired"
+            },
+            {
+              "portId": "state",
+              "id": "交付状态 / Delivery qualification",
+              "category": "item",
+              "amount": 500,
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "routing_mode": "wired"
+            }
+          ],
+          "mode": "demand"
+        }
+      },
+      {
+        "id": "split-f",
+        "type": "splitterNode",
+        "position": {
+          "x": 2100,
+          "y": 100
+        },
+        "data": {
+          "input": {
+            "category": "item",
+            "id": "ore",
+            "amount": 1,
+            "portId": "in"
+          },
+          "outputs": [
+            {
+              "category": "item",
+              "id": "ore",
+              "amount": 1,
+              "portId": "a",
+              "ratio": 0.4
+            },
+            {
+              "category": "item",
+              "id": "ore",
+              "amount": 1,
+              "portId": "b",
+              "ratio": 0.6
+            }
+          ],
+          "capacity": 2.5
+        }
+      },
+      {
+        "id": "split-s",
+        "type": "sourceNode",
+        "position": {
+          "x": 1800,
+          "y": 100
+        },
+        "data": {
+          "ports": [
+            {
+              "category": "item",
+              "id": "ore",
+              "amount": 1,
+              "portId": "s"
+            }
+          ]
+        }
+      },
+      {
+        "id": "split-t",
+        "type": "targetNode",
+        "position": {
+          "x": 2430,
+          "y": 100
+        },
+        "data": {
+          "ports": [
+            {
+              "category": "item",
+              "id": "ore",
+              "amount": 1,
+              "portId": "t"
+            }
+          ]
+        }
+      },
+      {
+        "id": "split-u",
+        "type": "targetNode",
+        "position": {
+          "x": 2430,
+          "y": 400
+        },
+        "data": {
+          "ports": [
+            {
+              "category": "item",
+              "id": "ore",
+              "amount": 1,
+              "portId": "u"
+            }
+          ]
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-0",
+        "source": "line-source",
+        "sourceHandle": "s",
+        "target": "line-0",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-1",
+        "source": "line-0",
+        "sourceHandle": "out",
+        "target": "line-1",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-2",
+        "source": "line-1",
+        "sourceHandle": "out",
+        "target": "line-2",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-3",
+        "source": "line-2",
+        "sourceHandle": "out",
+        "target": "line-3",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-4",
+        "source": "line-3",
+        "sourceHandle": "out",
+        "target": "line-4",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-5",
+        "source": "line-4",
+        "sourceHandle": "out",
+        "target": "line-5",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-6",
+        "source": "line-5",
+        "sourceHandle": "out",
+        "target": "line-6",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-7",
+        "source": "line-6",
+        "sourceHandle": "out",
+        "target": "line-7",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-8",
+        "source": "line-7",
+        "sourceHandle": "out",
+        "target": "line-8",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-9",
+        "source": "line-8",
+        "sourceHandle": "out",
+        "target": "line-9",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-10",
+        "source": "line-9",
+        "sourceHandle": "out",
+        "target": "line-10",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-11",
+        "source": "line-10",
+        "sourceHandle": "out",
+        "target": "line-11",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-12",
+        "source": "line-11",
+        "sourceHandle": "out",
+        "target": "line-12",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-13",
+        "source": "line-12",
+        "sourceHandle": "out",
+        "target": "line-13",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-14",
+        "source": "line-13",
+        "sourceHandle": "out",
+        "target": "line-14",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-15",
+        "source": "line-14",
+        "sourceHandle": "out",
+        "target": "line-15",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-16",
+        "source": "line-15",
+        "sourceHandle": "out",
+        "target": "line-16",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-17",
+        "source": "line-16",
+        "sourceHandle": "out",
+        "target": "line-17",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-18",
+        "source": "line-17",
+        "sourceHandle": "out",
+        "target": "line-18",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-19",
+        "source": "line-18",
+        "sourceHandle": "out",
+        "target": "line-19",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-20",
+        "source": "line-19",
+        "sourceHandle": "out",
+        "target": "line-20",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-21",
+        "source": "line-20",
+        "sourceHandle": "out",
+        "target": "line-21",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-22",
+        "source": "line-21",
+        "sourceHandle": "out",
+        "target": "line-22",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-23",
+        "source": "line-22",
+        "sourceHandle": "out",
+        "target": "line-23",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-24",
+        "source": "line-23",
+        "sourceHandle": "out",
+        "target": "line-24",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-25",
+        "source": "line-24",
+        "sourceHandle": "out",
+        "target": "line-25",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-26",
+        "source": "line-25",
+        "sourceHandle": "out",
+        "target": "line-26",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-27",
+        "source": "line-26",
+        "sourceHandle": "out",
+        "target": "line-27",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-28",
+        "source": "line-27",
+        "sourceHandle": "out",
+        "target": "line-28",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-29",
+        "source": "line-28",
+        "sourceHandle": "out",
+        "target": "line-29",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-30",
+        "source": "line-29",
+        "sourceHandle": "out",
+        "target": "line-30",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-31",
+        "source": "line-30",
+        "sourceHandle": "out",
+        "target": "line-31",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-32",
+        "source": "line-31",
+        "sourceHandle": "out",
+        "target": "line-target",
+        "targetHandle": "t"
+      },
+      {
+        "id": "edge-33",
+        "source": "dense-source",
+        "sourceHandle": "feed",
+        "target": "dense",
+        "targetHandle": "in-0"
+      },
+      {
+        "id": "edge-34",
+        "source": "dense",
+        "sourceHandle": "out-0",
+        "target": "dense-target",
+        "targetHandle": "product"
+      },
+      {
+        "id": "edge-35",
+        "source": "split-s",
+        "sourceHandle": "s",
+        "target": "split-f",
+        "targetHandle": "in"
+      },
+      {
+        "id": "edge-36",
+        "source": "split-f",
+        "sourceHandle": "a",
+        "target": "split-t",
+        "targetHandle": "t"
+      },
+      {
+        "id": "edge-37",
+        "source": "split-f",
+        "sourceHandle": "b",
+        "target": "split-u",
+        "targetHandle": "u"
+      }
+    ],
+    "nodeDisplayMode": "compact"
+  },
+  "domain": {
+    "recipes": {
+      "line-0": {
+        "recipe_id": "line-0",
+        "machine_name": "Continuous precision production stage 1 — long machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-0",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-1",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-0",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-1",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-1": {
+        "recipe_id": "line-1",
+        "machine_name": "精密连续制造工序 2 · 长名称检查",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-1",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-2",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-1",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-2",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-2": {
+        "recipe_id": "line-2",
+        "machine_name": "Continuous precision production stage 3 — long machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-2",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-3",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-2",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-3",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-3": {
+        "recipe_id": "line-3",
+        "machine_name": "精密连续制造工序 4 · 长名称检查",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-3",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-4",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-3",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-4",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-4": {
+        "recipe_id": "line-4",
+        "machine_name": "Continuous precision production stage 5 — long machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-4",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-5",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-4",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-5",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-5": {
+        "recipe_id": "line-5",
+        "machine_name": "精密连续制造工序 6 · 长名称检查",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-5",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-6",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-5",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-6",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-6": {
+        "recipe_id": "line-6",
+        "machine_name": "Continuous precision production stage 7 — long machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-6",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-7",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-6",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-7",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-7": {
+        "recipe_id": "line-7",
+        "machine_name": "精密连续制造工序 8 · 长名称检查",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-7",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-8",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-7",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-8",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-8": {
+        "recipe_id": "line-8",
+        "machine_name": "Continuous precision production stage 9 — long machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-8",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-9",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-8",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-9",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-9": {
+        "recipe_id": "line-9",
+        "machine_name": "精密连续制造工序 10 · 长名称检查",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-9",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-10",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-9",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-10",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-10": {
+        "recipe_id": "line-10",
+        "machine_name": "Continuous precision production stage 11 — long machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-10",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-11",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-10",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-11",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-11": {
+        "recipe_id": "line-11",
+        "machine_name": "精密连续制造工序 12 · 长名称检查",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-11",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-12",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-11",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-12",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-12": {
+        "recipe_id": "line-12",
+        "machine_name": "Continuous precision production stage 13 — long machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-12",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-13",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-12",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-13",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-13": {
+        "recipe_id": "line-13",
+        "machine_name": "精密连续制造工序 14 · 长名称检查",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-13",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-14",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-13",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-14",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-14": {
+        "recipe_id": "line-14",
+        "machine_name": "Continuous precision production stage 15 — long machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-14",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-15",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-14",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-15",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-15": {
+        "recipe_id": "line-15",
+        "machine_name": "精密连续制造工序 16 · 长名称检查",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-15",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-16",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-15",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-16",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-16": {
+        "recipe_id": "line-16",
+        "machine_name": "Continuous precision production stage 17 — long machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-16",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-17",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-16",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-17",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-17": {
+        "recipe_id": "line-17",
+        "machine_name": "精密连续制造工序 18 · 长名称检查",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-17",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-18",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-17",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-18",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-18": {
+        "recipe_id": "line-18",
+        "machine_name": "Continuous precision production stage 19 — long machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-18",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-19",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-18",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-19",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-19": {
+        "recipe_id": "line-19",
+        "machine_name": "精密连续制造工序 20 · 长名称检查",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-19",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-20",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-19",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-20",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-20": {
+        "recipe_id": "line-20",
+        "machine_name": "Continuous precision production stage 21 — long machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-20",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-21",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-20",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-21",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-21": {
+        "recipe_id": "line-21",
+        "machine_name": "精密连续制造工序 22 · 长名称检查",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-21",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-22",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-21",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-22",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-22": {
+        "recipe_id": "line-22",
+        "machine_name": "Continuous precision production stage 23 — long machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-22",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-23",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-22",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-23",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-23": {
+        "recipe_id": "line-23",
+        "machine_name": "精密连续制造工序 24 · 长名称检查",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-23",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-24",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-23",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-24",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-24": {
+        "recipe_id": "line-24",
+        "machine_name": "Continuous precision production stage 25 — long machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-24",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-25",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-24",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-25",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-25": {
+        "recipe_id": "line-25",
+        "machine_name": "精密连续制造工序 26 · 长名称检查",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-25",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-26",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-25",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-26",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-26": {
+        "recipe_id": "line-26",
+        "machine_name": "Continuous precision production stage 27 — long machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-26",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-27",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-26",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-27",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-27": {
+        "recipe_id": "line-27",
+        "machine_name": "精密连续制造工序 28 · 长名称检查",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-27",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-28",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-27",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-28",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-28": {
+        "recipe_id": "line-28",
+        "machine_name": "Continuous precision production stage 29 — long machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-28",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-29",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-28",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-29",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-29": {
+        "recipe_id": "line-29",
+        "machine_name": "精密连续制造工序 30 · 长名称检查",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-29",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-30",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-29",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-30",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-30": {
+        "recipe_id": "line-30",
+        "machine_name": "Continuous precision production stage 31 — long machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-30",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-31",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-30",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-31",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "line-31": {
+        "recipe_id": "line-31",
+        "machine_name": "精密连续制造工序 32 · 长名称检查",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in",
+            "id": "stage-31",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out",
+            "id": "stage-32",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in",
+            "id": "stage-31",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out",
+            "id": "stage-32",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [],
+        "base_utility_outputs": [],
+        "base_duration_seconds": 1,
+        "active_modifiers": [],
+        "hardware_specs": {},
+        "mode": "auto"
+      },
+      "dense": {
+        "recipe_id": "dense",
+        "machine_name": "多资源联合制造机 · Integrated multi-resource manufacturing / extended machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in-0",
+            "id": "精密输入-0-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-1",
+            "id": "精密输入-1-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-2",
+            "id": "精密输入-2-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.2,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-3",
+            "id": "精密输入-3-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.3,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-4",
+            "id": "精密输入-4-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.4,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-5",
+            "id": "精密输入-5-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.5,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-6",
+            "id": "精密输入-6-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 1.6,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-7",
+            "id": "精密输入-7-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 1.7,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-8",
+            "id": "精密输入-8-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 1.8,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-9",
+            "id": "精密输入-9-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 1.9,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-10",
+            "id": "精密输入-10-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 2,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-11",
+            "id": "精密输入-11-ultra-long-feedstock-name",
+            "category": "energy",
+            "amount": 2.1,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-12",
+            "id": "精密输入-12-ultra-long-feedstock-name",
+            "category": "energy",
+            "amount": 2.2,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-13",
+            "id": "精密输入-13-ultra-long-feedstock-name",
+            "category": "energy",
+            "amount": 2.3,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "capacity",
+            "id": "厂务容量 / Shared service capacity",
+            "category": "item",
+            "amount": 2,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out-0",
+            "id": "最终产品-0-extended-product-description",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-1",
+            "id": "最终产品-1-extended-product-description",
+            "category": "item",
+            "amount": 1.05,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-2",
+            "id": "最终产品-2-extended-product-description",
+            "category": "item",
+            "amount": 1.1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-3",
+            "id": "最终产品-3-extended-product-description",
+            "category": "item",
+            "amount": 1.15,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-4",
+            "id": "最终产品-4-extended-product-description",
+            "category": "item",
+            "amount": 1.2,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-5",
+            "id": "最终产品-5-extended-product-description",
+            "category": "item",
+            "amount": 1.25,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-6",
+            "id": "最终产品-6-extended-product-description",
+            "category": "fluid",
+            "amount": 1.3,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-7",
+            "id": "最终产品-7-extended-product-description",
+            "category": "fluid",
+            "amount": 1.35,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-8",
+            "id": "最终产品-8-extended-product-description",
+            "category": "fluid",
+            "amount": 1.4,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-9",
+            "id": "最终产品-9-extended-product-description",
+            "category": "fluid",
+            "amount": 1.45,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-10",
+            "id": "最终产品-10-extended-product-description",
+            "category": "fluid",
+            "amount": 1.5,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-11",
+            "id": "最终产品-11-extended-product-description",
+            "category": "energy",
+            "amount": 1.55,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-12",
+            "id": "最终产品-12-extended-product-description",
+            "category": "energy",
+            "amount": 1.6,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-13",
+            "id": "最终产品-13-extended-product-description",
+            "category": "energy",
+            "amount": 1.65,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in-0",
+            "id": "精密输入-0-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-1",
+            "id": "精密输入-1-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-2",
+            "id": "精密输入-2-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.2,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-3",
+            "id": "精密输入-3-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.3,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-4",
+            "id": "精密输入-4-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.4,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-5",
+            "id": "精密输入-5-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.5,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-6",
+            "id": "精密输入-6-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 1.6,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-7",
+            "id": "精密输入-7-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 1.7,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-8",
+            "id": "精密输入-8-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 1.8,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-9",
+            "id": "精密输入-9-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 1.9,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-10",
+            "id": "精密输入-10-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 2,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-11",
+            "id": "精密输入-11-ultra-long-feedstock-name",
+            "category": "energy",
+            "amount": 2.1,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-12",
+            "id": "精密输入-12-ultra-long-feedstock-name",
+            "category": "energy",
+            "amount": 2.2,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-13",
+            "id": "精密输入-13-ultra-long-feedstock-name",
+            "category": "energy",
+            "amount": 2.3,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "capacity",
+            "id": "厂务容量 / Shared service capacity",
+            "category": "item",
+            "amount": 2,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out-0",
+            "id": "最终产品-0-extended-product-description",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-1",
+            "id": "最终产品-1-extended-product-description",
+            "category": "item",
+            "amount": 1.05,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-2",
+            "id": "最终产品-2-extended-product-description",
+            "category": "item",
+            "amount": 1.1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-3",
+            "id": "最终产品-3-extended-product-description",
+            "category": "item",
+            "amount": 1.15,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-4",
+            "id": "最终产品-4-extended-product-description",
+            "category": "item",
+            "amount": 1.2,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-5",
+            "id": "最终产品-5-extended-product-description",
+            "category": "item",
+            "amount": 1.25,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-6",
+            "id": "最终产品-6-extended-product-description",
+            "category": "fluid",
+            "amount": 1.3,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-7",
+            "id": "最终产品-7-extended-product-description",
+            "category": "fluid",
+            "amount": 1.35,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-8",
+            "id": "最终产品-8-extended-product-description",
+            "category": "fluid",
+            "amount": 1.4,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-9",
+            "id": "最终产品-9-extended-product-description",
+            "category": "fluid",
+            "amount": 1.45,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-10",
+            "id": "最终产品-10-extended-product-description",
+            "category": "fluid",
+            "amount": 1.5,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-11",
+            "id": "最终产品-11-extended-product-description",
+            "category": "energy",
+            "amount": 1.55,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-12",
+            "id": "最终产品-12-extended-product-description",
+            "category": "energy",
+            "amount": 1.6,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-13",
+            "id": "最终产品-13-extended-product-description",
+            "category": "energy",
+            "amount": 1.65,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [
+          {
+            "portId": "utility-in",
+            "id": "高温循环热源",
+            "category": "energy",
+            "amount": 2,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired",
+            "is_utility": true,
+            "utility_type": "heat"
+          }
+        ],
+        "base_utility_outputs": [
+          {
+            "portId": "utility-out",
+            "id": "余热回收",
+            "category": "energy",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired",
+            "is_utility": true,
+            "utility_type": "heat"
+          }
+        ],
+        "base_duration_seconds": 1,
+        "active_modifiers": [
+          {
+            "instance_id": "time-a",
+            "definition_id": "time_multiplier",
+            "uiState": {
+              "multiplier": 1.25
+            }
+          },
+          {
+            "instance_id": "efficiency-a",
+            "definition_id": "base_chassis_efficiency",
+            "uiState": {
+              "efficiency": 1.1
+            }
+          },
+          {
+            "instance_id": "time-b",
+            "definition_id": "time_multiplier",
+            "uiState": {
+              "multiplier": 0.8
+            }
+          },
+          {
+            "instance_id": "chance-a",
+            "definition_id": "chance_output",
+            "uiState": {
+              "targetResourceId": "最终产品-1-extended-product-description",
+              "probability": 0.75
+            }
+          },
+          {
+            "instance_id": "efficiency-b",
+            "definition_id": "base_chassis_efficiency",
+            "uiState": {
+              "efficiency": 1
+            }
+          }
+        ],
+        "hardware_specs": {},
+        "mode": "auto"
+      }
+    }
+  }
+}

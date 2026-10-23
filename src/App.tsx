@@ -25,6 +25,7 @@ import ReactFlow, {
 import { nodeTypes, edgeTypes } from '@/features/canvas/canvas.flowConfig'
 import { RecipeEditorModal } from '@/features/recipe/components/RecipeEditorModal'
 import { EndpointEditorModal } from '@/features/endpoint/components/EndpointEditorModal'
+import { CoreResultSummary } from '@/features/canvas/components/CoreResultSummary'
 import { SystemHUD } from '@/features/canvas/components/SystemHUD'
 import { RecipeEditorProvider } from '@/features/recipe/contexts/RecipeEditorContext'
 import { EndpointEditorProvider } from '@/features/canvas/contexts/EndpointEditorContext'
@@ -427,6 +428,7 @@ export default function App() {
           onOpenSettings={() => setShowSettings(true)}
         />
 
+        <CoreResultSummary />
         <PlanningEditorProvider value={openPlanning}>
         <BoundaryCommitProvider value={commitBoundary}>
         <BoundaryBatchCommitProvider value={commitBoundaries}>

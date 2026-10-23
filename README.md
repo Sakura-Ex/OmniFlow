@@ -107,7 +107,7 @@ The v2 calculation path, node editing, settings, Chinese/English interface and d
 - **Local services are required.** After dependencies are installed, editing and calculation can run without Internet access while the local frontend and backend are running. There is no installed offline/PWA mode, cloud synchronization or automatic crash recovery.
 - **Local use is the deployment baseline.** The backend has no user authentication. Public or multi-user hosting requires additional deployment controls.
 
-**Next stage:** compact, standard and detailed node display modes. Their design and prototype exist; the production application does not yet implement these modes. Further large-canvas interactions are tracked in the [interaction handbook](docs/interaction-design-handbook.md).
+Use **View → Node display → Compact / Standard / Detailed** to change the whole canvas. Compact is the first-use default; all modes retain resources, ports and editing controls. Details open without resizing nodes. The mode is saved with the document and does not invalidate calculations or enter model undo history. The core delivery/installation summary remains visible when detailed results are hidden. Further large-canvas interactions are tracked in the [interaction handbook](docs/interaction-design-handbook.md).
 
 ## Development and contribution
 

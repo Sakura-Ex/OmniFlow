@@ -2,6 +2,10 @@
 :global(.react-flow__node.selected) .node { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft), 0 6px 20px var(--shadow-color); }
 .header { composes: header from './node-chrome.module.css'; min-height: 36px; }
 .header strong { font-size: 13px; font-weight: 600; }
+.header strong { margin-right: auto; }
+.capacity { height: 22px; box-sizing: border-box; padding: 3px 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; color: var(--muted); }
+.node[data-display-mode='compact'] .inputPort { height: 35px; box-sizing: border-box; }
+.node:not([data-display-mode='compact']) .outputPort { flex-direction: column; gap: 3px; }
 .iconButton { composes: iconButton from './node-chrome.module.css'; }
 .flow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .input, .output { min-width: 0; padding: 9px 0 8px; }

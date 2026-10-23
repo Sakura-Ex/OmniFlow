@@ -8,6 +8,7 @@ import type { RecipeNodeData } from '@/common/types/recipe'
 import type { Resource } from '@/common/types/resource'
 import type { ResourceCategoryDef, ResourceEntry, UnitOverride } from '@/common/types/registry'
 import type { UnitSnapshot } from '@/common/types/units'
+import { NODE_DISPLAY_MODES, type NodeDisplayMode } from '@/common/types/nodeDisplay'
 import { UnitSnapshotSchema } from '@/common/schemas/units.schema'
 import { RecipeNodeDataSchema } from '@/common/schemas/recipe.schema'
 import { ResourceSchema } from '@/common/schemas/resource.schema'
@@ -27,7 +28,7 @@ export interface CanvasDocument {
     overrides: Record<string, UnitOverride>
     entries: Record<string, ResourceEntry>
   }
-  ui: { nodes: Node[]; edges: Edge[] }
+  ui: { nodes: Node[]; edges: Edge[]; nodeDisplayMode?: NodeDisplayMode }
   domain: { recipes: Record<string, RecipeNodeData> }
 }
 
@@ -46,7 +47,7 @@ const DocumentSchema = z.object({
   networkConfiguration: NetworkConfigurationSchema.optional(),
   environment: UnitSnapshotSchema.optional(),
   registry: RegistrySchema.optional(),
-  ui: z.object({ nodes: z.array(NodeSchema), edges: z.array(EdgeSchema) }),
+  ui: z.object({ nodes: z.array(NodeSchema), edges: z.array(EdgeSchema), nodeDisplayMode: z.enum(NODE_DISPLAY_MODES).optional() }),
   domain: z.object({ recipes: z.record(RecipeNodeDataSchema) }),
 }).superRefine((document, context) => {
   for (const group of ['nodes', 'edges'] as const) {
@@ -124,5 +125,5 @@ export function readCanvasDocument(input: unknown): { document: CanvasDocument; 
   const graph = normalizeGraph(nodes, parsed.ui.edges as Edge[], recipes, parsed.version < 4)
   const issues = graph.edges.filter((edge) => edge.data?.portIssue)
   if (issues.length) warnings.push(...issues.map((edge) => `连线 ${edge.id} 待修复：${edge.data.portIssue}`))
-  return { document: { version: 5, networkConfiguration: parsed.networkConfiguration ?? migrateNetworkConfiguration(graph.nodes, units.snapshot), pluginApiVersion: 2, environment: units.snapshot, registry, ui: { nodes: graph.nodes, edges: graph.edges }, domain: { recipes: graph.recipes } }, warnings }
+  return { document: { version: 5, networkConfiguration: parsed.networkConfiguration ?? migrateNetworkConfiguration(graph.nodes, units.snapshot), pluginApiVersion: 2, environment: units.snapshot, registry, ui: { nodes: graph.nodes, edges: graph.edges, nodeDisplayMode: parsed.ui.nodeDisplayMode }, domain: { recipes: graph.recipes } }, warnings }
 }

@@ -3,6 +3,8 @@ import type { ComponentProps, KeyboardEvent, RefObject } from 'react'
 import { Icon } from '@/common/components/Icon'
 import { useTranslation } from '@/common/i18n'
 import styles from './MenuBar.module.css'
+import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
+import { NODE_DISPLAY_MODES } from '@/common/types/nodeDisplay'
 
 /** Optional capabilities stay visibly unavailable until a real handler is supplied. */
 export type MenuBarProps = {
@@ -70,6 +72,8 @@ type MenuAction = {
   shortcut?: string
   disabled?: boolean
   checked?: boolean
+  radio?: boolean
+  groupLabel?: string
   danger?: boolean
 }
 
@@ -83,6 +87,7 @@ const menuIds = [...mainMenuIds, ...utilityMenuIds] as const
  */
 export function MenuBar(props: MenuBarProps) {
   const { t } = useTranslation()
+  const nodeDisplayMode = useNodeDisplayStore(state => state.mode)
   const triggers = useRef<Record<string, HTMLButtonElement | null>>({})
   const {
     openMenu, setOpenMenu, menuRef, handleMenuAction,
@@ -169,6 +174,13 @@ export function MenuBar(props: MenuBarProps) {
       null,
       { label: t('action.results'), icon: 'check', action: props.onToggleResults, checked: props.showResults },
       { label: t('action.edgeLabels'), icon: 'link', action: props.onToggleEdgeLabels, checked: props.showEdgeLabels },
+      null,
+      ...NODE_DISPLAY_MODES.map((mode, index): MenuAction => ({
+        label: t(`nodeDisplay.${mode}`), icon: 'selectAll', radio: true,
+        groupLabel: index === 0 ? t('nodeDisplay.label') : undefined,
+        checked: nodeDisplayMode === mode,
+        action: () => useNodeDisplayStore.getState().selectMode(mode),
+      })),
     ],
     settings: [],
     help: [
@@ -254,11 +266,12 @@ export function MenuBar(props: MenuBarProps) {
         >
           {menus[id].map((item, index) => item === null
             ? <div key={`divider-${index}`} role="separator" className={styles.divider} />
-            : <button
-                key={item.label}
+            : <div key={item.label} role="presentation">
+              {item.groupLabel && <div className={styles.groupLabel}>{item.groupLabel}</div>}
+              <button
                 className={`${styles.item} ${item.danger ? styles.danger : ''}`}
                 type="button"
-                role={item.checked === undefined ? 'menuitem' : 'menuitemcheckbox'}
+                role={item.radio ? 'menuitemradio' : item.checked === undefined ? 'menuitem' : 'menuitemcheckbox'}
                 aria-checked={item.checked}
                 disabled={!item.action || item.disabled}
                 onClick={item.action && !item.disabled ? () => {
@@ -269,7 +282,7 @@ export function MenuBar(props: MenuBarProps) {
                 <span className={styles.itemIcon}><Icon name={item.checked ? 'check' : item.icon} /></span>
                 <span className={styles.label}>{item.label}</span>
                 <span className={styles.hint}>{!item.action ? t('common.unavailable') : item.shortcut}</span>
-              </button>)}
+              </button></div>)}
         </div>
       )}
     </div>

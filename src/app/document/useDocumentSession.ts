@@ -7,6 +7,7 @@ import { useCanvasStore } from '@/features/canvas/canvas.store'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { useSettingsStore } from '@/features/settings/settings.store'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
+import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
 
 /** Coordinate saved identity and leave protection across all document owners.
  * @returns Save acknowledgement and explicit document-replacement guard.
@@ -22,7 +23,7 @@ export function useDocumentSession() {
     baseline.markSaved(captureDocument())
     update()
     const dispose = [useCanvasStore.subscribe(update), useRecipeStore.subscribe(update),
-      useSettingsStore.subscribe(update), useGlobalResourceTable.subscribe(update)]
+      useSettingsStore.subscribe(update), useGlobalResourceTable.subscribe(update), useNodeDisplayStore.subscribe(update)]
     const leave = (event: BeforeUnloadEvent) => {
       if (!baseline.isDirty(captureDocument())) return
       event.preventDefault()

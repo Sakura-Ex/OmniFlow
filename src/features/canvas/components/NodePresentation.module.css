@@ -1,0 +1,12 @@
+.detailsButton { composes: iconButton from './node-chrome.module.css'; }
+.dialog { position: fixed; box-sizing: border-box; width: min(620px, calc(100vw - 32px)); max-height: min(720px, calc(100vh - 48px)); padding: 0; border: 1px solid var(--border); border-radius: 12px; color: var(--text-strong); background: var(--panel); box-shadow: 0 16px 60px var(--shadow-color); font: inherit; }
+.dialog::backdrop { background: var(--overlay); }
+.detailsHeader { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: var(--panel); border-bottom: 1px solid var(--border); z-index: 1; }
+.detailsHeader strong { min-width: 0; overflow-wrap: anywhere; }
+.detailsBody { padding: 12px 16px; font-size: 12px; overflow-wrap: anywhere; }
+.detailsBody dl { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(0, 2fr); gap: 6px 12px; }
+.detailsBody dt { color: var(--muted); }
+.detailsBody dd { margin: 0; }
+.status { display: flex; align-items: center; gap: 5px; height: 22px; box-sizing: border-box; padding: 2px 12px; overflow: hidden; color: var(--muted); border-top: 1px solid var(--border); font-size: 10px; line-height: 16px; }
+.status span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.status[data-status='stale'], .status[data-status='error'] { color: var(--danger); }

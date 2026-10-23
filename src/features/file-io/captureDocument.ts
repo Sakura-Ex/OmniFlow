@@ -4,6 +4,7 @@ import { useSettingsStore } from '@/features/settings/settings.store'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 import { stripCalculationResults } from '@/common/utils/calculationState'
 import type { CanvasDocument } from './canvasDocument'
+import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
 
 /** Capture only persisted document content, excluding selection, measurements and results.
  * @returns An independent save/export snapshot from authoritative stores.
@@ -17,6 +18,7 @@ export function captureDocument(): CanvasDocument {
     environment: useSettingsStore.getState().units,
     registry: { categories, overrides, entries },
     ui: {
+      nodeDisplayMode: useNodeDisplayStore.getState().mode,
       nodes: canvas.nodes.map(node => {
         const { selected, dragging, width, height, positionAbsolute, ...editable } = node
         void selected; void dragging; void width; void height; void positionAbsolute

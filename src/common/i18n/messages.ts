@@ -1,4 +1,7 @@
+import { summaryEn, summaryZhCN } from './summaryMessages'
+import { recipeDisplayEn, recipeDisplayZhCN } from './recipeDisplayMessages'
 import { settingsEn, settingsZhCN } from './settingsMessages'
+import { nodeDisplayEn, nodeDisplayZhCN } from './nodeDisplayMessages'
 import { canvasEn, canvasZhCN } from './canvasMessages'
 import { editorEn, editorZhCN } from './editorMessages'
 import { shellEn, shellZhCN } from './shellMessages'
@@ -6,11 +9,14 @@ import { domainEn, domainZhCN } from './domainMessages'
 
 /** UI messages only; resource display names use their own explicit/category/ID cascade. */
 export const zhCN = {
+  ...nodeDisplayZhCN,
   ...settingsZhCN,
+  ...recipeDisplayZhCN,
   ...canvasZhCN,
   ...editorZhCN,
   ...shellZhCN,
   ...domainZhCN,
+  ...summaryZhCN,
   'menu.select': '选择',
   'menu.arrange': '整理',
   'action.selectUpstream': '选择全部上游',
@@ -101,11 +107,14 @@ export const zhCN = {
 export type UiTranslationKey = keyof typeof zhCN
 
 export const en: Record<UiTranslationKey, string> = {
+  ...nodeDisplayEn,
   ...settingsEn,
+  ...recipeDisplayEn,
   ...canvasEn,
   ...editorEn,
   ...shellEn,
   ...domainEn,
+  ...summaryEn,
   'menu.select': 'Select',
   'menu.arrange': 'Arrange',
   'action.selectUpstream': 'Select all upstream',

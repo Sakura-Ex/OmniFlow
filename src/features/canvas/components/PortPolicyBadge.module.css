@@ -1,0 +1,2 @@
+.badge { display: block; max-width: 100%; min-width: 0; height: 14px; line-height: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--accent); font-size: 9px; }
+.badge:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }

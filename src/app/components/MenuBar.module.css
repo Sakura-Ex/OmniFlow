@@ -111,6 +111,7 @@
 .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hint { min-width: 64px; color: var(--muted); font-size: 11px; text-align: right; white-space: nowrap; }
 .divider { height: 1px; margin: 4px 7px; background: var(--border); }
+.groupLabel { padding: 5px 8px; color: var(--muted); font-size: 11px; }
 .item:disabled { opacity: .43; cursor: default; }
 .danger:not(:disabled) { color: var(--danger, #d66a70); }
 .status {

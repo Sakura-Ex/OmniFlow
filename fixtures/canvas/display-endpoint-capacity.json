@@ -1,0 +1,1610 @@
+{
+  "version": 5,
+  "networkConfiguration": {
+    "version": 1,
+    "ports": {
+      "[\"dense\",\"in-1\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-1\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      },
+      "[\"dense\",\"in-2\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-2\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": 50
+        }
+      },
+      "[\"dense\",\"in-3\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-3\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      },
+      "[\"dense\",\"in-4\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-4\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": 50
+        }
+      },
+      "[\"dense\",\"in-5\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-5\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      },
+      "[\"dense\",\"in-6\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-6\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": 50
+        }
+      },
+      "[\"dense\",\"in-7\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-7\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      },
+      "[\"dense\",\"in-8\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-8\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": 50
+        }
+      },
+      "[\"dense\",\"in-9\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-9\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      },
+      "[\"dense\",\"in-10\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-10\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": 50
+        }
+      },
+      "[\"dense\",\"in-11\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-11\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      },
+      "[\"dense\",\"in-12\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-12\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": 50
+        }
+      },
+      "[\"dense\",\"in-13\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"out-13\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      },
+      "[\"dense\",\"utility-in\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 100
+        }
+      },
+      "[\"dense\",\"utility-out\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "spill",
+          "capacity": null
+        }
+      },
+      "[\"dense-source\",\"feed\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "source",
+          "capacity": 10
+        }
+      },
+      "[\"dense-source\",\"capacity\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "capacity",
+          "available": 100
+        }
+      },
+      "[\"dense-source\",\"state\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "state",
+          "actual": 500,
+          "minimum": 400,
+          "maximum": 600
+        }
+      },
+      "[\"dense-target\",\"product\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "flow"
+        },
+        "boundary": {
+          "kind": "delivery",
+          "mode": "exact",
+          "amount": 2,
+          "capacity": null
+        }
+      },
+      "[\"dense-target\",\"capacity\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "capacity",
+          "available": 100
+        }
+      },
+      "[\"dense-target\",\"state\"]": {
+        "scopeId": "document",
+        "busId": "default",
+        "semantics": {
+          "kind": "state",
+          "actual": 500,
+          "minimum": 400,
+          "maximum": 600
+        }
+      }
+    },
+    "machines": {
+      "dense": {
+        "installed": 4,
+        "operatingUpper": 3,
+        "existing": 1
+      }
+    },
+    "minimizeMachines": {
+      "priority": 10,
+      "weight": 1,
+      "scale": 1
+    }
+  },
+  "pluginApiVersion": 2,
+  "environment": {
+    "ticksPerSecond": 20,
+    "definitions": [
+      {
+        "id": "s",
+        "symbol": "s"
+      },
+      {
+        "id": "g",
+        "symbol": "g"
+      },
+      {
+        "id": "m",
+        "symbol": "m"
+      },
+      {
+        "id": "L",
+        "symbol": "L"
+      },
+      {
+        "id": "J",
+        "symbol": "J"
+      },
+      {
+        "id": "EU",
+        "symbol": "EU"
+      },
+      {
+        "id": "RF",
+        "symbol": "RF"
+      },
+      {
+        "id": "HU",
+        "symbol": "HU"
+      },
+      {
+        "id": "su",
+        "symbol": "su"
+      },
+      {
+        "id": "RPM",
+        "symbol": "RPM"
+      },
+      {
+        "id": "mB",
+        "symbol": "mB"
+      },
+      {
+        "id": "item",
+        "symbol": "个"
+      },
+      {
+        "id": "tick",
+        "symbol": "t",
+        "scale": 0.05,
+        "derived": [
+          {
+            "baseUnitId": "s",
+            "exponent": 1
+          }
+        ]
+      },
+      {
+        "id": "W",
+        "symbol": "W",
+        "nativeRate": true,
+        "derived": [
+          {
+            "baseUnitId": "J",
+            "exponent": 1
+          },
+          {
+            "baseUnitId": "s",
+            "exponent": -1
+          }
+        ]
+      }
+    ],
+    "prefixes": [
+      {
+        "id": "k",
+        "symbol": "k",
+        "scale": 1000
+      },
+      {
+        "id": "milli",
+        "symbol": "m",
+        "scale": 0.001
+      },
+      {
+        "id": "micro",
+        "symbol": "µ",
+        "scale": 0.000001
+      },
+      {
+        "id": "mega",
+        "symbol": "M",
+        "scale": 1000000
+      }
+    ]
+  },
+  "registry": {
+    "categories": {
+      "item": {
+        "id": "item",
+        "displayName": "物品",
+        "base_unit": "个",
+        "themeColor": "#e5e7eb",
+        "preferred_time_base": "per_cycle"
+      },
+      "fluid": {
+        "id": "fluid",
+        "displayName": "流体",
+        "base_unit": "mB",
+        "themeColor": "#4ddcff",
+        "preferred_time_base": "per_cycle"
+      },
+      "energy": {
+        "id": "energy",
+        "displayName": "能源",
+        "base_unit": "EU",
+        "themeColor": "#f59e0b",
+        "preferred_time_base": "rate_per_tick"
+      },
+      "stress": {
+        "id": "stress",
+        "displayName": "应力",
+        "base_unit": "su",
+        "themeColor": "#c084fc",
+        "preferred_time_base": "per_cycle"
+      },
+      "heat": {
+        "id": "heat",
+        "displayName": "热能",
+        "base_unit": "HU",
+        "themeColor": "#fb7185",
+        "preferred_time_base": "rate_per_tick"
+      }
+    },
+    "overrides": {
+      "stress:create_su": {
+        "unit_override": "RPM"
+      },
+      "energy:thermal_rf": {
+        "unit_override": "RF"
+      }
+    },
+    "entries": {
+      "item:精密输入-0-ultra-long-feedstock-name": {
+        "fullId": "item:精密输入-0-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 0 / Precision feedstock with multilingual label"
+      },
+      "item:最终产品-0-extended-product-description": {
+        "fullId": "item:最终产品-0-extended-product-description",
+        "displayName": "多类别产出 0 / High-purity engineered product"
+      },
+      "item:精密输入-1-ultra-long-feedstock-name": {
+        "fullId": "item:精密输入-1-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 1 / Precision feedstock with multilingual label"
+      },
+      "item:最终产品-1-extended-product-description": {
+        "fullId": "item:最终产品-1-extended-product-description",
+        "displayName": "多类别产出 1 / High-purity engineered product"
+      },
+      "item:精密输入-2-ultra-long-feedstock-name": {
+        "fullId": "item:精密输入-2-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 2 / Precision feedstock with multilingual label"
+      },
+      "item:最终产品-2-extended-product-description": {
+        "fullId": "item:最终产品-2-extended-product-description",
+        "displayName": "多类别产出 2 / High-purity engineered product"
+      },
+      "item:精密输入-3-ultra-long-feedstock-name": {
+        "fullId": "item:精密输入-3-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 3 / Precision feedstock with multilingual label"
+      },
+      "item:最终产品-3-extended-product-description": {
+        "fullId": "item:最终产品-3-extended-product-description",
+        "displayName": "多类别产出 3 / High-purity engineered product"
+      },
+      "item:精密输入-4-ultra-long-feedstock-name": {
+        "fullId": "item:精密输入-4-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 4 / Precision feedstock with multilingual label"
+      },
+      "item:最终产品-4-extended-product-description": {
+        "fullId": "item:最终产品-4-extended-product-description",
+        "displayName": "多类别产出 4 / High-purity engineered product"
+      },
+      "item:精密输入-5-ultra-long-feedstock-name": {
+        "fullId": "item:精密输入-5-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 5 / Precision feedstock with multilingual label"
+      },
+      "item:最终产品-5-extended-product-description": {
+        "fullId": "item:最终产品-5-extended-product-description",
+        "displayName": "多类别产出 5 / High-purity engineered product"
+      },
+      "fluid:精密输入-6-ultra-long-feedstock-name": {
+        "fullId": "fluid:精密输入-6-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 6 / Precision feedstock with multilingual label"
+      },
+      "fluid:最终产品-6-extended-product-description": {
+        "fullId": "fluid:最终产品-6-extended-product-description",
+        "displayName": "多类别产出 6 / High-purity engineered product"
+      },
+      "fluid:精密输入-7-ultra-long-feedstock-name": {
+        "fullId": "fluid:精密输入-7-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 7 / Precision feedstock with multilingual label"
+      },
+      "fluid:最终产品-7-extended-product-description": {
+        "fullId": "fluid:最终产品-7-extended-product-description",
+        "displayName": "多类别产出 7 / High-purity engineered product"
+      },
+      "fluid:精密输入-8-ultra-long-feedstock-name": {
+        "fullId": "fluid:精密输入-8-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 8 / Precision feedstock with multilingual label"
+      },
+      "fluid:最终产品-8-extended-product-description": {
+        "fullId": "fluid:最终产品-8-extended-product-description",
+        "displayName": "多类别产出 8 / High-purity engineered product"
+      },
+      "fluid:精密输入-9-ultra-long-feedstock-name": {
+        "fullId": "fluid:精密输入-9-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 9 / Precision feedstock with multilingual label"
+      },
+      "fluid:最终产品-9-extended-product-description": {
+        "fullId": "fluid:最终产品-9-extended-product-description",
+        "displayName": "多类别产出 9 / High-purity engineered product"
+      },
+      "fluid:精密输入-10-ultra-long-feedstock-name": {
+        "fullId": "fluid:精密输入-10-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 10 / Precision feedstock with multilingual label"
+      },
+      "fluid:最终产品-10-extended-product-description": {
+        "fullId": "fluid:最终产品-10-extended-product-description",
+        "displayName": "多类别产出 10 / High-purity engineered product"
+      },
+      "energy:精密输入-11-ultra-long-feedstock-name": {
+        "fullId": "energy:精密输入-11-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 11 / Precision feedstock with multilingual label"
+      },
+      "energy:最终产品-11-extended-product-description": {
+        "fullId": "energy:最终产品-11-extended-product-description",
+        "displayName": "多类别产出 11 / High-purity engineered product"
+      },
+      "energy:精密输入-12-ultra-long-feedstock-name": {
+        "fullId": "energy:精密输入-12-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 12 / Precision feedstock with multilingual label"
+      },
+      "energy:最终产品-12-extended-product-description": {
+        "fullId": "energy:最终产品-12-extended-product-description",
+        "displayName": "多类别产出 12 / High-purity engineered product"
+      },
+      "energy:精密输入-13-ultra-long-feedstock-name": {
+        "fullId": "energy:精密输入-13-ultra-long-feedstock-name",
+        "displayName": "超长资源名称 13 / Precision feedstock with multilingual label"
+      },
+      "energy:最终产品-13-extended-product-description": {
+        "fullId": "energy:最终产品-13-extended-product-description",
+        "displayName": "多类别产出 13 / High-purity engineered product"
+      }
+    }
+  },
+  "ui": {
+    "nodes": [
+      {
+        "id": "dense",
+        "type": "recipeNode",
+        "position": {
+          "x": 600,
+          "y": 0
+        },
+        "data": {
+          "label": "多资源联合制造机 · Integrated multi-resource manufacturing / extended machine name"
+        }
+      },
+      {
+        "id": "dense-source",
+        "type": "sourceNode",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "data": {
+          "ports": [
+            {
+              "portId": "feed",
+              "id": "精密输入-0-ultra-long-feedstock-name",
+              "category": "item",
+              "amount": 10,
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "routing_mode": "wired"
+            },
+            {
+              "portId": "capacity",
+              "id": "厂务容量 / Shared service capacity",
+              "category": "item",
+              "amount": 2,
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "routing_mode": "wired"
+            },
+            {
+              "portId": "state",
+              "id": "温度状态 / Qualified temperature",
+              "category": "item",
+              "amount": 500,
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "routing_mode": "wired"
+            }
+          ],
+          "mode": "limit"
+        }
+      },
+      {
+        "id": "dense-target",
+        "type": "targetNode",
+        "position": {
+          "x": 1200,
+          "y": 0
+        },
+        "data": {
+          "ports": [
+            {
+              "portId": "product",
+              "id": "最终产品-0-extended-product-description",
+              "category": "item",
+              "amount": 2,
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "routing_mode": "wired"
+            },
+            {
+              "portId": "capacity",
+              "id": "出口容量 / Export capacity",
+              "category": "item",
+              "amount": 1,
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "routing_mode": "wired"
+            },
+            {
+              "portId": "state",
+              "id": "交付状态 / Delivery qualification",
+              "category": "item",
+              "amount": 500,
+              "unit": [
+                {
+                  "baseUnitId": "item",
+                  "exponent": 1
+                }
+              ],
+              "routing_mode": "wired"
+            }
+          ],
+          "mode": "demand"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-33",
+        "source": "dense-source",
+        "sourceHandle": "feed",
+        "target": "dense",
+        "targetHandle": "in-0"
+      },
+      {
+        "id": "edge-34",
+        "source": "dense",
+        "sourceHandle": "out-0",
+        "target": "dense-target",
+        "targetHandle": "product"
+      }
+    ],
+    "nodeDisplayMode": "compact"
+  },
+  "domain": {
+    "recipes": {
+      "dense": {
+        "recipe_id": "dense",
+        "machine_name": "多资源联合制造机 · Integrated multi-resource manufacturing / extended machine name",
+        "system": "vanilla",
+        "duration_seconds": 1,
+        "inputs": [
+          {
+            "portId": "in-0",
+            "id": "精密输入-0-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-1",
+            "id": "精密输入-1-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-2",
+            "id": "精密输入-2-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.2,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-3",
+            "id": "精密输入-3-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.3,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-4",
+            "id": "精密输入-4-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.4,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-5",
+            "id": "精密输入-5-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.5,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-6",
+            "id": "精密输入-6-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 1.6,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-7",
+            "id": "精密输入-7-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 1.7,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-8",
+            "id": "精密输入-8-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 1.8,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-9",
+            "id": "精密输入-9-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 1.9,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-10",
+            "id": "精密输入-10-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 2,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-11",
+            "id": "精密输入-11-ultra-long-feedstock-name",
+            "category": "energy",
+            "amount": 2.1,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-12",
+            "id": "精密输入-12-ultra-long-feedstock-name",
+            "category": "energy",
+            "amount": 2.2,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-13",
+            "id": "精密输入-13-ultra-long-feedstock-name",
+            "category": "energy",
+            "amount": 2.3,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "outputs": [
+          {
+            "portId": "out-0",
+            "id": "最终产品-0-extended-product-description",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-1",
+            "id": "最终产品-1-extended-product-description",
+            "category": "item",
+            "amount": 1.05,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-2",
+            "id": "最终产品-2-extended-product-description",
+            "category": "item",
+            "amount": 1.1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-3",
+            "id": "最终产品-3-extended-product-description",
+            "category": "item",
+            "amount": 1.15,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-4",
+            "id": "最终产品-4-extended-product-description",
+            "category": "item",
+            "amount": 1.2,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-5",
+            "id": "最终产品-5-extended-product-description",
+            "category": "item",
+            "amount": 1.25,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-6",
+            "id": "最终产品-6-extended-product-description",
+            "category": "fluid",
+            "amount": 1.3,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-7",
+            "id": "最终产品-7-extended-product-description",
+            "category": "fluid",
+            "amount": 1.35,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-8",
+            "id": "最终产品-8-extended-product-description",
+            "category": "fluid",
+            "amount": 1.4,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-9",
+            "id": "最终产品-9-extended-product-description",
+            "category": "fluid",
+            "amount": 1.45,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-10",
+            "id": "最终产品-10-extended-product-description",
+            "category": "fluid",
+            "amount": 1.5,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-11",
+            "id": "最终产品-11-extended-product-description",
+            "category": "energy",
+            "amount": 1.55,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-12",
+            "id": "最终产品-12-extended-product-description",
+            "category": "energy",
+            "amount": 1.6,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-13",
+            "id": "最终产品-13-extended-product-description",
+            "category": "energy",
+            "amount": 1.65,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "metadata": {},
+        "archetype_id": "custom_generic",
+        "base_inputs": [
+          {
+            "portId": "in-0",
+            "id": "精密输入-0-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-1",
+            "id": "精密输入-1-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-2",
+            "id": "精密输入-2-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.2,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-3",
+            "id": "精密输入-3-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.3,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-4",
+            "id": "精密输入-4-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.4,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-5",
+            "id": "精密输入-5-ultra-long-feedstock-name",
+            "category": "item",
+            "amount": 1.5,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-6",
+            "id": "精密输入-6-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 1.6,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-7",
+            "id": "精密输入-7-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 1.7,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-8",
+            "id": "精密输入-8-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 1.8,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-9",
+            "id": "精密输入-9-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 1.9,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-10",
+            "id": "精密输入-10-ultra-long-feedstock-name",
+            "category": "fluid",
+            "amount": 2,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-11",
+            "id": "精密输入-11-ultra-long-feedstock-name",
+            "category": "energy",
+            "amount": 2.1,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-12",
+            "id": "精密输入-12-ultra-long-feedstock-name",
+            "category": "energy",
+            "amount": 2.2,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "in-13",
+            "id": "精密输入-13-ultra-long-feedstock-name",
+            "category": "energy",
+            "amount": 2.3,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_outputs": [
+          {
+            "portId": "out-0",
+            "id": "最终产品-0-extended-product-description",
+            "category": "item",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-1",
+            "id": "最终产品-1-extended-product-description",
+            "category": "item",
+            "amount": 1.05,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-2",
+            "id": "最终产品-2-extended-product-description",
+            "category": "item",
+            "amount": 1.1,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-3",
+            "id": "最终产品-3-extended-product-description",
+            "category": "item",
+            "amount": 1.15,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-4",
+            "id": "最终产品-4-extended-product-description",
+            "category": "item",
+            "amount": 1.2,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-5",
+            "id": "最终产品-5-extended-product-description",
+            "category": "item",
+            "amount": 1.25,
+            "unit": [
+              {
+                "baseUnitId": "item",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-6",
+            "id": "最终产品-6-extended-product-description",
+            "category": "fluid",
+            "amount": 1.3,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-7",
+            "id": "最终产品-7-extended-product-description",
+            "category": "fluid",
+            "amount": 1.35,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-8",
+            "id": "最终产品-8-extended-product-description",
+            "category": "fluid",
+            "amount": 1.4,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-9",
+            "id": "最终产品-9-extended-product-description",
+            "category": "fluid",
+            "amount": 1.45,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-10",
+            "id": "最终产品-10-extended-product-description",
+            "category": "fluid",
+            "amount": 1.5,
+            "unit": [
+              {
+                "baseUnitId": "L",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-11",
+            "id": "最终产品-11-extended-product-description",
+            "category": "energy",
+            "amount": 1.55,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-12",
+            "id": "最终产品-12-extended-product-description",
+            "category": "energy",
+            "amount": 1.6,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          },
+          {
+            "portId": "out-13",
+            "id": "最终产品-13-extended-product-description",
+            "category": "energy",
+            "amount": 1.65,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired"
+          }
+        ],
+        "base_utility_inputs": [
+          {
+            "portId": "utility-in",
+            "id": "高温循环热源",
+            "category": "energy",
+            "amount": 2,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired",
+            "is_utility": true,
+            "utility_type": "heat"
+          }
+        ],
+        "base_utility_outputs": [
+          {
+            "portId": "utility-out",
+            "id": "余热回收",
+            "category": "energy",
+            "amount": 1,
+            "unit": [
+              {
+                "baseUnitId": "J",
+                "exponent": 1
+              }
+            ],
+            "routing_mode": "wired",
+            "is_utility": true,
+            "utility_type": "heat"
+          }
+        ],
+        "base_duration_seconds": 1,
+        "active_modifiers": [
+          {
+            "instance_id": "time-a",
+            "definition_id": "time_multiplier",
+            "uiState": {
+              "multiplier": 1.25
+            }
+          },
+          {
+            "instance_id": "efficiency-a",
+            "definition_id": "base_chassis_efficiency",
+            "uiState": {
+              "efficiency": 1.1
+            }
+          },
+          {
+            "instance_id": "time-b",
+            "definition_id": "time_multiplier",
+            "uiState": {
+              "multiplier": 0.8
+            }
+          },
+          {
+            "instance_id": "chance-a",
+            "definition_id": "chance_output",
+            "uiState": {
+              "targetResourceId": "最终产品-1-extended-product-description",
+              "probability": 0.75
+            }
+          },
+          {
+            "instance_id": "efficiency-b",
+            "definition_id": "base_chassis_efficiency",
+            "uiState": {
+              "efficiency": 1
+            }
+          }
+        ],
+        "hardware_specs": {},
+        "mode": "auto"
+      }
+    }
+  }
+}

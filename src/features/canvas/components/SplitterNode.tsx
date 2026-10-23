@@ -12,6 +12,14 @@ import { SplitterNodeDataSchema, type SplitterNodeData } from '@/common/schemas/
 import { generateId } from '@/common/utils/id'
 import { useNodeData } from '@/features/canvas/contexts/NodeDataContext'
 import styles from './SplitterNode.module.css'
+import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
+import { NodeDetails, NodeCalculationStatus } from './NodePresentation'
+import { useSettingsStore } from '@/features/settings/settings.store'
+import { UnitSystem } from '@/common/units/UnitSystem'
+import { defaultResourceUnit } from '@/common/units/defaults'
+import { buildUnitSuffix } from '@/features/resource-registry/registry.units'
+import { buildResourceId } from '@/common/utils/resourceId'
+import { formatOpExRate } from '@/common/utils/format'
 
 /**
  * Edit branch ratios together while retaining the last valid allocation on the canvas.
@@ -22,10 +30,14 @@ import styles from './SplitterNode.module.css'
  */
 export function SplitterNode({ id, data }: NodeProps<SplitterNodeData & { port_throughputs?: Record<string, number> }>) {
   useTranslation()
+  const displayMode = useNodeDisplayStore(state => state.mode)
   const { updateNodeData } = useNodeData()
   const updateNodeInternals = useUpdateNodeInternals()
   const categories = useGlobalResourceTable(state => state.categories)
   const overrides = useGlobalResourceTable(state => state.overrides)
+  const entries = useGlobalResourceTable(state => state.entries)
+  const environment = useSettingsStore(state => state.units)
+  const units = new UnitSystem(environment)
   const [advanced, setAdvanced] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [draft, setDraft] = useState(() => stripCalculationResults(data))
@@ -34,7 +46,7 @@ export function SplitterNode({ id, data }: NodeProps<SplitterNodeData & { port_t
   const category = resolveCategoryDef(shown.input.category, categories, overrides)
   const categoryColor = { '--port-color': category.themeColor } as CSSProperties
   const outputIdentities = JSON.stringify(shown.outputs.map(output => output.portId))
-  useEffect(() => updateNodeInternals(id), [id, outputIdentities, updateNodeInternals])
+  useEffect(() => updateNodeInternals(id), [id, outputIdentities, displayMode, updateNodeInternals])
   const change = (next: SplitterNodeData) => { setDraft(next); setDirty(true); setError('') }
   const setResource = (field: 'id' | 'category', value: string) => change({ ...shown, input: { ...shown.input, [field]: value }, outputs: shown.outputs.map(output => ({ ...output, [field]: value })) })
   const cancel = () => { setDraft(stripCalculationResults(data)); setDirty(false); setAdvanced(false); setError('') }
@@ -47,9 +59,19 @@ export function SplitterNode({ id, data }: NodeProps<SplitterNodeData & { port_t
   const total = shown.outputs.reduce((sum, output) => sum + output.ratio, 0)
   const totalValid = Math.abs(total - 1) <= 1e-8
   const inputRate = data.port_throughputs?.[data.input.portId]
-  return <article className={styles.node}>
+  const resourceName = entries[buildResourceId(shown.input.category, shown.input.id)]?.displayName || shown.input.id
+  const expression = shown.input.displayUnit ?? shown.input.unit ?? defaultResourceUnit(shown.input.category, shown.input.id)
+  const suffix = buildUnitSuffix(expression, 'rate_per_sec', units)
+  const rate = (value: number | undefined) => value === undefined ? '—' : formatOpExRate(units.fromRate(value, expression, 'rate_per_sec'))
+  return <article className={styles.node} data-display-mode={displayMode}>
     <header className={styles.header}>
       <strong>{t('canvas.splitter')}</strong>
+      <NodeDetails title={t('canvas.splitter')}><dl>
+        <dt>{t('canvas.resource_id')}</dt><dd>{resourceName} · {shown.input.category} / {shown.input.id}</dd>
+        <dt>{t('canvas.throughput_limit')}</dt><dd>{shown.capacity === null ? t('canvas.unlimited') : `${rate(shown.capacity)} ${suffix}`}</dd>
+        <dt>{t('canvas.actual_flow')}</dt><dd>{rate(inputRate)} {suffix}</dd>
+        {shown.outputs.map((output, index) => <div key={output.portId}><dt>{t('canvas.branch')} {index + 1}</dt><dd>{Number((output.ratio * 100).toPrecision(12))}% · {rate(data.port_throughputs?.[output.portId])} {suffix}<br />{output.portId}</dd></div>)}
+      </dl></NodeDetails>
       <button type="button" className={`${styles.iconButton} nodrag nopan`} aria-label={t('canvas.splitter_settings')} aria-expanded={advanced} title={t('canvas.resource_throughput_limit_and_branches')} onClick={() => { if (!dirty) setDraft(stripCalculationResults(data)); setAdvanced(!advanced); setError('') }}><Icon name="settings" size={15} /></button>
     </header>
     <div className={styles.flow}>
@@ -57,18 +79,20 @@ export function SplitterNode({ id, data }: NodeProps<SplitterNodeData & { port_t
         <div className={shared.categoryHeading} style={categoryColor}>{categoryDisplayName(category.id, category.displayName)}</div>
         <div className={styles.inputPort} title={t('canvas.throughput_limit_standard_unitss', { p0: shown.input.category, p1: shown.input.id, p2: shown.capacity ?? t('canvas.unlimited') })}>
           <Handle type="target" position={Position.Left} id={shown.input.portId} className={styles.handle} />
-          <span className={styles.resource}>{shown.input.id || t('canvas.select_resource')}</span>
-          <span className={styles.throughput}>{inputRate === undefined ? '—' : inputRate.toPrecision(5)} /s</span>
+          <span className={styles.resource} title={`${resourceName} (${shown.input.id})`}>{resourceName || t('canvas.select_resource')}</span>
+          {displayMode !== 'compact' && <span className={styles.throughput} title={`${rate(inputRate)} ${suffix}`}>{rate(inputRate)} {suffix}</span>}
         </div>
       </section>
       <section className={styles.output}><h3>{t('canvas.output_ratios')}</h3>
         <div className={shared.categoryHeading} style={categoryColor}>{categoryDisplayName(category.id, category.displayName)}</div>
         {shown.outputs.map((output, index) => <div className={styles.outputPort} key={output.portId} title={t('canvas.branch_standard_unitss', { p0: index + 1, p1: data.port_throughputs?.[output.portId]?.toPrecision(5) ?? '—' })}>
-          <label className={styles.ratioLabel}><span>{index + 1}</span><input className="nodrag nopan" aria-label={t('canvas.branch_percentage', { p0: index + 1 })} type="number" min="0" max="100" step="any" value={Number((output.ratio * 100).toPrecision(12))} onChange={event => change({ ...shown, outputs: shown.outputs.map(item => item.portId === output.portId ? { ...item, ratio: Number(event.target.value) / 100 } : item) })} /><span>%</span></label>
+          <label className={styles.ratioLabel}><span>{index + 1}</span><input className="nodrag nopan" aria-label={t('canvas.branch_percentage', { p0: index + 1 })} type="number" min="0" max="100" step="any" value={Number((output.ratio * 100).toPrecision(12))} onChange={event => change({ ...shown, outputs: shown.outputs.map(item => item.portId === output.portId ? { ...item, ratio: Number(event.target.value) / 100 } : item) })} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancel() } else if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); save() } }} /><span>%</span></label>
+          {displayMode !== 'compact' && <span className={styles.throughput} title={`${rate(data.port_throughputs?.[output.portId])} ${suffix}`}>{rate(data.port_throughputs?.[output.portId])} {suffix}</span>}
           {data.outputs.some(port => port.portId === output.portId) && <Handle type="source" position={Position.Right} id={output.portId} className={styles.handle} />}
         </div>)}
       </section>
     </div>
+    <div className={styles.capacity} title={`${t('canvas.throughput_limit')} ${shown.capacity === null ? t('canvas.unlimited') : `${rate(shown.capacity)} ${suffix}`}`}>{t('canvas.throughput_limit')} {shown.capacity === null ? t('canvas.unlimited') : `${rate(shown.capacity)} ${suffix}`}</div>
     {advanced && <section className={`${styles.editor} nodrag nowheel`} aria-label={t('canvas.advanced_splitter_settings')}>
       <label>{t('canvas.resource_category')}<input value={shown.input.category} onChange={event => setResource('category', event.target.value)} /></label>
       <label>{t('canvas.resource_id')}<input value={shown.input.id} onChange={event => setResource('id', event.target.value)} /></label>
@@ -81,5 +105,6 @@ export function SplitterNode({ id, data }: NodeProps<SplitterNodeData & { port_t
       <button type="button" onClick={cancel}>{t('canvas.cancel')}</button><button type="button" onClick={save}>{t('canvas.save')}</button>
     </footer>}
     {error && <p role="alert" className={styles.error}>{translateDiagnostic(error)}</p>}
+    <NodeCalculationStatus />
   </article>
 }

@@ -8,12 +8,15 @@ import { useCanvasStore } from '@/features/canvas/canvas.store'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { captureDocument } from '../captureDocument'
 import { useFileIO as createFileIO } from './useFileIO'
+import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
+import { useSettingsStore } from '@/features/settings/settings.store'
 
 vi.mock('react', async (original) => ({ ...await original<typeof import('react')>(), useCallback: (callback: unknown) => callback }))
 
 beforeEach(() => {
   useCanvasStore.getState().resetCanvas()
   useRecipeStore.setState({ recipes: {} })
+  useNodeDisplayStore.setState({ mode: 'compact' })
   vi.stubGlobal('alert', vi.fn())
 })
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks() })
@@ -134,4 +137,76 @@ it('checks replacement permission when asynchronous file reading completes', () 
   expect(action.confirmReplace).toHaveBeenCalledOnce()
   expect(action.commitEdit).not.toHaveBeenCalled()
   expect(captureDocument()).toEqual(before)
+})
+
+it('saves and restores document display mode without overwriting the last explicit local preference', () => {
+  const action = setup()
+  useNodeDisplayStore.getState().selectMode('detailed')
+  action.handleSaveCanvas()
+  const saved = JSON.parse(action.storage.setItem.mock.calls.at(-1)![1])
+  expect(saved.ui.nodeDisplayMode).toBe('detailed')
+  useNodeDisplayStore.getState().selectMode('standard')
+  action.storage.getItem.mockReturnValue(JSON.stringify(saved))
+  const writes = action.storage.setItem.mock.calls.length
+  action.handleLoadCanvas()
+  expect(useNodeDisplayStore.getState().mode).toBe('detailed')
+  expect(action.storage.setItem).toHaveBeenCalledTimes(writes)
+  expect(action.baseline.isDirty(captureDocument())).toBe(false)
+})
+
+it.each([['standard', 'standard'], [null, 'compact'], ['unknown', 'compact']] as const)(
+  'opens legacy documents using local preference %s with fallback %s', (preference, expected) => {
+    const action = setup()
+    const legacy = captureDocument()
+    delete legacy.ui.nodeDisplayMode
+    action.storage.getItem.mockImplementation((key: string) => key === 'test-document' ? JSON.stringify(legacy) : preference)
+    action.handleLoadCanvas()
+    expect(useNodeDisplayStore.getState().mode).toBe(expected)
+    expect(action.baseline.isDirty(captureDocument())).toBe(false)
+  },
+)
+
+it('rejects invalid display preferences and preserves the current display on failed replacement', () => {
+  const action = setup()
+  useNodeDisplayStore.getState().selectMode('detailed')
+  const invalid = { ...captureDocument(), ui: { ...captureDocument().ui, nodeDisplayMode: 'unknown' } }
+  action.storage.getItem.mockReturnValue(JSON.stringify(invalid))
+  vi.spyOn(console, 'error').mockImplementation(() => {})
+  action.handleLoadCanvas()
+  expect(action.confirmReplace).not.toHaveBeenCalled()
+  expect(useNodeDisplayStore.getState().mode).toBe('detailed')
+  const valid = captureDocument()
+  valid.ui.nodeDisplayMode = 'compact'
+  action.storage.getItem.mockReturnValue(JSON.stringify(valid))
+  action.normalizeCanvasNode.mockImplementationOnce(() => { throw new Error('Invalid normalized node') })
+  action.handleLoadCanvas()
+  expect(useNodeDisplayStore.getState().mode).toBe('detailed')
+  expect(action.onLoaded).not.toHaveBeenCalled()
+})
+
+it('unmounts the old graph before replacing a document-specific unit environment', () => {
+  const action = setup()
+  const incoming = captureDocument()
+  const environment = useSettingsStore.getState().units
+  useSettingsStore.getState().setEnvironment({ ...environment, definitions: [
+    ...environment.definitions, { id: 'minute-test', symbol: 'min', scale: 60, derived: [{ baseUnitId: 's', exponent: 1 }] },
+  ] })
+  const oldNode = { ...action.nodesRef.current[0], data: { ports: [{
+    portId: 'p', category: 'item', id: 'ore', amount: 1,
+    unit: [{ baseUnitId: 'item', exponent: 1 }],
+    displayUnit: [{ baseUnitId: 'item', exponent: 1 }, { baseUnitId: 'minute-test', exponent: -1 }],
+  }] } }
+  useCanvasStore.getState().setNodes([oldNode])
+  action.nodesRef.current = [oldNode]
+  action.storage.getItem.mockReturnValue(JSON.stringify(incoming))
+  const observedGraphSizes: number[] = []
+  const unsubscribe = useSettingsStore.subscribe(() => observedGraphSizes.push(useCanvasStore.getState().nodes.length))
+  try {
+    action.handleLoadCanvas()
+    expect(observedGraphSizes).toEqual([0])
+    expect(useSettingsStore.getState().units).toEqual(environment)
+    expect(useCanvasStore.getState().nodes).toMatchObject(incoming.ui.nodes)
+    expect(action.history.canUndo()).toBe(false)
+    expect(action.baseline.isDirty(captureDocument())).toBe(false)
+  } finally { unsubscribe(); useSettingsStore.getState().setEnvironment(environment) }
 })

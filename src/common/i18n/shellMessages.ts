@@ -1,5 +1,9 @@
 /** Application shell and result-inspector messages. */
 export const shellZhCN = {
+  'nodeDisplay.label': '节点显示',
+  'nodeDisplay.compact': '简洁',
+  'nodeDisplay.standard': '标准',
+  'nodeDisplay.detailed': '详尽',
   'shell.discardDocument': '当前产线有未保存修改。放弃修改并继续？',
   'shell.discardDraft': '有尚未应用的设置。放弃这些更改并返回画布？',
   'shell.clipboardEmpty': '剪贴板为空，没有可粘贴的产线内容。',
@@ -53,6 +57,10 @@ export const shellZhCN = {
 } as const
 
 export const shellEn: Record<keyof typeof shellZhCN, string> = {
+  'nodeDisplay.label': 'Node display',
+  'nodeDisplay.compact': 'Compact',
+  'nodeDisplay.standard': 'Standard',
+  'nodeDisplay.detailed': 'Detailed',
   'shell.discardDocument': 'This production line has unsaved changes. Discard them and continue?',
   'shell.discardDraft': 'Some settings have not been applied. Discard them and return to the canvas?',
   'shell.clipboardEmpty': 'The clipboard is empty. There is no production line to paste.',

@@ -24,6 +24,12 @@ import type { ResourceIo, NormalizedResource } from '@/common/types/resource'
 import styles from './RecipeNode.module.css'
 import { groupPortsByCategory } from '../groupPortsByCategory'
 import { GlobalPortIcon } from './GlobalPortIcon'
+import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
+import { NodeDetails, NodeCalculationStatus } from './NodePresentation'
+import { PortPolicyBadge } from './PortPolicyBadge'
+import { MachineLimit } from './MachineLimit'
+import { modifierNameKeys } from '@/common/i18n/editorMessages'
+import { getModifierById } from '@/features/modifier/modifier.registry'
 
 /**
  * Present one recipe with readable resource flows and a compact installation summary.
@@ -33,6 +39,7 @@ import { GlobalPortIcon } from './GlobalPortIcon'
  * @returns Recipe card with independent persistent resource handles.
  */
 export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
+  const mode = useNodeDisplayStore(state => state.mode)
   const commitEdit = useDocumentEdit()
   useTranslation()
   const { onEdit, onAutoFill } = useRecipeEditor()
@@ -48,9 +55,11 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   const payload = storedPayload ?? previewModifierPipeline(data, environment)
   const updateNodeInternals = useUpdateNodeInternals()
   const handleSignature = JSON.stringify([payload.recipe_inputs, payload.recipe_outputs, payload.utility_inputs, payload.utility_outputs].map(ports => ports.map(port => [portIdentity(port), port.routing_mode ?? 'wired'])))
-  useLayoutEffect(() => { updateNodeInternals(id) }, [id, handleSignature, updateNodeInternals])
+  useLayoutEffect(() => { updateNodeInternals(id) }, [id, handleSignature, mode, updateNodeInternals])
   const machineName = recipe?.machine_name ?? data.machine_name
   const implemented = recipe?.is_implemented ?? false
+  const modifiers = recipe?.active_modifiers ?? data.active_modifiers ?? []
+  const modifierNames = modifiers.map(modifier => { const key = modifierNameKeys[modifier.definition_id]; return key ? t(key) : getModifierById(modifier.definition_id)?.name ?? modifier.definition_id })
   const allPorts = [...payload.recipe_inputs, ...payload.recipe_outputs, ...payload.utility_inputs, ...payload.utility_outputs]
   const hasUtilities = payload.utility_inputs.length > 0 || payload.utility_outputs.length > 0
 
@@ -60,10 +69,10 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
       const category = resolveCategoryDef(port.utility_type ?? port.category, categories, overrides)
       const resourceName = resourceEntries[buildResourceId(port.category, port.id)]?.displayName || port.id
       const actual = data.port_throughputs?.[portId]
-      const presentation = recipePortPresentation(port, payload, actual, units, category)
+      const policy = portPolicies[portKey(id, portId)]
+      const presentation = recipePortPresentation(port, payload, actual, units, category, policy?.semantics)
       const inventory = port.consumable === false || port.probability === 0
       const input = direction === 'input'
-      const policy = portPolicies[portKey(id, portId)]
       const supply = policy?.boundary?.kind === 'source' ? policy.boundary : undefined
       const showSupply = input && !inventory && supply && (policy?.semantics.kind ?? 'flow') === 'flow'
       const supplyDescription = supply?.capacity === null
@@ -71,18 +80,20 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
         : supply ? t('canvas.limitedSupplyStatus', { capacity: recipePortPresentation(port, payload, supply.capacity, units, category).rateValue }) : ''
       const previous = grouped[index - 1]
       const startsCategory = previous && (previous.utility_type ?? previous.category) !== (port.utility_type ?? port.category)
-      return <Fragment key={portId}>{(!previous || startsCategory) && <li className={`${styles.categoryHeading}${startsCategory ? ` ${styles.categoryStart}` : ''}`} style={{ '--port-color': category.themeColor } as CSSProperties}>{categoryDisplayName(category.id, category.displayName)}</li>}<li className={styles.port} style={{ '--port-color': category.themeColor } as CSSProperties}>
+      return <Fragment key={portId}>{(!previous || startsCategory) && <li className={`${styles.categoryHeading}${startsCategory ? ` ${styles.categoryStart}` : ''}`} style={{ '--port-color': category.themeColor } as CSSProperties}>{categoryDisplayName(category.id, category.displayName)}</li>}<li className={`${styles.port} ${styles[mode]}`} style={{ '--port-color': category.themeColor } as CSSProperties}>
         {port.routing_mode === 'global'
           ? <GlobalPortIcon side={input ? 'left' : 'right'} />
           : <Handle id={portId} type={input ? 'target' : 'source'} position={input ? Position.Left : Position.Right} className={`${styles.handle} ${input ? styles.left : styles.right}`} />}
-        <div className={styles.resourceIdentity}><span className={styles.resourceName} title={`${resourceName} (${port.id})`}>{resourceName || t('canvas.unnamed_resource')}</span>{inventory && <span className={styles.inventoryTag}>{t('canvas.inventory')}</span>}{showSupply && <span
+        <div className={styles.resourceIdentity}><span tabIndex={0} className={styles.resourceName} title={`${resourceName} (${port.id})`}>{resourceName || t('canvas.unnamed_resource')}</span>{inventory && <span className={styles.inventoryTag}>{t('canvas.inventory')}</span>}{showSupply && <span
           className={`${styles.supplyStatus} nodrag nopan`}
           role="img"
           tabIndex={0}
           aria-label={`${resourceName || t('canvas.this_input')}: ${supplyDescription}`}
           title={supplyDescription}
         ><Icon name={supply.capacity === null ? 'check' : 'boundary'} size={12} /></span>}</div>
-        <div className={styles.rate} title={presentation.rate}><strong aria-label={presentation.rate}>{presentation.rateValue}</strong></div>
+        {mode !== 'compact' && <div className={styles.rate} title={actual === undefined ? t('shell.idle') : presentation.rate}><strong>{actual === undefined ? '—' : presentation.rateValue}</strong></div>}
+        <div className={styles.policy}><PortPolicyBadge policy={policy} formatQuantity={presentation.formatQuantity} formatAmount={amount => recipePortPresentation(port, payload, amount, units, category).rateValue} /></div>
+        {mode === 'detailed' && <div className={styles.portDetail} tabIndex={0} title={`${presentation.amount} · ${t('recipeDisplay.probability', { value: formatProbability(port.probability ?? 1) })}`}>{presentation.amount} · {t('recipeDisplay.probability', { value: formatProbability(port.probability ?? 1) })}</div>}
 
       </li></Fragment>
     })}
@@ -103,14 +114,16 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
       <section className={styles.inputSection}><h3>{t('canvas.utility_inputs')}</h3>{renderPorts(payload.utility_inputs, 'input')}</section>
       <section className={styles.outputSection}><h3>{t('canvas.utility_outputs')}</h3>{renderPorts(payload.utility_outputs, 'output')}</section>
     </div>}
-    <footer className={styles.footer}>
-      <dl className={styles.summary} title={t('canvas.running_machines_installed_machines_utilization', { p0: data.operating_equivalent === undefined ? '—' : formatMachineExact(data.operating_equivalent), p1: data.planned_installed === undefined ? '—' : formatCapEx(data.planned_installed), p2: data.utilization == null ? '—' : formatProbability(data.utilization) })}>
-        <div><dt>{t('canvas.running')}</dt><dd>{data.operating_equivalent === undefined ? '—' : formatMachineExact(data.operating_equivalent)}<small>  {t('canvas.machines')}</small></dd></div>
-        <div><dt><button className={`${styles.planningLink} nodrag`} onClick={() => openPlanning(id)}>{t('canvas.installation_settings')}</button></dt><dd>{data.planned_installed === undefined ? '—' : formatCapEx(data.planned_installed)}<small>  {t('canvas.machines')}</small></dd></div>
-        <div><dt>{t('canvas.utilization')}</dt><dd>{data.utilization === undefined || data.utilization === null ? '—' : formatProbability(data.utilization)}</dd></div>
-      </dl>
-      <details className={`${styles.details} nodrag`}>
-        <summary><span className={styles.summaryIcon}><Icon name="chevronRight" size={13} /></span>  {t('canvas.equipment_and_permachine_usage')}</summary>
+    <footer className={`${styles.footer} ${styles[mode]}`}>
+      <div className={`${styles.machineSummary} ${styles[mode]}`}>
+        <div className={styles.primaryCount}><span>{data.planned_installed === undefined && data.operating_equivalent !== undefined ? t('canvas.running') : t('recipeDisplay.installed')}</span><strong>{data.planned_installed !== undefined ? formatCapEx(data.planned_installed) : data.operating_equivalent !== undefined ? formatMachineExact(data.operating_equivalent) : '—'}</strong><small>{t('canvas.machines')}</small></div>
+        {mode !== 'compact' && <div className={styles.auxiliaryCount}>{t('canvas.running')} <strong>{data.operating_equivalent === undefined ? '—' : formatMachineExact(data.operating_equivalent)}</strong>{mode === 'detailed' && <span> · {t('canvas.utilization')} {data.utilization == null ? '—' : formatProbability(data.utilization)}</span>}</div>}
+        <MachineLimit id={id} />
+      </div>
+      {mode === 'detailed' && <div className={styles.modifiers}><span title={modifierNames.join(' → ')}>{t('recipeDisplay.cycle', { value: formatMachineExact(payload.duration_seconds) })} · {modifierNames[0] ?? t('canvas.none')}</span>{modifiers.length > 1 && <button className={`${styles.planningLink} nodrag`} onClick={() => onEdit(id, data)}>{t('recipeDisplay.more', { count: modifiers.length - 1 })}</button>}</div>}
+      <div className={styles.bottomBar}><NodeCalculationStatus /><NodeDetails title={machineName || t('canvas.unnamed_machine')}>
+        <p>{t('recipeDisplay.cycle', { value: formatMachineExact(payload.duration_seconds) })}</p>
+        <p>{t('canvas.running_machines_installed_machines_utilization', { p0: data.operating_equivalent === undefined ? '—' : formatMachineExact(data.operating_equivalent), p1: data.planned_installed === undefined ? '—' : formatCapEx(data.planned_installed), p2: data.utilization == null ? '—' : formatProbability(data.utilization) })}</p>
         <dl className={styles.equipment}>
           <div><dt>{t('canvas.recommended_installation')}</dt><dd>{data.recommended_installed ?? '—'}</dd></div>
           <div><dt>{t('canvas.existing_equipment')}</dt><dd>{data.existing_installed ?? t('canvas.unconfirmed')}</dd></div>
@@ -118,10 +131,12 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
         </dl>
         <ul className={styles.coefficients}>{allPorts.map(port => {
           const category = resolveCategoryDef(port.utility_type ?? port.category, categories, overrides)
-          const presentation = recipePortPresentation(port, payload, undefined, units, category)
-          return <li key={portIdentity(port)}><span title={port.id}>{port.id}</span><span>{presentation.amount}</span></li>
+          const policy = portPolicies[portKey(id, portIdentity(port))]
+          const presentation = recipePortPresentation(port, payload, data.port_throughputs?.[portIdentity(port)], units, category, policy?.semantics)
+          return <li key={portIdentity(port)}><span>{port.id}<small>{port.routing_mode === 'global' ? `${t('canvas.global_bus')}: ${policy?.scopeId ?? 'document'} / ${policy?.busId ?? 'default'}` : portIdentity(port)}</small></span><span>{presentation.amount}<small>{data.port_throughputs?.[portIdentity(port)] === undefined ? t('shell.idle') : presentation.rate}</small><small>{t('recipeDisplay.probability', { value: formatProbability(port.probability ?? 1) })}</small><PortPolicyBadge policy={policy} formatQuantity={presentation.formatQuantity} formatAmount={amount => recipePortPresentation(port, payload, amount, units, category).rateValue} /></span></li>
         })}</ul>
-      </details>
+        <p>{t('recipeDisplay.modifiers', { count: modifiers.length })}</p><ol>{modifierNames.map((name, index) => <li key={modifiers[index].instance_id}>{name}</li>)}</ol>
+      </NodeDetails></div>
     </footer>
   </article>
 }

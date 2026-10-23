@@ -1,13 +1,11 @@
 import { captureDocument } from '../captureDocument'
 import { t } from '@/common/i18n'
-import { useCanvasStore } from '@/features/canvas/canvas.store'
 import { readCanvasDocument, type CanvasDocument } from '../canvasDocument'
-import { useSettingsStore } from '@/features/settings/settings.store'
-import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
+import { replaceDocument } from '../replaceDocument'
 import { useCallback } from 'react'
 import type { ChangeEvent, MutableRefObject } from 'react'
 import type { Edge, Node } from 'reactflow'
-import { useRecipeStore } from '@/features/recipe/recipe.store'
+import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
 
 /** Parameters for the `useFileIO` hook. */
 type UseFileIOParams = {
@@ -62,18 +60,12 @@ export function useFileIO({
     const { document, warnings } = readCanvasDocument(payload)
     if (!confirmReplace()) return
     commitEdit(() => {
-      useCanvasStore.getState().setNetworkConfiguration(document.networkConfiguration)
-      useRecipeStore.setState({ recipes: {} })
-      useSettingsStore.getState().setEnvironment(document.environment)
-      useGlobalResourceTable.getState().restore(document.registry)
-      useRecipeStore.getState().loadAll(document.domain.recipes)
-      const normalizedNodes = document.ui.nodes.map(normalizeCanvasNode)
-      setNodes(normalizedNodes)
-      setEdges(document.ui.edges)
-      resetSystemStats()
+      const normalizedNodes = replaceDocument(document, { setNodes, setEdges, normalizeCanvasNode, resetSystemStats })
       nodesRef.current = normalizedNodes
       edgesRef.current = document.ui.edges
       })
+    // Apply presentation only after model replacement succeeds; rollback remains model-owned.
+    useNodeDisplayStore.getState().restoreMode(document.ui.nodeDisplayMode)
     onLoaded(captureDocument())
     if (warnings.length) alert(warnings.join('\n'))
 

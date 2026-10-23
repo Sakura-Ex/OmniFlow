@@ -14,7 +14,7 @@ The active calculation path compiles explicit resource networks in the frontend 
 
 | Area | Boundary / next decision |
 |---|---|
-| Node display | Compact, standard and detailed modes remain next-stage work; follow the [interaction handbook](interaction-design-handbook.md). |
+| Node display | Compact, standard and detailed modes, document display preferences and a persistent core result summary are implemented; category folding and semantic zoom remain separate planned work. See the [interaction handbook](interaction-design-handbook.md). |
 | Large graphs | Search, network tracing, grouping and broader batch actions remain as marked in the handbook. Full-document snapshot and serialization costs need measurement before architectural changes. |
 | Recovery | Browser save is a single local slot. No autosave/crash recovery; viewport persistence and database upgrade/corruption recovery need dedicated work and verification. |
 | Diagnostics | Legacy text matching remains in translation compatibility. Prefer stable diagnostic codes and parameters when extending the protocol. A diagnostic is not a unique/minimal conflict proof. |
