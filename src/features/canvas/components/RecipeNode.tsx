@@ -81,7 +81,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
           tabIndex={0}
           aria-label={`${resourceName || t('canvas.this_input')}: ${supplyDescription}`}
           title={supplyDescription}
-        ><Icon name={supply.capacity === null ? 'check' : 'download'} size={12} /></span>}</div>
+        ><Icon name={supply.capacity === null ? 'check' : 'boundary'} size={12} /></span>}</div>
         <div className={styles.rate} title={presentation.rate}><strong aria-label={presentation.rate}>{presentation.rateValue}</strong></div>
 
       </li></Fragment>
@@ -92,7 +92,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   return <article className={`${styles.card}${!payload.eligibility.eligible ? ` ${styles.blocked}` : ''}`}>
     <header className={styles.header}>
       <div className={styles.heading}><h2 title={machineName}>{machineName || t('canvas.unnamed_machine')}</h2></div>
-      <div className={`${styles.headerActions} nodrag`}><button className={styles.editButton} onClick={() => commitEdit(() => useRecipeStore.getState().updateRecipe(id, { is_implemented: !implemented }))} aria-label={t('canvas.toggle_built_status')} aria-pressed={implemented} title={implemented ? t('canvas.remove_built_mark') : t('canvas.mark_built')}><Icon name="check" size={15} /></button><button className={styles.editButton} onClick={() => onAutoFill(id)} aria-label={t('canvas.fill_ports')} title={t('canvas.fill_unconnected_ports')}><Icon name="wand" size={15} /></button><button className={styles.editButton} onClick={() => openPlanning(id)} aria-label={t('canvas.supplyAndBoundaries')} title={t('canvas.supplyAndBoundaries')}><Icon name="download" size={15} /></button><button className={styles.editButton} onClick={() => onEdit(id, data)} aria-label={t('canvas.edit_recipe')} title={t('canvas.edit_recipe')}><Icon name="settings" /></button></div>
+      <div className={`${styles.headerActions} nodrag`}><button className={styles.editButton} onClick={() => commitEdit(() => useRecipeStore.getState().updateRecipe(id, { is_implemented: !implemented }))} aria-label={t('canvas.toggle_built_status')} aria-pressed={implemented} title={implemented ? t('canvas.remove_built_mark') : t('canvas.mark_built')}><Icon name="check" size={15} /></button><button className={styles.editButton} onClick={() => onAutoFill(id)} aria-label={t('canvas.fill_ports')} title={t('canvas.fill_unconnected_ports')}><Icon name="wand" size={15} /></button><button className={styles.editButton} onClick={() => openPlanning(id)} aria-label={t('canvas.supplyAndBoundaries')} title={t('canvas.supplyAndBoundaries')}><Icon name="boundary" size={15} /></button><button className={styles.editButton} onClick={() => onEdit(id, data)} aria-label={t('canvas.edit_recipe')} title={t('canvas.edit_recipe')}><Icon name="settings" /></button></div>
     </header>
     {!payload.eligibility.eligible && <div className={styles.warning} title={payload.eligibility.reasons.map(reason => translateDiagnostic(reason)).join('; ')}>{t('canvas.cannot_run')} {translateDiagnostic(payload.eligibility.reasons[0] ?? t('canvas.check_recipe_settings'))}</div>}
     <div className={styles.flowGroup}>

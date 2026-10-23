@@ -10,6 +10,7 @@ const paths = {
   chevronRight: 'm9 6 6 6-6 6',
   chevronUp: 'm6 15 6-6 6 6',
   more: 'M5 12h.01M12 12h.01M19 12h.01',
+  boundary: 'M3 7h6m4 0h8M9 4h4v6H9zM3 17h10m4 0h4M13 14h4v6h-4z',
   lock: 'M7 10V7a5 5 0 0 1 10 0v3M5 10h14v11H5zM12 14v3',
   bolt: 'm13 2-9 12h7l-1 8 10-12h-7z',
   wand: 'm4 17 11-11 3 3L7 20zM13 8l3 3M4 3v4M2 5h4M18 2v4M16 4h4M3 11v2M2 12h2',

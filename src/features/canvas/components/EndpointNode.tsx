@@ -146,7 +146,7 @@ export function EndpointNode({ id, data, role }: { id: string; data: SourceNodeD
         ]} />
       </div>
       <button className={`${styles.iconButton} nodrag nopan`} onClick={() => onEdit(id, role, data)} title={t('canvas.edit_resources')} aria-label={t('canvas.edit_resources')}><Icon name="settings" size={15} /></button>
-      <button className={`${styles.iconButton} nodrag nopan`} onClick={() => openPlanning(id)} title={t('canvas.advanced_settings')} aria-label={supply ? t('canvas.supply_settings') : t('canvas.demand_settings')}><Icon name="more" size={16} /></button>
+      <button className={`${styles.iconButton} nodrag nopan`} onClick={() => openPlanning(id)} title={supply ? t('canvas.supply_settings') : t('canvas.demand_settings')} aria-label={supply ? t('canvas.supply_settings') : t('canvas.demand_settings')}><Icon name="boundary" size={16} /></button>
     </header>
     <ul className={styles.ports}>{ports.map((port, index) => {
       const portId = portIdentity(port)

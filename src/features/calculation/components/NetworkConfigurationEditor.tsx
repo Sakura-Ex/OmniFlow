@@ -1,6 +1,8 @@
 import { translateDiagnostic } from '@/common/i18n/translateDiagnostic'
 import { useDraftState } from '@/common/components/DraftStateContext'
 import { documentKey } from '@/common/utils/saveBaseline'
+import { categoryDisplayName } from '@/common/i18n/resourceLabels'
+import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 import { t, useTranslation } from '@/common/i18n'
 import { Icon } from '@/common/components/Icon'
 import { useState } from 'react'
@@ -18,6 +20,8 @@ import { BoundaryEditor } from './BoundaryEditor'
 import { supplyUnconnectedInputs } from '../inputSupply'
 import modal from '@/common/components/Modal.module.css'
 import styles from './BoundaryEditor.module.css'
+
+const sectionLabels = { machines: 'settings.machines', boundaries: 'settings.boundaries', network: 'settings.network', optimization: 'settings.optimization' } as const
 
 /**
  * Edit a supply, demand or machine locally, retaining advanced network settings.
@@ -37,6 +41,12 @@ export function NetworkConfigurationEditor({ nodeId, onClose, takeSnapshot, embe
   const [draft, setDraft] = useState(() => structuredClone(useCanvasStore.getState().networkConfiguration))
   const committed = useCanvasStore(state => state.networkConfiguration)
   useDraftState(documentKey(draft) !== documentKey(committed))
+  const entries = useGlobalResourceTable(state => state.entries)
+  const categories = useGlobalResourceTable(state => state.categories)
+  const [section, setSection] = useState<'machines' | 'boundaries' | 'network' | 'optimization'>('boundaries')
+  const [search, setSearch] = useState('')
+  const [applied, setApplied] = useState(false)
+  const dirty = documentKey(draft) !== documentKey(committed)
   const [error, setError] = useState<string | null>(null)
   const units = new UnitSystem(environment)
   const focused = nodes.find(node => node.id === nodeId)
@@ -46,6 +56,11 @@ export function NetworkConfigurationEditor({ nodeId, onClose, takeSnapshot, embe
   try { ports = graphPorts(nodes, recipes, environment) } catch (failure) { displayError ??= failure instanceof Error ? failure.message : String(failure) }
   const visibleNodes = nodeId ? nodes.filter(node => node.id === nodeId) : nodes
   const recipeInputs = ports.filter(port => visibleNodes.some(node => node.id === port.nodeId && node.type === 'recipeNode') && port.direction === 'input' && port.port.amount > 0 && port.port.consumable !== false && port.port.probability !== 0 && (draft.ports[portKey(port.nodeId, port.portId)]?.semantics.kind ?? 'flow') === 'flow')
+  const nodeName = (id: string): string => recipes[id]?.machine_name || nodes.find(node => node.id === id)?.data?.label || id
+  const matches = (id: string, resource = '') => [id, nodeName(id), resource].join(' ').toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())
+  const scopedPorts = ports.filter(port => visibleNodes.some(node => node.id === port.nodeId))
+  const filteredPorts = scopedPorts.filter(port => matches(port.nodeId, port.port.id + ' ' + port.port.category + ' ' + (entries[port.resourceId]?.displayName ?? '')))
+  const machineNodes = visibleNodes.filter(node => node.type === 'recipeNode' && (matches(node.id) || filteredPorts.some(port => port.nodeId === node.id)))
   const patch = (key: string, value: NetworkPortConfiguration) => setDraft(previous => ({ ...previous, ports: { ...previous.ports, [key]: value } }))
   const save = () => {
     const parsed = NetworkConfigurationSchema.safeParse(draft)
@@ -53,9 +68,10 @@ export function NetworkConfigurationEditor({ nodeId, onClose, takeSnapshot, embe
     takeSnapshot()
     useCanvasStore.getState().setNetworkConfiguration(parsed.data)
     setError(null)
+    setApplied(true)
     if (!embedded) onClose()
   }
-  const renderPort = (port: typeof ports[number], endpoint: boolean) => {
+  const renderPort = (port: typeof ports[number], view: 'boundary' | 'network' | 'optimization') => {
     const key = portKey(port.nodeId, port.portId)
     const value = draft.ports[key] ?? { scopeId: 'document', busId: 'default', semantics: { kind: 'flow' as const } }
     const expression = port.port.displayUnit ?? port.port.unit ?? defaultResourceUnit(port.port.category, port.port.id)
@@ -74,25 +90,48 @@ export function NetworkConfigurationEditor({ nodeId, onClose, takeSnapshot, embe
         </div>
         <button className={styles.subtle} onClick={() => setDraft(previous => { const next = { ...previous.ports }; delete next[key]; return { ...previous, ports: next } })}>{t('canvas.restore_closed_port')}</button>
 </>
-    return <section key={key} className={styles.portCard}>
-      <h4>{port.port.id} <span>{endpoint ? port.direction === 'output' ? t('canvas.supply') : t('canvas.demand') : port.direction === 'input' ? t('canvas.input_port') : t('canvas.output_port')}</span></h4>
-      {value.semantics.kind === 'flow' ? <BoundaryEditor direction={port.direction} supplyInput={port.direction === 'input' && nodes.some(node => node.id === port.nodeId && node.type === 'recipeNode')} value={convert(value.boundary, true)} unitLabel={unitLabel} advanced={networkFields} onChange={boundary => patch(key, { ...value, boundary: convert(boundary, false) })} /> : <details className={styles.advanced} open><summary>{t('canvas.capacity_and_operating_state')}</summary>{networkFields}</details>}
+    return <section key={key} className={styles.portRow} aria-label={port.port.id + ' · ' + nodeName(port.nodeId)}>
+      <div className={styles.resourceName}><strong title={port.port.id}>{entries[port.resourceId]?.displayName || port.port.id}</strong><span>{port.direction === 'input' ? t('canvas.input_port') : t('canvas.output_port')}</span>{!nodeId && <small title={port.nodeId}>{nodeName(port.nodeId)} · {visibleNodes.findIndex(node => node.id === port.nodeId) + 1}</small>}</div>
+      <div className={styles.portFields}>{view === 'network' ? networkFields : value.semantics.kind === 'flow' ? <BoundaryEditor direction={port.direction} supplyInput={port.direction === 'input' && nodes.some(node => node.id === port.nodeId && node.type === 'recipeNode')} value={convert(value.boundary, true)} unitLabel={unitLabel} mode={view} onChange={boundary => patch(key, { ...value, boundary: convert(boundary, false) })} /> : <span className={styles.hint}>{t('canvas.capacity_and_operating_state')}</span>}</div>
     </section>
   }
-  return <div className={embedded ? styles.embeddedHost : modal.overlay}><section role={embedded ? undefined : 'dialog'} aria-modal={embedded ? undefined : true} aria-labelledby={embedded ? undefined : 'planning-title'} className={`${embedded ? styles.embedded : modal.panel} ${styles.dialog}`} onKeyDown={event => { if (event.key === 'Escape' && !embedded) onClose() }}>
-    {!embedded && <header className={styles.header}><div><h3 id="planning-title">{title}</h3></div><button aria-label={t('canvas.close_settings')} onClick={onClose}><Icon name="close" /></button></header>}
+  const renderPorts = (items: typeof ports, view: 'boundary' | 'network' | 'optimization' = 'boundary') => {
+    const groups = new Map<string, typeof ports>()
+    for (const port of items) {
+      const group = groups.get(port.port.category) ?? []
+      group.push(port)
+      groups.set(port.port.category, group)
+    }
+    return [...groups].sort(([a], [b]) => Object.keys(categories).indexOf(a) - Object.keys(categories).indexOf(b)).map(([category, group]) => <section key={category} className={styles.category}><h4>{categoryDisplayName(category, categories[category]?.displayName ?? category)}</h4>{group.map(port => renderPort(port, view))}</section>)
+  }
+
+  const suppliedInputs = filteredPorts.filter(port => recipeInputs.includes(port))
+  const otherInputs = filteredPorts.filter(port => !recipeInputs.includes(port) && port.direction === 'input' && nodes.some(node => node.id === port.nodeId && node.type === 'recipeNode'))
+  const remainingPorts = filteredPorts.filter(port => !suppliedInputs.includes(port) && !otherInputs.includes(port))
+  const optimizationPorts = filteredPorts.filter(port => {
+    const boundary = draft.ports[portKey(port.nodeId, port.portId)]?.boundary
+    return boundary?.kind === 'source' || boundary?.kind === 'spill' || (boundary?.kind === 'delivery' && (boundary.mode === 'maximize' || boundary.objective !== undefined))
+  })
+  const count = section === 'machines' ? machineNodes.length : section === 'optimization' ? optimizationPorts.length : filteredPorts.length
+  const network = <>{renderPorts(filteredPorts, 'network')}        {!nodeId && Object.keys(draft.ports).filter(key => !ports.some(port => portKey(port.nodeId, port.portId) === key)).map(key => <p key={key}>{t('canvas.obsolete_configuration')} {key} <button onClick={() => setDraft(previous => { const next = { ...previous.ports }; delete next[key]; return { ...previous, ports: next } })}>{t('canvas.remove')}</button></p>)}</>
+  const optimization = <>{!nodeId && <section className={styles.group}>        <label className={styles.check}><input type="checkbox" checked={Boolean(draft.minimizeMachines)} onChange={event => setDraft(previous => ({ ...previous, minimizeMachines: event.target.checked ? { priority: 1, weight: 1, scale: 1 } : undefined }))} />{t('canvas.customize_the_priority_of_minimizing_machine_operation')}</label>
+        {draft.minimizeMachines && <div className={styles.fields}>{(['priority', 'weight', 'scale'] as const).map(field => <label key={field}>{{ priority: t('canvas.priority_lower_first'), weight: t('canvas.weight'), scale: t('canvas.normalization_scale') }[field]}<input type="number" value={draft.minimizeMachines![field]} onChange={event => { const next = Number(event.target.value); setDraft(previous => ({ ...previous, minimizeMachines: { ...previous.minimizeMachines!, [field]: next } })) }} /></label>)}</div>}</section>}{renderPorts(optimizationPorts, 'optimization')}</>
+  return <div className={embedded ? styles.embeddedHost : modal.overlay}><section role={embedded ? undefined : 'dialog'} aria-modal={embedded ? undefined : true} aria-labelledby={embedded ? undefined : 'planning-title'} className={(embedded ? styles.embedded : modal.panel) + ' ' + styles.dialog} onKeyDown={event => { if (event.key === 'Escape' && !embedded) onClose() }}>
+    {!embedded && <header className={styles.header}><div><h3 id="planning-title">{title}</h3>{nodeId && <p>{nodeName(nodeId)}</p>}</div><button aria-label={t('canvas.close_settings')} onClick={onClose}><Icon name="close" /></button></header>}
+    {!nodeId && <div className={styles.toolbar}>
+      <nav className={styles.sections} aria-label={t('settings.production')}>{(['machines', 'boundaries', 'network', 'optimization'] as const).map(item => <button key={item} aria-current={section === item ? 'page' : undefined} onClick={() => setSection(item)}>{t(sectionLabels[item])}</button>)}</nav>
+      <div className={styles.search}><input type="search" aria-label={t('settings.search')} placeholder={t('settings.search')} value={search} onChange={event => setSearch(event.target.value)} />{search && <button aria-label={t('settings.clearSearch')} onClick={() => setSearch('')}><Icon name="close" /></button>}<span role="status">{t('settings.matching', { count })}</span></div>
+    </div>}
     <div className={styles.body}>
       {displayError && <p role="alert" className={styles.error}>{translateDiagnostic(displayError)}</p>}
-      {recipeInputs.length > 0 && <details className={styles.machine} open={Boolean(nodeId)}><summary>{t('canvas.input_supply')}</summary><button title={t('canvas.only_unconnected_ordinary_inputs_without_conditions_are')} onClick={() => setDraft(previous => supplyUnconnectedInputs(recipeInputs, visibleNodes, edges, previous))}>{t('canvas.provide_sufficient_supply_to_unconnected_inputs')}</button>{recipeInputs.map(port => <div key={portKey(port.nodeId, port.portId)}>{!nodeId && <p className={styles.hint}>{recipes[port.nodeId]?.machine_name || t('canvas.machine')}</p>}{renderPort(port, false)}</div>)}</details>}
-      {visibleNodes.filter(node => node.type === 'sourceNode' || node.type === 'targetNode').map(node => <div key={node.id}>{ports.filter(port => port.nodeId === node.id).map(port => renderPort(port, true))}</div>)}
-      {visibleNodes.filter(node => node.type === 'recipeNode').map(node => <details key={node.id} className={styles.machine} open={Boolean(nodeId)}><summary>{recipes[node.id]?.machine_name || t('canvas.machine')}  {t('canvas.installed_count')}</summary><div className={styles.fields}>{(['installed', 'existing', 'operatingUpper'] as const).map(field => <label key={field}>{field === 'installed' ? t('canvas.planned_installation') : field === 'existing' ? t('canvas.existing_machines') : t('canvas.operating_limit')}<input type="number" min="0" step={field === 'operatingUpper' ? 'any' : '1'} placeholder={field === 'installed' ? t('canvas.automatic_recommendation') : field === 'existing' ? t('canvas.not_registered') : t('canvas.noLimit')} value={draft.machines[node.id]?.[field] ?? ''} onChange={event => { const next = event.target.value; setDraft(previous => ({ ...previous, machines: { ...previous.machines, [node.id]: { ...(previous.machines[node.id] ?? { installed: null, operatingUpper: null }), [field]: next === '' ? field === 'existing' ? undefined : null : Number(next) } } })) }} /></label>)}</div></details>)}
-      {(!focused || focused.type === 'recipeNode' || focused.type === 'splitterNode') && <details className={styles.advanced}><summary>{t('canvas.more_constraints_and_objectives')}</summary>
-        {ports.filter(port => !recipeInputs.includes(port) && visibleNodes.some(node => node.id === port.nodeId && node.type !== 'sourceNode' && node.type !== 'targetNode')).map(port => renderPort(port, false))}
-        {Object.keys(draft.ports).filter(key => !ports.some(port => portKey(port.nodeId, port.portId) === key)).map(key => <p key={key}>{t('canvas.obsolete_configuration')} {key} <button onClick={() => setDraft(previous => { const next = { ...previous.ports }; delete next[key]; return { ...previous, ports: next } })}>{t('canvas.remove')}</button></p>)}
-        <label className={styles.check}><input type="checkbox" checked={Boolean(draft.minimizeMachines)} onChange={event => setDraft(previous => ({ ...previous, minimizeMachines: event.target.checked ? { priority: 1, weight: 1, scale: 1 } : undefined }))} />{t('canvas.customize_the_priority_of_minimizing_machine_operation')}</label>
-        {draft.minimizeMachines && <div className={styles.fields}>{(['priority', 'weight', 'scale'] as const).map(field => <label key={field}>{{ priority: t('canvas.priority_lower_first'), weight: t('canvas.weight'), scale: t('canvas.normalization_scale') }[field]}<input type="number" value={draft.minimizeMachines![field]} onChange={event => { const next = Number(event.target.value); setDraft(previous => ({ ...previous, minimizeMachines: { ...previous.minimizeMachines!, [field]: next } })) }} /></label>)}</div>}
-      </details>}
+      {(nodeId || section === 'machines') && <>{machineNodes.map(node => <section key={node.id} className={styles.machine}><h4 title={node.id}>{nodeId ? t('settings.machines') : nodeName(node.id)}{!nodeId && <small> · {visibleNodes.findIndex(item => item.id === node.id) + 1}</small>}</h4><div className={styles.machineFields}>{(['installed', 'existing', 'operatingUpper'] as const).map(field => <label key={field}>{field === 'installed' ? t('canvas.planned_installation') : field === 'existing' ? t('canvas.existing_machines') : t('canvas.operating_limit')}<input type="number" min="0" step={field === 'operatingUpper' ? 'any' : '1'} placeholder={field === 'installed' ? t('canvas.automatic_recommendation') : field === 'existing' ? t('canvas.not_registered') : t('canvas.noLimit')} value={draft.machines[node.id]?.[field] ?? ''} onChange={event => { const next = event.target.value; setDraft(previous => ({ ...previous, machines: { ...previous.machines, [node.id]: { ...(previous.machines[node.id] ?? { installed: null, operatingUpper: null }), [field]: next === '' ? field === 'existing' ? undefined : null : Number(next) } } })) }} /></label>)}</div></section>)}</>}
+      {(nodeId || section === 'boundaries') && <>
+        {suppliedInputs.length > 0 && <section className={styles.group}><header className={styles.groupHeader}><h3>{t('canvas.input_supply')}</h3><button title={t('canvas.only_unconnected_ordinary_inputs_without_conditions_are')} onClick={() => setDraft(previous => supplyUnconnectedInputs(suppliedInputs, visibleNodes, edges, previous))}>{t(nodeId ? 'canvas.provide_sufficient_supply_to_unconnected_inputs' : 'settings.supplyVisible')}</button></header>{renderPorts(suppliedInputs)}</section>}
+        {otherInputs.length > 0 && <section className={styles.group}><h3>{t('settings.otherPorts')}</h3>{renderPorts(otherInputs)}</section>}
+        {remainingPorts.length > 0 && <section className={styles.group}><h3>{t(focused?.type === 'recipeNode' ? 'settings.outputs' : 'settings.boundaries')}</h3>{renderPorts(remainingPorts)}</section>}
+      </>}
+      {nodeId ? <><details className={styles.advanced}><summary>{t('settings.network')}</summary>{network}</details>{optimizationPorts.length > 0 && <details className={styles.advanced}><summary>{t('settings.optimization')}</summary>{optimization}</details>}</> : <>{section === 'network' && network}{section === 'optimization' && optimization}{count === 0 && <p className={styles.hint}>{t('settings.noMatches')}</p>}</>}
     </div>
-    <footer className={styles.footer}><button onClick={() => { if (embedded) { setDraft(structuredClone(useCanvasStore.getState().networkConfiguration)); setError(null) } else onClose() }}>{t(embedded ? 'settings.reset' : 'canvas.cancel')}</button><button className={styles.primary} onClick={save}>{t('canvas.save_settings')}</button></footer>
+    <footer className={styles.footer}><span role="status">{dirty ? t('settings.pending') : applied ? t('settings.applied') : ''}</span><button onClick={() => { if (embedded) { setDraft(structuredClone(useCanvasStore.getState().networkConfiguration)); setError(null); setApplied(false) } else onClose() }}>{t(embedded ? 'settings.reset' : 'canvas.cancel')}</button><button className={styles.primary} onClick={save}>{t('settings.apply')}</button></footer>
   </section></div>
 }
