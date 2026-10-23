@@ -53,4 +53,4 @@ These examples illustrate documentation style, not production validation or the 
 
 - `npm run lint` includes the JSDoc rules in `eslint.config.js`.
 - If installed, `pydocstyle backend/` uses `pyproject.toml`; install with `python -m pip install pydocstyle`.
-- Report actual output. Historical coverage claims in `DOCSTRING_STATUS.md` do not establish current lint success.
+- Report actual output; historical coverage claims do not establish current lint success.

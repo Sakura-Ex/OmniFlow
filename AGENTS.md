@@ -21,7 +21,7 @@ Prefer the smallest architecturally sound change.
 
 - `src/features/`: domain-owned components, hooks, stores, and services.
 - `src/app/`: application-level UI composing feature entry points; shared controls stay in `src/common/components/`.
-- `tests/browser/`: manual browser validation harness; `fixtures/`: shared test data; `scripts/validation/`: validation helpers. Keep observations and screenshots in `docs/validation/`.
+- `tests/browser/`: manual browser validation harness; `fixtures/`: shared test data; `scripts/validation/`: validation helpers. Keep disposable observations, screenshots and benchmark output in ignored `artifacts/`; keep maintained regression fixtures in `fixtures/`.
 - `src/common/`: shared types, schemas, utilities, and database infrastructure.
 - `src/data/archetypes/`: machine templates; `features/modifier/modifiers/`: game-specific rules.
 - `backend/main.py`: FastAPI and SciPy LP; `public/`: assets; `dist/`: generated output.

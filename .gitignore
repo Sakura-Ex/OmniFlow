@@ -83,3 +83,6 @@ htmlcov/
 build/
 coverage/
 .todo.md
+
+# Disposable screenshots, local reports and benchmark measurements
+/artifacts/

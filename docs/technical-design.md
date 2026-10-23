@@ -1,6 +1,6 @@
 # OmniFlow 技术设计文档
 
-> 历史 v1 设计参考。下文中的扁平资源传输、可变 Context 修饰器及旧后端建模流程已由 v2 替代；当前计算语义以 [v2 设计](technical-design-v2-proposal.md) 和 [实现验证记录](validation/v2-completion/README.md) 为准。不要据本文旧接口新增实现。
+> 历史 v1 设计参考。下文中的扁平资源传输、可变 Context 修饰器及旧后端建模流程已由 v2 替代；当前计算语义以 [v2 设计](technical-design-v2-proposal.md) 和 [测试指南](testing.md) 为准。不要据本文旧接口新增实现。
 
 > 原有操作习惯仍是交互基准，不因计算接口更新而作废。调整功能入口、默认行为和布局前，参照[交互设计手册](interaction-design-handbook.md)并核对 v2 前实现。
 

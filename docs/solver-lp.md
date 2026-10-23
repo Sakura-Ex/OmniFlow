@@ -86,10 +86,7 @@ node node_modules/eslint/bin/eslint.js src/common/types/lp.ts src/common/types/l
 
 覆盖 T09 慢配方优先最大化、T16 真正无界、T21 第二层超时保留带锁残差证据的方案、T23 非法数值/索引/边界和小数变量；另有显示单位尺度与容差、重复项和精度抵消、矛盾零行、空模型、逐层回代、共享预算、执行异常及跨语言六状态契约。
 
-本次独立验证结果：上述 pytest **89 passed**，LP 契约 Vitest **66 passed**，TypeScript 构建检查及上述两个文件 ESLint 均通过。在当前 Windows 环境中使用 `.venv\Scripts\python.exe` 运行 Python 命令；该解释器需要允许本地环境执行，Node 入口直接运行锁定依赖中的 runner。
-
-以上 89/66 为 PR-05 历史独立测试结果，不是当前全仓测试总数。2026-10-23 协调 agent 的最终集成回归为前端 212、后端 163 全通过，无跳过；lint 零告警，build 通过且保留约 677 kB 主包大小告警。当前已增加 31 组编译器真实求解 fixtures（含 T07/T08/T10/T14/T18/T24）、版本化 HTTP、执行池及诊断测试，详见 [测试指南](testing.md) 与 [T01–T24 证据映射](validation/v2-completion/acceptance-matrix.md)。[后端性能实测](validation/v2-completion/performance-backend.md) 记录固定硬件与数据集的 P50/P95、队列和原生内存；函数级正确性测试不替代浏览器或性能验收。
-
+验证入口与覆盖边界统一见[测试指南](testing.md)。函数级正确性测试不替代浏览器或性能验收。
 
 ## 当前 HTTP、诊断与发布边界
 

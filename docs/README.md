@@ -1,39 +1,16 @@
 # Documentation index
 
-Start here when developing or reviewing OmniFlow. Design proposals describe intent; implementation status and validation evidence must be checked separately.
-
-## Active references
-
-| Task | Reference |
+| Need | Reference |
 |---|---|
-| Development rules | [Repository guidelines](../AGENTS.md), [contributing](../CONTRIBUTING.md) |
-| UX, defaults and workflows | [Interaction design handbook](interaction-design-handbook.md) |
-| v2 domain and calculation contract | [v2 technical design](technical-design-v2-proposal.md), [LP contract](solver-lp.md) |
-| Implementation status | [Gap assessment](v2-code-gap-assessment.md), [implementation plan](v2-implementation-plan.md) |
-| Running and validating changes | [Testing](testing.md), [CI](ci.md), [local startup](starting.md) |
-| Comments and documentation | [Docstring guidelines](DOCSTRING_GUIDELINES.md) |
+| First use | [English README](../README.md), [中文 README](README_CN.md), [Windows launcher](starting.md) |
+| Development | [Contributing](../CONTRIBUTING.md), [repository guidelines](../AGENTS.md), [docstring conventions](DOCSTRING_GUIDELINES.md) |
+| Interaction and next-stage plans | [Interaction handbook](interaction-design-handbook.md) |
+| Calculation architecture | [v2 design](technical-design-v2-proposal.md), [solver contract](solver-lp.md) |
+| Current implementation limits | [Gap assessment](v2-code-gap-assessment.md) |
+| Verification | [Testing](testing.md), [CI](ci.md), [manual browser harness](../tests/browser/README.md) |
 
-## Code and evidence locations
+Application shell code belongs in `src/app/`, domain code in `src/features/`, and shared controls, schemas and utilities in `src/common/`. Automated tests live beside the behavior they protect; configuration tests live in `tests/config/`. Shared mathematical inputs and migration documents belong in `fixtures/`, not in documentation folders.
 
-| Location | Responsibility |
-|---|---|
-| `src/app/components/` | Application-level menus, settings page and shortcut help; composes feature entry points |
-| `src/features/` | Domain-owned code; `components/` contains UI and `contexts/` contains React entry-point coordination |
-| `src/common/components/` | Reusable, domain-independent controls and shells |
-| `tests/browser/` | Manual browser validation harness mounting the real application |
-| `fixtures/canvas/` | Saved canvas documents used by the browser harness |
-| `fixtures/compiler/`, `fixtures/diagnostics/` | Shared frontend/backend regression inputs and recorded solver responses |
-| `scripts/validation/` | Canvas fixture generation and browser report generation |
-| `backend/benchmarks/` | Python benchmark runners and their raw measurements |
-| `docs/validation/` | Observations, acceptance records, screenshots and measured results; not executable application code |
+The [original technical design](technical-design.md) remains solely as the v1 interaction reference used by the handbook. Its old calculation interfaces are superseded by v2. Implementation diaries, intermediate screenshots and historical measurements can be recovered from Git before the repository cleanup; they are not current specifications.
 
-Unit tests remain beside the modules they cover. Browser validation instructions are in [the harness guide](../tests/browser/README.md). File moves do not change the document schema or backend API.
-
-## Historical and supporting material
-
-- [Original technical design](technical-design.md), [storage reform proposal](phase2-storage-reform.md) and [whitepaper](whitepaper.md): background; reconcile with current contracts before using as implementation instructions.
-- [Technical debt audit](technical-debt-audit-2026-10-23.md): historical findings and later incremental review, with explicit snapshot boundaries.
-- [v2 acceptance ledger](validation/v2-completion/README.md), [UX validation ledger](validation/ux-2026-10-23/README.md): evidence for their recorded snapshots, not proof that later changes passed.
-- [Docstring status](DOCSTRING_STATUS.md): documentation review notes, not a substitute for current checks.
-
-Keep old evidence when it explains an accepted result. Update active links when files move; label superseded statements rather than rewriting historical observations as new validation.
+Keep documentation focused on usage, contracts, decisions and unresolved limits. Update the owning document instead of adding a report per change. Store disposable screenshots, benchmark output and local reports under ignored `artifacts/`; retain a fixture only when a maintained test or reproduction tool uses it.

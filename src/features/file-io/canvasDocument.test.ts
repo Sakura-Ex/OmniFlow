@@ -1,4 +1,4 @@
-import exportedDocumentJson from '../../../docs/validation/pr-02-04/export-roundtrip.json?raw'
+import exportedDocumentJson from '../../../fixtures/documents/legacy-v4-export.json?raw'
 import { describe, expect, it } from 'vitest'
 import type { RecipeNodeData } from '@/common/types/recipe'
 import { readCanvasDocument } from './canvasDocument'

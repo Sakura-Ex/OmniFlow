@@ -1,3 +1,4 @@
+import { createHistory } from '@/common/utils/history'
 import { beforeEach, expect, it } from 'vitest'
 import type { Node } from 'reactflow'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
@@ -45,33 +46,51 @@ it('migrates database graph handles using authoritative recipes and replaces the
   expect(graph.isDirty).toBe(false)
 })
 
-
-it('restores imported unit environments and registry through undo and redo', () => {
-  const before = captureSnapshot([], [])
+it('undoes and redoes TPS, registry units and installed quantities through the real document history', () => {
+  const canvas = useCanvasStore.getState()
+  const original = captureSnapshot(canvas.nodes, canvas.edges)
+  const restore = (snapshot: ReturnType<typeof captureSnapshot>) => {
+    restoreSnapshot(snapshot)
+    useCanvasStore.getState().setNodes(snapshot.nodes)
+    useCanvasStore.getState().setEdges(snapshot.edges)
+  }
   try {
-    useSettingsStore.getState().setTps(40)
-    useGlobalResourceTable.getState().addCategory({ id: 'custom', displayName: 'Custom', base_unit: 'custom-unit', themeColor: 'blue', preferred_time_base: 'rate_per_tick' })
-    const after = captureSnapshot([], [])
-    restoreSnapshot(before)
-    expect(useSettingsStore.getState().units).toEqual(before.environment)
-    expect(useGlobalResourceTable.getState().categories).toEqual(before.registry.categories)
-    restoreSnapshot(after)
-    expect(useSettingsStore.getState().tps).toBe(40)
-    expect(useSettingsStore.getState().units.definitions.some((d) => d.symbol === 'custom-unit')).toBe(true)
-    expect(useGlobalResourceTable.getState().categories.custom.base_unit).toBe('custom-unit')
-  } finally { restoreSnapshot(before) }
-})
-
-
-it('undo and redo restore network assumptions together with the graph', () => {
-  const before = captureSnapshot([], [])
-  const configuration = { version: 1 as const, ports: {}, machines: { r: { installed: 3, operatingUpper: 1.2 } } }
-  try {
-    useCanvasStore.getState().setNetworkConfiguration(configuration)
-    const after = captureSnapshot([], [])
-    restoreSnapshot(before)
-    expect(useCanvasStore.getState().networkConfiguration).toEqual(before.networkConfiguration)
-    restoreSnapshot(after)
-    expect(useCanvasStore.getState().networkConfiguration).toEqual(configuration)
-  } finally { restoreSnapshot(before) }
+    canvas.resetCanvas()
+    useRecipeStore.setState({ recipes: {} })
+    canvas.addRecipeNode('machine', {
+      recipe_id: 'machine', machine_name: 'Machine', system: 'custom', duration_seconds: 1,
+      inputs: [], outputs: [], metadata: {},
+    }, { id: 'machine', type: 'recipeNode', position: { x: 0, y: 0 }, data: {} })
+    const initial = captureSnapshot(useCanvasStore.getState().nodes, [])
+    const history = createHistory({ capture: () => captureSnapshot(useCanvasStore.getState().nodes, useCanvasStore.getState().edges), restore })
+    const newTps = initial.environment.ticksPerSecond === 40 ? 60 : 40
+    history.commit(() => useSettingsStore.getState().setTps(newTps))
+    history.commit(() => useGlobalResourceTable.getState().addCategory({
+      id: 'history-custom', displayName: 'History custom', base_unit: 'history-widget', themeColor: 'blue', preferred_time_base: 'rate_per_tick',
+    }))
+    history.commit(() => useCanvasStore.getState().setNetworkConfiguration({
+      ...useCanvasStore.getState().networkConfiguration, machines: { machine: { installed: 3, operatingUpper: 1.2 } },
+    }))
+    history.undo()
+    expect(useCanvasStore.getState().networkConfiguration.machines).toEqual(initial.networkConfiguration.machines)
+    expect(useSettingsStore.getState().tps).toBe(newTps)
+    expect(useGlobalResourceTable.getState().categories['history-custom']).toBeDefined()
+    history.undo()
+    expect(useGlobalResourceTable.getState().categories).toEqual(initial.registry.categories)
+    expect(useSettingsStore.getState().units.definitions.some(definition => definition.symbol === 'history-widget')).toBe(false)
+    expect(useSettingsStore.getState().tps).toBe(newTps)
+    history.undo()
+    expect(useSettingsStore.getState().units).toEqual(initial.environment)
+    expect(history.canUndo()).toBe(false)
+    history.redo()
+    history.redo()
+    history.redo()
+    expect(useSettingsStore.getState().tps).toBe(newTps)
+    expect(useSettingsStore.getState().units.definitions.some(definition => definition.symbol === 'history-widget')).toBe(true)
+    expect(useGlobalResourceTable.getState().categories['history-custom'].base_unit).toBe('history-widget')
+    expect(useCanvasStore.getState().networkConfiguration.machines.machine).toEqual({ installed: 3, operatingUpper: 1.2 })
+    expect(useRecipeStore.getState().recipes.machine.machine_name).toBe('Machine')
+    expect(useCanvasStore.getState().calculationStatus).toBe('stale')
+    expect(history.canRedo()).toBe(false)
+  } finally { restore(original) }
 })
