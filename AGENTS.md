@@ -1,53 +1,46 @@
 # Repository Guidelines
 
-## Scope & References
+## Scope & Authority
 
-Explicit user instructions take precedence. Tool-specific rules link here. Historical specs/status reports are references, not tasks. Verify code/configuration; consult [v2 design](docs/technical-design-v2-proposal.md) and [gap assessment](docs/v2-code-gap-assessment.md) for calculation changes.
+Explicit user instructions take precedence. Work within the agreed scope and preserve unrelated changes. Historical reports and planned features are references, not standing tasks. Verify the current implementation rather than assuming documentation is current; resolve discrepancies relevant to the current task and update the owning document.
 
-For UI entry points, defaults and workflows, read the [interaction design handbook](docs/interaction-design-handbook.md) and inspect the pre-v2 behavior before changing them. Preserve established inline editing and shortcuts; integrate v2 capabilities into existing workflows and document necessary deviations.
+This file defines repository-wide working principles. Keep domain-specific requirements in their authoritative documents:
 
-## Implementation Strategy
+- [Documentation index](docs/README.md): usage, architecture and contribution references.
+- [Interaction handbook](docs/interaction-design-handbook.md): workflows and interaction contracts.
+- [v2 design](docs/technical-design-v2-proposal.md) and [gap assessment](docs/v2-code-gap-assessment.md): calculation design and implementation limits.
+- [Testing](docs/testing.md): environment, commands and verification scope.
+- [Docstring guidelines](docs/DOCSTRING_GUIDELINES.md): documentation conventions.
 
-Prefer the smallest architecturally sound change.
+## Approach
 
-- Inspect existing abstractions first. Explain substantial changes, interface/caller impacts, and migrations; proceed within authorized scope without routine reconfirmation.
-- Prefer localized changes; extend the abstraction that naturally owns the behavior.
-- Avoid one-off branches, duplicated logic, special-case fields, and ad-hoc abstractions merely to minimize the diff.
-- When workarounds create meaningful debt or inconsistency, explain local versus structural alternatives and prefer the structural solution.
-- Consider extension costs without speculative abstractions. Do not refactor unrelated code.
-- Preserve unrelated working-tree changes.
+Prioritize correctness, coherent design and long-term maintainability over minimizing the change size. Choose the scope needed to resolve the underlying problem, rather than defaulting to a local patch.
 
-## Structure & Architecture
+- Understand the user's task, existing behavior and root cause before editing. Distinguish intended contracts from accidental implementation constraints; do not preserve a flawed structure merely because it already exists.
+- Assess responsibilities, data flow, abstractions and affected callers together. Keep related entry points consistent and resolve problems at the layer that owns them.
+- Reuse sound abstractions. When the existing design obstructs reuse or mixes responsibilities, restructure it and migrate affected callers instead of adding duplicated logic, special cases or temporary workarounds. Necessary restructuring is not limited to small edits. Record the purpose and removal conditions of temporary solutions and compatibility layers in existing tracking channels.
+- Compare local and structural solutions by correctness, clarity, maintenance cost and realistic extension needs. Prefer the structural solution when it removes the cause of recurring complexity; avoid abstractions justified only by hypothetical future features.
+- Explain substantial changes, tradeoffs, compatibility impacts and validation. Carry the chosen approach through implementation, caller migration, cleanup and documentation within the authorized scope. Ask when an unresolved product decision or expansion of scope requires user input, not merely because several files need to change.
+- Keep changes tied to the problem being solved. Avoid unrelated rewrites, but do not use minimal-diff or scope arguments to leave necessary architectural work unfinished.
 
-- `src/features/`: domain-owned components, hooks, stores, and services.
-- `src/app/`: application-level UI composing feature entry points; shared controls stay in `src/common/components/`.
-- `tests/browser/`: manual browser validation harness; `fixtures/`: shared test data; `scripts/validation/`: validation helpers. Keep disposable observations, screenshots and benchmark output in ignored `artifacts/`; keep maintained regression fixtures in `fixtures/`.
-- `src/common/`: shared types, schemas, utilities, and database infrastructure.
-- `src/data/archetypes/`: machine templates; `features/modifier/modifiers/`: game-specific rules.
-- `backend/main.py`: FastAPI and SciPy LP; `public/`: assets; `dist/`: generated output.
+## Architecture & Code Quality
 
-Respect `eslint.config.js` boundaries. Keep calculations deterministic with explicit environment inputs; hooks orchestrate, domain functions compute. Keep recipe data authoritative in its store. Use focused Zustand selectors and semantic actions. Validate external data with Zod/Pydantic. Reuse ID/formatting helpers; retain precision until display.
+Keep responsibilities cohesive and dependencies explicit. Application composition belongs in `src/app/`, domain behavior in `src/features/`, and genuinely shared infrastructure in `src/common/`. Respect the boundaries enforced by `eslint.config.js`.
 
-## Commands & Configuration
+Keep domain calculations deterministic and separate from UI orchestration and external effects. Maintain authoritative data sources, validate external inputs, and preserve precision until presentation. Presentation changes must not silently alter business rules or persisted contracts. Changes to persisted data or public interfaces must define compatibility, migration and failure handling.
 
-- `npm ci`: install locked dependencies.
-- `npm run dev`: Vite on port 5173.
-- `npm run build`: TypeScript checks and production bundle.
-- `npm run lint`: ESLint, module boundaries, hooks, and JSDoc.
-- `npm run preview`: preview the bundle.
-- `npm test`: Vitest regression tests (`npm run test:watch` for watch mode).
-- `python -m pytest`: backend HTTP/solver regression tests.
+Follow existing naming, formatting and component conventions. Prefer readable code and explicit interfaces over compressed expressions. Comments should explain intent, constraints or non-obvious decisions rather than repeat the implementation. Never commit secrets.
 
-In an activated Python environment, run `python -m pip install -r backend/requirements-dev.txt` (or `backend/requirements.txt` for runtime only), then run `python -m uvicorn backend.main:app --reload --port 7998`. Match `VITE_BACKEND_URL` to this port using `.env.example`; never commit secrets. See [testing](docs/testing.md) for setup and regression scope.
+## Repository & Documentation Hygiene
 
-## Style & Documentation
+Every retained file should have an ongoing purpose. Extend the existing source of truth instead of adding parallel documentation, task diaries or a report per change. Keep usage documentation aligned with implemented behavior and repair references when moving or removing files.
 
-TypeScript: two spaces, single quotes, no semicolons, `unknown` over `any`, and `@/` imports. Components/types use PascalCase; functions use camelCase; hooks start with `use`. Follow `recipe.store.ts` and `resource.schema.ts` naming.
-
-Use CSS modules; reserve global CSS for resets and shared overrides. Python: four spaces, snake_case, type hints, Google-style docstrings. Write concise English JSDoc/docstrings; see [examples](docs/DOCSTRING_GUIDELINES.md).
+Store disposable screenshots, local reports and measurements in ignored `artifacts/`. Keep maintained regression data in `fixtures/`; generated output is not source. Remove obsolete artifacts and redundant tests without discarding useful regression coverage or unrelated user work.
 
 ## Validation & Delivery
 
-Vitest and pytest are configured; no coverage threshold is imposed. Run relevant checks; report actual results and explicitly skipped future acceptance cases. Cover conservation, capacity, units, and infeasible/unbounded solver cases. Use `*.test.ts` or `test_*.py` for new tests and document their runner.
+Match verification to the affected contracts and risks; use the testing guide for concrete checks. For bug fixes, add a regression test that reproduces the original failure where feasible. Prefer contract-focused tests in existing suites over tests that mirror implementation or exist only for one task. Automated checks do not substitute for checking actual behavior where the change requires it.
 
-Use Conventional Commits, e.g. `fix(calculation): preserve net isolation`. PRs describe the problem, behavior, validation, migrations, and related issues; include UI screenshots.
+Report what changed, why, what was verified and any relevant limitations. Distinguish local results, hosted CI and unverified plans. Do not claim completion from a successful command when the requested behavior remains unchecked.
+
+Use Conventional Commits. Keep commits focused on intended changes and PR descriptions centered on the resulting behavior and validation. When asked to submit or push, verify the target branch, outcome and remaining working-tree changes; do not infer authorization to merge or change repository policy.
