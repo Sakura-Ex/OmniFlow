@@ -9,7 +9,7 @@ import { flattenRecipeResources } from '@/features/canvas/canvas.utils'
  *
  * For each recipe node whose actual machine count exceeds zero, the function
  * multiplies every non-consumable resource amount by the machine count.
- * Resources with `consumable: true` or `probability: 0` are excluded.
+ * Non-consumable and zero-loss resources are included; consumable resources are excluded.
  *
  * @param recipes    - Recipe store keyed by node ID.
  * @param nodeResults - Per-node results from the backend calculation response.
@@ -24,8 +24,10 @@ export function computeCapexList(
   for (const [nodeId, shaped] of Object.entries(recipes)) {
     const nodeResult =
       nodeResults?.[nodeId] ?? nodeResults?.[shaped.recipe_id]
-    const machines =
-      nodeResult?.machine_actual ?? nodeResult?.machines_exact ?? 0
+    const machines = nodeResult?.machines_actual
+    if (machines === undefined || !Number.isSafeInteger(machines) || machines < 0) {
+      throw new Error(`Missing or invalid machines_actual for recipe node ${nodeId}`)
+    }
     if (machines <= 0) continue
 
     const allRes = flattenRecipeResources(shaped)

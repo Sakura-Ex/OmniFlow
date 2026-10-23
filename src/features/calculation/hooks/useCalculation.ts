@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import type { CalculateResponse } from '@/common/types/api'
+import { readCalculationResponse } from '../calculationClient'
 import { buildCalculationPayload } from '../payloadBuilder'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { useCanvasStore } from '@/features/canvas/canvas.store'
@@ -43,6 +43,7 @@ export function useCalculation() {
     const nodes = useCanvasStore.getState().nodes
     const edges = useCanvasStore.getState().edges
     const recipeStore = useRecipeStore.getState().recipes
+    useCanvasStore.getState().resetCalculationState()
 
     const result = buildCalculationPayload(nodes, edges, recipeStore)
 
@@ -64,22 +65,24 @@ export function useCalculation() {
     const backendUrl = import.meta.env.VITE_BACKEND_URL || `http://${window.location.hostname}:7998`
     const apiUrl = `${backendUrl}/api/calculate`
 
+    let response: Response
     try {
-      const response = await fetch(apiUrl, {
+      response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`HTTP ${response.status}: ${errorText}`)
-      }
-      const data = await response.json() as CalculateResponse
-      console.log('Calculation result:', data)
-      canvasStore.setCalculationResult(data)
     } catch (err) {
-      console.error('calculate failed', err)
-      canvasStore.setError(`Cannot connect to backend: ${err instanceof Error ? err.message : 'Unknown error'}\nPlease confirm the backend is running at http://localhost:8000`)
+      canvasStore.setError(`Cannot connect to backend at ${apiUrl}: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      return
+    }
+    try {
+      canvasStore.setCalculationResult(await readCalculationResponse(response))
+    } catch (err) {
+      canvasStore.setCalculationResult({
+        status: 'solver_error',
+        message: `Invalid calculation result: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      })
     }
   }, [])
 

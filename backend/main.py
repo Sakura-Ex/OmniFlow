@@ -1,11 +1,13 @@
 import math
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Literal, Optional
 
 import numpy as np
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, StringConstraints, ValidationError, model_validator
 from scipy.optimize import linprog
 
 logger = logging.getLogger("omniflow")
@@ -89,6 +91,10 @@ app.add_middleware(
 # =====================================================================
 # 2. Pydantic 数据模型定义 (API 契约)
 # =====================================================================
+ResourceId = Annotated[str, StringConstraints(min_length=1, pattern=r"\S")]
+NonnegativeNumber = Annotated[float, Field(ge=0, allow_inf_nan=False, strict=True)]
+
+
 class RecipeNodeData(BaseModel):
     """Data model for recipe node configuration.
     
@@ -108,11 +114,18 @@ class RecipeNodeData(BaseModel):
     recipe_id: str = Field("", description="Recipe ID")
     machine_name: str = Field("Recipe", description="Machine name")
     system: Optional[str] = Field(None, description="Mod system")
-    inputs: Dict[str, float] = Field(default_factory=dict, description="Input rates")
-    outputs: Dict[str, float] = Field(default_factory=dict, description="Output rates")
-    mode: Optional[str] = Field(None, description="Operation mode: auto|limit")
-    manual_machines: Optional[float] = Field(None, description="Manual machine cap")
+    inputs: Dict[ResourceId, NonnegativeNumber] = Field(default_factory=dict, description="Input rates")
+    outputs: Dict[ResourceId, NonnegativeNumber] = Field(default_factory=dict, description="Output rates")
+    mode: Optional[Literal['auto', 'limit']] = None
+    manual_machines: Optional[NonnegativeNumber] = None
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Machine metadata")
+
+    @model_validator(mode="after")
+    def require_manual_cap(self) -> "RecipeNodeData":
+        """Require an explicit capacity for limited recipes."""
+        if self.mode == "limit" and self.manual_machines is None:
+            raise ValueError("manual_machines is required in limit mode")
+        return self
 
 
 class SourceNodeData(BaseModel):
@@ -126,10 +139,10 @@ class SourceNodeData(BaseModel):
         mode: Supply mode - 'infinite' for unlimited, 'limit' for capped supply.
         actual_amounts: Backend-calculated actual throughput per port (for multi-port sources).
     """
-    id: str = Field(..., description="Resource ID")
-    amount: float = Field(0, description="Amount/rate")
-    mode: Optional[str] = Field(None, description="Supply mode: infinite|limit")
-    actual_amounts: Optional[Dict[str, float]] = Field(None, description="Calculated throughput")
+    id: ResourceId = Field(..., description="Resource ID")
+    amount: NonnegativeNumber = Field(0, description="Amount/rate")
+    mode: Optional[Literal['infinite', 'limit']] = None
+    actual_amounts: Optional[Dict[ResourceId, NonnegativeNumber]] = None
 
 
 class TargetNodeData(BaseModel):
@@ -144,10 +157,10 @@ class TargetNodeData(BaseModel):
               'overflow' for excess disposal.
         actual_amounts: Backend-calculated actual throughput per port (for multi-port targets).
     """
-    id: str = Field(..., description="Resource ID")
-    amount: float = Field(0, description="Amount/rate")
-    mode: Optional[str] = Field(None, description="Target mode: demand|maximize|overflow")
-    actual_amounts: Optional[Dict[str, float]] = Field(None, description="Calculated throughput")
+    id: ResourceId = Field(..., description="Resource ID")
+    amount: NonnegativeNumber = Field(0, description="Amount/rate")
+    mode: Optional[Literal['demand', 'maximize', 'overflow']] = None
+    actual_amounts: Optional[Dict[ResourceId, NonnegativeNumber]] = None
 
 
 class GraphNode(BaseModel):
@@ -160,7 +173,7 @@ class GraphNode(BaseModel):
         type: Node type discriminator - 'recipeNode', 'sourceNode', or 'targetNode'.
         data: Node-specific data payload matching the corresponding data model.
     """
-    id: str = Field(..., description="Unique node identifier")
+    id: ResourceId = Field(..., description="Unique node identifier")
     type: str = Field(..., description="Node type: recipeNode|sourceNode|targetNode")
     data: Dict[str, Any] = Field(default_factory=dict, description="Node data payload")
 
@@ -195,6 +208,94 @@ class CalculateRequest(BaseModel):
     edges: List[GraphEdge] = Field(..., description="All graph edges")
 
 
+class InvalidGraph(Exception):
+    """Carry JSON-safe validation issues for the complete graph."""
+
+    def __init__(self, errors: List[Dict[str, Any]]) -> None:
+        super().__init__("Graph validation failed")
+        self.errors = errors
+
+
+@app.exception_handler(InvalidGraph)
+async def invalid_graph_handler(_request: Request, exc: InvalidGraph) -> JSONResponse:
+    """Return a consistent error envelope without serializing invalid inputs."""
+    return JSONResponse(status_code=422, content={
+        "status": "invalid_model", "message": str(exc), "errors": exc.errors,
+    })
+
+
+@app.exception_handler(RequestValidationError)
+async def invalid_request_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """Normalize outer request errors to the graph validation contract."""
+    errors = []
+    for issue in exc.errors():
+        path = list(issue["loc"])
+        if path and path[0] == "body":
+            path = path[1:]
+        node_id = None
+        if (len(path) >= 2 and path[0] == "nodes" and isinstance(path[1], int)
+                and isinstance(exc.body, dict)):
+            nodes = exc.body.get("nodes")
+            if isinstance(nodes, list) and path[1] < len(nodes):
+                node = nodes[path[1]]
+                if isinstance(node, dict) and isinstance(node.get("id"), str):
+                    node_id = node["id"]
+        errors.append({"node_id": node_id, "path": path,
+                       "code": issue["type"], "message": issue["msg"]})
+    return await invalid_graph_handler(request, InvalidGraph(errors))
+
+
+def validate_graph(request: CalculateRequest) -> tuple[list[Dict[str, Any]], list[Dict[str, Any]], list[Dict[str, Any]]]:
+    """Validate every node and edge before either route builds a matrix.
+
+    Args:
+        request: Graph containing business nodes and optional global helpers.
+
+    Returns:
+        Validated recipe, source and target groups in request order.
+
+    Raises:
+        InvalidGraph: If any node or edge is invalid.
+    """
+    groups: Dict[str, list[Dict[str, Any]]] = {"recipeNode": [], "sourceNode": [], "targetNode": []}
+    models = {"recipeNode": RecipeNodeData, "sourceNode": SourceNodeData,
+              "targetNode": TargetNodeData}
+    virtual_nodes = {"Virtual_Global_Source": "global_source",
+                     "Virtual_Global_Target": "global_target"}
+    errors = []
+    node_ids = set()
+    for index, node in enumerate(request.nodes):
+        path = ["nodes", index]
+        if node.id in node_ids:
+            errors.append({"node_id": node.id, "path": path + ["id"],
+                           "code": "duplicate_id", "message": "Node ID must be unique"})
+        node_ids.add(node.id)
+        if node.type == "virtualNode":
+            if node.id not in virtual_nodes or node.data.get("kind") != virtual_nodes[node.id]:
+                errors.append({"node_id": node.id, "path": path + ["data", "kind"],
+                               "code": "invalid_virtual_node", "message": "Unknown global helper node"})
+            continue
+        if node.type not in models:
+            errors.append({"node_id": node.id, "path": path + ["type"],
+                           "code": "unknown_node_type", "message": "Unsupported node type"})
+            continue
+        try:
+            data = models[node.type].model_validate(node.data)
+            groups[node.type].append({"node_id": node.id, "data": data})
+        except ValidationError as exc:
+            for issue in exc.errors():
+                errors.append({"node_id": node.id, "path": path + ["data", *issue["loc"]],
+                               "code": issue["type"], "message": issue["msg"]})
+    for index, edge in enumerate(request.edges):
+        for field in ("source", "target"):
+            if getattr(edge, field) not in node_ids:
+                errors.append({"node_id": getattr(edge, field), "path": ["edges", index, field],
+                               "code": "missing_node", "message": "Edge references an unknown node"})
+    if errors:
+        raise InvalidGraph(errors)
+    return groups["recipeNode"], groups["sourceNode"], groups["targetNode"]
+
+
 # =====================================================================
 # 3. 路由与 Mock 解算接口
 # =====================================================================
@@ -217,36 +318,13 @@ async def calculate_flow(request: CalculateRequest):
             - system_outputs: Total system output rates
     
     Raises:
-        ValidationError: If node data format is invalid.
+        InvalidGraph: If node data or graph structure is invalid.
     
     Note:
         - Void_ prefixed ports are directly discarded from constraints
         - Spill variables use dynamic Big-M method (White Paper §7.3.4)
     """
-    nodes = request.nodes
-    edges = request.edges
-
-    def parse_model(model_cls, payload):
-        """Parse payload into Pydantic model, supporting both v1 and v2 APIs."""
-        if hasattr(model_cls, "model_validate"):
-            return model_cls.model_validate(payload)
-        return model_cls.parse_obj(payload)
-
-    recipe_nodes: List[Dict[str, Any]] = []
-    source_nodes: List[Dict[str, Any]] = []
-    target_nodes: List[Dict[str, Any]] = []
-
-    for node in nodes:
-        try:
-            if node.type == "recipeNode":
-                recipe_data = parse_model(RecipeNodeData, node.data)
-                recipe_nodes.append({"node_id": node.id, "data": recipe_data})
-            elif node.type == "sourceNode":
-                source_nodes.append({"node_id": node.id, "data": parse_model(SourceNodeData, node.data)})
-            elif node.type == "targetNode":
-                target_nodes.append({"node_id": node.id, "data": parse_model(TargetNodeData, node.data)})
-        except ValidationError as e:
-            logger.warning("Skipping invalid node %s: %s", node.id, e)
+    recipe_nodes, source_nodes, target_nodes = validate_graph(request)
 
     # Step 1: Parse network, extract all items and build index
     items: List[str] = []
@@ -410,26 +488,26 @@ async def calculate_flow(request: CalculateRequest):
             "system_outputs": {},
         }
 
-    res = linprog(
-        c,
-        A_ub=A_ub,
-        b_ub=b_ub_arr,
-        A_eq=A_eq,
-        b_eq=b_eq_arr,
-        bounds=bounds,
-        method="highs",
-    )
+    try:
+        res = linprog(
+            c, A_ub=A_ub, b_ub=b_ub_arr, A_eq=A_eq, b_eq=b_eq_arr,
+            bounds=bounds, method="highs",
+        )
+    except Exception:
+        logger.exception("Calculation solver failed")
+        return JSONResponse(status_code=500, content={
+            "status": "solver_error", "message": "Solver execution failed. See server logs.",
+        })
 
-    if res.status == 3:  # INFEASIBLE_OR_UNBOUNDED / Unbounded
-        return {
-            "status": "unbounded",
-            "message": "Found maximize node but no physical bottleneck. Set a machine cap or source limit upstream.",
-        }
-    if not res.success:
-        return {
-            "status": "infeasible",
-            "message": res.message,
-        }
+    if res.status != 0 or not res.success:
+        status = {1: "limit_reached", 2: "infeasible", 3: "unbounded"}.get(res.status, "solver_error")
+        return JSONResponse(status_code=500 if status == "solver_error" else 200, content={
+            "status": status, "message": str(res.message),
+        })
+    if res.x is None or len(res.x) != total_vars or not np.all(np.isfinite(res.x)):
+        return JSONResponse(status_code=500, content={
+            "status": "solver_error", "message": "Solver returned an invalid solution vector.",
+        })
 
     # Step 6: Format and return results
     node_results: Dict[str, Dict[str, float]] = {}
@@ -465,7 +543,7 @@ async def calculate_flow(request: CalculateRequest):
         }
 
     # Full matrix back-substitution
-    full_matrix = np.array([item_rows[item_id] for item_id in items], dtype=float)
+    full_matrix = np.array([item_rows[item_id] for item_id in items], dtype=float).reshape(len(items), total_vars)
     net_rates = full_matrix @ res.x
 
     system_inputs: Dict[str, float] = {}
@@ -505,32 +583,8 @@ async def debug_matrix(request: CalculateRequest):
             - constraint_details: Detailed constraint information per item
             - edges_received: All edges with handles
     """
-    import json
-
-    nodes = request.nodes
     edges = request.edges
-
-    def parse_model(model_cls, payload):
-        """Parse payload into Pydantic model, supporting both v1 and v2 APIs."""
-        if hasattr(model_cls, "model_validate"):
-            return model_cls.model_validate(payload)
-        return model_cls.parse_obj(payload)
-
-    recipe_nodes: List[Dict[str, Any]] = []
-    source_nodes: List[Dict[str, Any]] = []
-    target_nodes: List[Dict[str, Any]] = []
-
-    for node in nodes:
-        try:
-            if node.type == "recipeNode":
-                recipe_data = parse_model(RecipeNodeData, node.data)
-                recipe_nodes.append({"node_id": node.id, "data": recipe_data})
-            elif node.type == "sourceNode":
-                source_nodes.append({"node_id": node.id, "data": parse_model(SourceNodeData, node.data)})
-            elif node.type == "targetNode":
-                target_nodes.append({"node_id": node.id, "data": parse_model(TargetNodeData, node.data)})
-        except ValidationError as e:
-            logger.warning("Skipping invalid node %s: %s", node.id, e)
+    recipe_nodes, source_nodes, target_nodes = validate_graph(request)
 
     items: List[str] = []
     item_index: Dict[str, int] = {}

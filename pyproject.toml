@@ -2,3 +2,7 @@
 convention = "google"
 add-ignore = ["D100", "D104"]  # Ignore missing docstring in public module/package (handled by individual functions/classes)
 add-select = ["D205", "D401"]  # Require blank line after first line, imperative mood
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+pythonpath = ["."]

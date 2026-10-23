@@ -6,6 +6,23 @@ import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { normalizeEndpointPorts } from '@/features/recipe/recipe.endpointNorm'
 import { buildResourceId, normalizeResourceKey, DEFAULT_RESOURCE_CATEGORY } from '@/common/utils/resourceId'
 import { computeCapexList } from '@/features/calculation/capEx'
+import { formatCalculationError } from '@/features/calculation/calculationClient'
+
+/**
+ * Remove transient calculation values while retaining editable node data.
+ * @param nodes - Current canvas nodes.
+ * @returns Nodes without values from a previous calculation.
+ */
+function clearNodeResults(nodes: Node[]): Node[] {
+  return nodes.map((node) => {
+    const data = { ...node.data }
+    delete data.machines_exact
+    delete data.machines_actual
+    delete data.utilization
+    delete data.actual_amounts
+    return { ...node, data }
+  })
+}
 
 /**
  * Normalize and extract `actual_amounts` from a single sub-node calculation result.
@@ -145,7 +162,8 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
   loadFromDB: (canvasId, projectId, nodes, edges, viewport) => set({ canvasId, projectId, nodes, edges, viewport, isDirty: false }),
   resetCanvas: () => set({ nodes: [], edges: [], canvasId: null, projectId: null, isDirty: false, systemInputs: {}, systemOutputs: {}, lastSystemInputs: {}, lastSystemOutputs: {}, globalInputIds: [], globalOutputIds: [], capexList: {}, error: null }),
 
-  resetCalculationState: () => set({
+  resetCalculationState: () => set((state) => ({
+    nodes: clearNodeResults(state.nodes),
     systemInputs: {},
     systemOutputs: {},
     lastSystemInputs: {},
@@ -154,7 +172,7 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
     globalOutputIds: [],
     capexList: {},
     error: null,
-  }),
+  })),
 
   addNode: (node) => {
     set((state) => ({ nodes: [...state.nodes, node] }))
@@ -265,17 +283,17 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
     const nextSystemOutputs = result.system_outputs ?? {}
 
     if (result.status !== 'success') {
-      const messages: Record<string, string> = {
-        unbounded: 'Unbounded: Found "Maximize" nodes, but no physical bottleneck. Set a machine cap or source limit upstream.',
-        infeasible: 'Infeasible: Check for conflicting constraints or missing input sources.',
-      }
-      set({
+      set((state) => ({
+        nodes: clearNodeResults(state.nodes),
         systemInputs: {},
         systemOutputs: {},
+        lastSystemInputs: {},
+        lastSystemOutputs: {},
+        capexList: {},
         globalInputIds: [],
         globalOutputIds: [],
-        error: messages[result.status ?? ''] ?? 'Calculation failed. Please try again later.',
-      })
+        error: formatCalculationError(result),
+      }))
       return
     }
 
@@ -318,6 +336,7 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
 
       return {
         nodes: nextNodes,
+        error: null,
         systemInputs: nextSystemInputs,
         systemOutputs: nextSystemOutputs,
         lastSystemInputs: nextSystemInputs,

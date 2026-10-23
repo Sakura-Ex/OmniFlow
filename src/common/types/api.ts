@@ -8,7 +8,7 @@ export type CalculationNodeResult = {
   /** Exact (floating-point) machine count required */
   machines_exact?: number
   /** Integer machine count (ceiling of exact) */
-  machine_actual?: number
+  machines_actual?: number
   /** Machine utilization rate (0.0 to 1.0) */
   utilization?: number
   /** Actual throughput per resource for source/target nodes */
@@ -22,8 +22,8 @@ export type CalculationNodeResult = {
  * system-level material balance, and status information.
  */
 export type CalculateResponse = {
-  /** Solver status: 'success', 'unbounded', 'infeasible' */
-  status?: string
+  /** Outcome of validation or solver execution. */
+  status: 'success' | 'invalid_model' | 'unbounded' | 'infeasible' | 'limit_reached' | 'solver_error'
   /** Per-node calculation results, keyed by node ID */
   node_results?: Record<string, CalculationNodeResult>
   /** Total system input rates (items/s) */
@@ -32,4 +32,11 @@ export type CalculateResponse = {
   system_outputs?: Record<string, number>
   /** Error or status message from the solver */
   message?: string
+  /** Field-level validation issues with graph identities. */
+  errors?: Array<{
+    node_id?: string | null
+    path: Array<string | number>
+    code: string
+    message: string
+  }>
 }
