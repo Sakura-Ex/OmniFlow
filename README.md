@@ -1,102 +1,142 @@
 # OmniFlow
 
-English | [中文](docs/README_CN.md)
+English | [简体中文](docs/README_CN.md)
 
-[Documentation index](docs/README.md)
+[![CI](https://github.com/Sakura-Ex/OmniFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/Sakura-Ex/OmniFlow/actions/workflows/ci.yml)
 
-[Documentation index](docs/README.md)
+OmniFlow is a visual production-line planner for calculating machine quantities, resource requirements and final output rates under supply and disposal constraints. It is intended for players planning factory-game production chains, including GregTech recipes with parallelism and overclocking.
 
-**A visual industrial-line planner with deterministic recipe compilation and sparse linear programming.**
+## What you can do
 
-OmniFlow uses React Flow to connect recipes, sources, delivery targets and fixed-ratio splitters. Resource identity, persistent port identity and units are separate, so the same resource can serve independent process and utility networks. Game-specific rules such as GregTech parallelism and overclocking live in modifier plugins.
+- **Plan for a target output.** Connect recipes, supply sources and delivery targets, then inspect operating quantities, recommended installation counts, utilization and resource flows.
+- **Model only the processes you care about.** Give an input explicit external supply instead of drawing every upstream machine. Set a finite limit when supply is constrained, or sufficient supply when that part of the chain is outside your model.
+- **Check bottlenecks and coproducts.** Set supply, delivery, disposal and capacity constraints. Inspect active limits and diagnostic shortages when the requested plan is infeasible.
+- **Adjust machine behavior.** Edit recipes, units, TPS and supported modifiers; use wired connections, shared resource buses and fixed-ratio splitters where needed.
 
-## Current calculation path
+For example, size a steel line for 10 ingots/min, then restrict ore supply or close a coproduct outlet to inspect why that target can no longer be met.
 
-```mermaid
-flowchart TD
-  S[Document snapshot: recipes, graph, units, environment, policies] --> M[Independent modifier calculation: readonly Context to Effect]
-  M --> P[Final ports, canonical rates, eligibility and occupancy]
-  P --> N[Deterministic wired/global Nets and explicit boundaries]
-  N --> L[Versioned sparse LP: conservation, capacity, ratios, objectives]
-  L --> B[Bounded backend queue and lexicographic HiGHS solves]
-  B --> V[Verified vector, residuals, bounds and stage evidence]
-  V --> I[Same-snapshot operating quantity, installation, BOM and startup checklist]
-  I --> U[Validated current-revision UI results]
-  B --> D[Separate budgeted infeasibility diagnosis]
-  D --> U
+## Quick start
+
+Run the frontend and calculation backend locally. Use **Node.js 24 with npm** and **Python 3.13** to match the CI configuration. Installing dependencies requires Internet access. Git is needed for the clone command; a downloaded source archive also works.
+
+```sh
+git clone https://github.com/Sakura-Ex/OmniFlow.git
+cd OmniFlow
 ```
 
-The modifier computation registry and pipeline do not import React, stores or card renderers. Each recipe is evaluated once per compilation from an explicit environment snapshot. Plugins return effects; the pipeline applies them in dependency-checked order. GregTech parallel and overclock definitions share pure rules with their separately registered UI cards. Parallel configuration affects subsequent overclocking, and unsupported orderings fail explicitly.
+### Windows
 
-The frontend compiles all business rules. The backend accepts only `omniflow.lp.v1` mathematical requests with sparse equalities/inequalities, explicit bounds and prioritized objective layers. It does not classify Recipe/Source/Target nodes or create automatic spill variables. Each accepted vector is checked against original constraints, bounds and previous objective locks.
+From PowerShell in the repository root:
 
-### Network and objective semantics
+```powershell
+.\start.bat
+```
 
-- `wired` ports share only their explicit connected network. `global` ports share a pool by scope, resource and bus; global routing supplies no material or energy by itself.
-- Supply and spill require explicit boundaries. Every internal flow Net is conserved; an unconnected input cannot manufacture resources, and a closed coproduct can prevent production.
-- Delivery supports at-least, exact and maximize policies. Same-priority objectives use explicit normalized weights or fixed ratios; lexicographic priority does not use a big-M coefficient.
-- Capacity is an upper constraint. Unused dispatchable generating capacity is slack, not discarded energy. Fixed state requirements are checked at the selected operating condition.
-- Splitters enforce allocation ratios, including blocked and zero-ratio branches. They are continuous flow devices, not rounded machine counts.
-- Units support registered prefixes, multiplication/division and integer powers. TPS and cycle duration are explicit; display-only unit changes preserve physical quantities.
+The launcher installs missing dependencies, creates a Python virtual environment, starts both services and opens **http://127.0.0.1:5173**. Keep its window open; press Enter or Ctrl+C there to stop the services. See the [launcher guide](docs/starting.md) for diagnostics and options.
 
-### Truthful results and limits
-
-Results distinguish `operating_equivalent`, `recommended_installed`, fixed/planned/existing installation and utilization. Logistics use the continuous operating quantity; final-condition catalyst/occupancy BOM uses the selected installation plan. Steady-state cycles and declared preheat/catalyst requirements are shown as startup conditions requiring confirmation, not a proof of dynamic startup.
-
-Requests and responses carry request identity, document revision and compiler fingerprint. Runtime validation and calculation sessions reject stale or incompatible results. `limit_reached` may carry a verified feasible plan without a complete optimality proof. Elastic diagnostic vectors stay separate from normal logistics/BOM, and active limits do not by themselves prove that expansion has value.
-
-The backend has bounded workers, queue and native thread limits. Queue time shares the total request budget. Explicit cancellation removes queued work; aborting a browser request does not terminate an already running native solve. The current solver is continuous LP, without integer installation optimization, inventory dynamics or automatic operating-condition selection.
-
-## Development
-
-The locked Vite version requires Node `^20.19.0 || >=22.12.0`; pinned NumPy/SciPy require Python 3.11 or later. The current validated environment uses Node 24.13.0 and Python 3.14.0.
-
-From the repository root:
+For manual setup, run this in the first terminal:
 
 ```powershell
 npm ci
+Copy-Item .env.example .env
 python -m venv .venv
-.venv/Scripts/python.exe -m pip install -r backend/requirements-dev.txt
-.venv/Scripts/python.exe -m uvicorn backend.main:app --reload --port 7998
+.\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt
+.\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 7998
 ```
 
-In another terminal, run `npm run dev` for Vite on port 5173. Set `VITE_BACKEND_URL` to the backend port using `.env.example`. For runtime-only Python dependencies, install `backend/requirements.txt`. API documentation is available at [http://localhost:7998/docs](http://localhost:7998/docs).
+In a second terminal, also in the repository root:
 
 ```powershell
-npm test
-.venv/Scripts/python.exe -m pytest backend/tests -q
-npm run build
+npm run dev -- --host 127.0.0.1
+```
+
+### macOS / Linux
+
+In the first terminal:
+
+```sh
+npm ci
+cp .env.example .env
+python3 -m venv .venv
+.venv/bin/python -m pip install -r backend/requirements.txt
+.venv/bin/python -m uvicorn backend.main:app --host 127.0.0.1 --port 7998
+```
+
+In a second terminal, in the repository root:
+
+```sh
+npm run dev -- --host 127.0.0.1
+```
+
+These manual commands are for a fresh checkout; keep your existing `.env` if you have already configured one. If you change ports, update `VITE_BACKEND_URL` and the backend's allowed browser origins as described in [.env.example](.env.example). Backend settings must be exported to the Python process; Vite's `.env` does not configure Python.
+
+### Your first calculation
+
+1. Open **http://127.0.0.1:5173**. The starter canvas contains a steel line with a **10 ingots/min** target, explicit ore/water supply, electricity supply and coproduct outlets.
+2. Click **Calculate**. Inspect machine quantities on recipe cards and expand the calculation results for resource totals. The starter document also requests an initial calculation when it opens.
+3. Change the steel target to **12 ingots/min** and calculate again. Editing keeps the previous result visible with an out-of-date notice until recalculation.
+4. Use **File → Save** to keep the document in this browser, or **File → Export** to download a portable JSON copy.
+
+If calculation cannot connect, check that the backend is running at **http://localhost:7998/api/health** and that `VITE_BACKEND_URL` matches it. The frontend alone cannot solve a production line.
+
+## Building and adjusting a line
+
+Add recipe nodes, enter their inputs, outputs and cycle duration, and connect the processes you want to model. Set machine modifiers before calculating their required quantities.
+
+Three boundary choices determine what may enter or leave the line:
+
+| Boundary | Meaning |
+|---|---|
+| Supply | Material or energy may enter from outside the model, with a finite limit or sufficient supply. An unconnected input is not automatically supplied. |
+| Delivery target | Require at least a quantity, require an exact quantity, or maximize delivery subject to the other constraints. |
+| Spill / disposal | Allow surplus or coproducts to leave, optionally with a limit. Without an outlet, a coproduct can block production. |
+
+Use a recipe card's supply/boundary settings for inputs whose upstream processes you want to omit. A global bus connects compatible ports; it does **not** create supply. The settings page holds line-wide constraints, the resource dictionary and the unit environment.
+
+Calculate, inspect the result, adjust quantities or limits, and calculate again. Use undo/redo for document edits. Settings with an Apply or Save button remain drafts until committed; applying settings is separate from saving the document.
+
+**Save** writes one document slot in this browser's local storage; **Open** reads it. **Export** downloads JSON; **Import** validates and loads a JSON document. Export is the way to transfer or back up a line. Browser storage is not cloud sync and can be lost if browser data is cleared. Exporting does not clear the local-save “unsaved” indicator.
+
+## Current status and limits
+
+The v2 calculation path, node editing, settings, Chinese/English interface and document import/export are implemented. Menu items marked unavailable are placeholders, not working commands. Current verification and remaining acceptance boundaries are in the [testing guide](docs/testing.md).
+
+- **Steady-state planning, not a time simulation.** The continuous linear model balances average flows. It does not simulate inventory over time, automatically choose operating conditions or perform integer installation optimization. An operating quantity of 1.2 machines is distinct from an installation recommendation of 2.
+- **Startup is not guaranteed by balanced flows.** A cyclic line may need an initial charge or preheating. Startup checklists flag conditions for review; they do not prove the line can start dynamically.
+- **Diagnostics are guidance.** Shortages and binding limits are not necessarily the only conflict or proof that expanding a machine will help. A time-limited feasible result is not necessarily optimal.
+- **Local services are required.** After dependencies are installed, editing and calculation can run without Internet access while the local frontend and backend are running. There is no installed offline/PWA mode, cloud synchronization or automatic crash recovery.
+- **Local use is the deployment baseline.** The backend has no user authentication. Public or multi-user hosting requires additional deployment controls.
+
+**Next stage:** compact, standard and detailed node display modes. Their design and prototype exist; the production application does not yet implement these modes. Further large-canvas interactions are tracked in the [interaction handbook](docs/interaction-design-handbook.md).
+
+## Development and contribution
+
+The frontend uses TypeScript, React and React Flow; the backend uses FastAPI and SciPy/HiGHS. Frontend code compiles the production model, and the backend solves the resulting linear program.
+
+After installing the dependencies above, run the frontend checks:
+
+```sh
 npm run lint
-npm run preview
+npm test
+npm run build
 ```
 
-Both `/api/calculate` and `/api/debug` use the same LP runtime; debug returns solver stages and residual evidence and currently performs a solve. The old graph payload is rejected. See the [solver contract](docs/solver-lp.md) and [testing guide](docs/testing.md).
+For backend tests on Windows:
 
-## Persistence and validation
-
-Version-5 JSON documents contain authoritative recipes, persistent ports, units/environment, registry and explicit network policies. The shared reader migrates older documents with visible assumptions and repair messages. Clipboard, history and database canvas paths preserve the relevant configuration; no legacy mathematical solver is retained after migration. The local canvas save key is `omniflow.canvas.v1`; its name is independent of the document format version.
-
-Current closeout results and remaining warnings are recorded in [testing](docs/testing.md); earlier counts below belong to their original validation snapshots. Browser observations and exact acceptance boundaries are recorded in the [T01–T24 matrix](docs/validation/v2-completion/acceptance-matrix.md) and [validation ledger](docs/validation/v2-completion/README.md). Performance reports state measured hardware and datasets rather than universal latency or frame-rate guarantees.
-
-## Project structure
-
-```text
-src/common/                 Shared types, Zod schemas, unit algebra, utilities and database
-src/data/archetypes/        Machine templates
-src/features/calculation/  Final-port Net compiler, result projection, installation and diagnostics
-src/features/modifier/     Pure calculation definitions and separately registered UI cards
-src/features/canvas/       Canvas state, nodes, splitters and history
-src/features/recipe/       Authoritative editable recipes and recipe editors
-src/features/file-io/      Versioned documents, clipboard and migration
-src/features/project/      Project and canvas persistence
-backend/main.py            Versioned HTTP routes and runtime lifetime
-backend/solver/            Pydantic LP schema, sparse solver and bounded runtime
-backend/benchmarks/        Reproducible backend measurement scripts and raw samples
-fixtures/                  Cross-language LP, compiler and diagnostic evidence
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r backend/requirements-dev.txt
+.\.venv\Scripts\python.exe -m pytest
 ```
 
-The [v2 design](docs/technical-design-v2-proposal.md), [implementation plan](docs/v2-implementation-plan.md) and acceptance matrix distinguish current behavior from historical proposals.
+On macOS/Linux, replace `.\.venv\Scripts\python.exe` with `.venv/bin/python`. CI runs these checks; browser acceptance is documented separately. Start with [Contributing](CONTRIBUTING.md) and the [repository guidelines](AGENTS.md) before changing code.
+
+## Further reading
+
+- [Documentation index](docs/README.md): design, implementation status and historical evidence.
+- [Interaction handbook](docs/interaction-design-handbook.md): workflows and planned interactions.
+- [v2 technical design](docs/technical-design-v2-proposal.md) and [solver contract](docs/solver-lp.md): model assumptions and calculation architecture.
+- [Testing](docs/testing.md) and [CI](docs/ci.md): checks, results and verification limits.
 
 ## License
 
-GPL-3.0 license
+[GNU GPL v3](LICENSE).
