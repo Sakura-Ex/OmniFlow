@@ -1,7 +1,7 @@
 import { categoryDisplayName } from '@/common/i18n/resourceLabels'
 import { t, useTranslation } from '@/common/i18n'
 import { Icon } from '@/common/components/Icon'
-import { Fragment, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Combobox } from '@/common/components/Combobox'
 import { Handle, Position, useUpdateNodeInternals } from 'reactflow'
 import type { SourceNodeData, TargetNodeData } from '@/common/types/recipe'
@@ -23,6 +23,7 @@ import { buildResourceId } from '@/common/utils/resourceId'
 import { buildUnitSuffix } from '@/features/resource-registry/registry.units'
 import styles from './EndpointNode.module.css'
 import { groupPortsByCategory } from '../groupPortsByCategory'
+import { resourceGeometrySignature } from '../nodeGeometry'
 import { GlobalPortIcon } from './GlobalPortIcon'
 import { NodeDetails } from './NodePresentation'
 import { PortPolicyBadge } from './PortPolicyBadge'
@@ -140,7 +141,7 @@ export function EndpointNode({ id, data, role }: { id: string; data: SourceNodeD
   const categories = useGlobalResourceTable(state => state.categories)
   const overrides = useGlobalResourceTable(state => state.overrides)
   const entries = useGlobalResourceTable(state => state.entries)
-  const units = new UnitSystem(environment)
+  const units = useMemo(() => new UnitSystem(environment), [environment])
   const supply = role === 'source'
   const ports = groupPortsByCategory(normalizeEndpointPorts(data))
   const retainedAmounts = useRef<Record<string, number>>({})
@@ -161,8 +162,8 @@ export function EndpointNode({ id, data, role }: { id: string; data: SourceNodeD
     commitBatch(id, boundaries)
   }
   const updateNodeInternals = useUpdateNodeInternals()
-  const handleSignature = JSON.stringify(ports.map(port => [portIdentity(port), port.routing_mode ?? 'wired']))
-  useLayoutEffect(() => { updateNodeInternals(id) }, [id, role, handleSignature, displayMode, updateNodeInternals])
+  const handleSignature = resourceGeometrySignature([ports])
+  useLayoutEffect(() => { updateNodeInternals(id) }, [id, role, handleSignature, updateNodeInternals])
   return <NodeFrame className={`${styles.card} ${supply ? styles.supply : styles.demand}`} mode={displayMode}>
     <NodeHeader title={supply ? t('canvas.source') : t('canvas.target')} controls={
       <div className={`${styles.mode} nodrag nopan`} title={hasNonFlow ? t('canvas.contains_capacity_or_state_ports_use_advanced') : undefined}>

@@ -5,7 +5,7 @@ import { useGlobalResourceTable } from '@/features/resource-registry/registry.st
 import { resolveCategoryDef } from '@/features/recipe/recipe.endpointNorm'
 import { Icon } from '@/common/components/Icon'
 import { stripCalculationResults } from '@/common/utils/calculationState'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Handle, Position, useUpdateNodeInternals, type NodeProps } from 'reactflow'
 import { SplitterNodeDataSchema, type SplitterNodeData } from '@/common/schemas/splitter.schema'
 import { generateId } from '@/common/utils/id'
@@ -13,6 +13,7 @@ import { useNodeData } from '@/features/canvas/contexts/NodeDataContext'
 import styles from './SplitterNode.module.css'
 import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
 import { NodeDetails } from './NodePresentation'
+import { splitterGeometrySignature } from '../nodeGeometry'
 import { NodeFrame, NodeHeader, NodeResourceLayout } from './NodeFrame'
 import { NodeCategoryHeading, NodeQuantity, NodeResourceIdentity, NodeResourceRow } from './NodeResource'
 import { useSettingsStore } from '@/features/settings/settings.store'
@@ -38,15 +39,15 @@ export function SplitterNode({ id, data }: NodeProps<SplitterNodeData & { port_t
   const overrides = useGlobalResourceTable(state => state.overrides)
   const entries = useGlobalResourceTable(state => state.entries)
   const environment = useSettingsStore(state => state.units)
-  const units = new UnitSystem(environment)
+  const units = useMemo(() => new UnitSystem(environment), [environment])
   const [advanced, setAdvanced] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [draft, setDraft] = useState(() => stripCalculationResults(data))
   const [error, setError] = useState('')
   const shown = dirty || advanced ? draft : data
   const category = resolveCategoryDef(shown.input.category, categories, overrides)
-  const outputIdentities = JSON.stringify(shown.outputs.map(output => output.portId))
-  useEffect(() => updateNodeInternals(id), [id, outputIdentities, displayMode, updateNodeInternals])
+  const handleSignature = splitterGeometrySignature(shown.input.portId, shown.outputs.map(output => output.portId), data.outputs.map(output => output.portId))
+  useEffect(() => updateNodeInternals(id), [id, handleSignature, updateNodeInternals])
   const change = (next: SplitterNodeData) => { setDraft(next); setDirty(true); setError('') }
   const setResource = (field: 'id' | 'category', value: string) => change({ ...shown, input: { ...shown.input, [field]: value }, outputs: shown.outputs.map(output => ({ ...output, [field]: value })) })
   const cancel = () => { setDraft(stripCalculationResults(data)); setDirty(false); setAdvanced(false); setError('') }

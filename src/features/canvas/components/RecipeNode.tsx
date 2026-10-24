@@ -10,7 +10,7 @@ import { buildResourceId } from '@/common/utils/resourceId'
 import { useSettingsStore } from '@/features/settings/settings.store'
 import { UnitSystem } from '@/common/units/UnitSystem'
 import { portIdentity } from '@/common/utils/ports'
-import { Fragment, useLayoutEffect, type CSSProperties } from 'react'
+import { Fragment, useLayoutEffect, useMemo, type CSSProperties } from 'react'
 import { Handle, Position, useUpdateNodeInternals, type NodeProps } from 'reactflow'
 import type { RecipeNodeData } from '@/common/types/recipe'
 import { useRecipeEditor } from '@/features/recipe/contexts/RecipeEditorContext'
@@ -23,6 +23,7 @@ import { formatProbability, formatMachineExact, formatCapEx } from '@/common/uti
 import type { ResourceIo, NormalizedResource } from '@/common/types/resource'
 import styles from './RecipeNode.module.css'
 import { groupPortsByCategory } from '../groupPortsByCategory'
+import { resourceGeometrySignature } from '../nodeGeometry'
 import { GlobalPortIcon } from './GlobalPortIcon'
 import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
 import { NodeDetails } from './NodePresentation'
@@ -54,11 +55,12 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
   const recipe = useRecipeStore(state => state.recipes[id])
   const storedPayload = useRecipeStore(state => state.getPayload(id))
   const environment = useSettingsStore(state => state.units)
-  const units = new UnitSystem(environment)
-  const payload = storedPayload ?? previewModifierPipeline(data, environment)
+  const units = useMemo(() => new UnitSystem(environment), [environment])
+  const payload = useMemo(() => storedPayload ?? previewModifierPipeline(data, environment), [storedPayload, data, environment])
   const updateNodeInternals = useUpdateNodeInternals()
-  const handleSignature = JSON.stringify([payload.recipe_inputs, payload.recipe_outputs, payload.utility_inputs, payload.utility_outputs].map(ports => ports.map(port => [portIdentity(port), port.routing_mode ?? 'wired'])))
-  useLayoutEffect(() => { updateNodeInternals(id) }, [id, handleSignature, mode, updateNodeInternals])
+  const handleSignature = resourceGeometrySignature([payload.recipe_inputs, payload.recipe_outputs, payload.utility_inputs, payload.utility_outputs])
+  const blocked = !payload.eligibility.eligible
+  useLayoutEffect(() => { updateNodeInternals(id) }, [id, handleSignature, blocked, updateNodeInternals])
   const machineName = recipe?.machine_name ?? data.machine_name
   const implemented = recipe?.is_implemented ?? false
   const modifiers = recipe?.active_modifiers ?? data.active_modifiers ?? []
