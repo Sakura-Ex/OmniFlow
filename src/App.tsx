@@ -38,7 +38,7 @@ import { useCanvasOperations } from '@/features/canvas/hooks/useCanvasOperations
 import { useClipboard } from '@/features/file-io/hooks/useClipboard'
 import { useFileIO } from '@/features/file-io/hooks/useFileIO'
 import { useKeyboardShortcuts } from '@/features/canvas/hooks/useKeyboardShortcuts'
-import { useNodeEditor } from '@/features/recipe/hooks/useNodeEditor'
+import { useNodeEditor } from '@/app/editors/useNodeEditor'
 import { useCalculation } from '@/features/calculation/hooks/useCalculation'
 import { useNodeOperations } from '@/features/recipe/hooks/useNodeOperations'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
@@ -245,7 +245,7 @@ export default function App() {
     handleEditEndpoint,
     handleCloseEndpointEditor,
     handleSaveEndpoint,
-  } = useNodeEditor({ setNodes, takeSnapshot, updateNodeInternals })
+  } = useNodeEditor({ setNodes, commitEdit, updateNodeInternals, onError: reason => window.alert(t(`workspace.${reason}`)) })
 
   const { updateNodeData, autoFillEndpoints, handleAutoFillSelected } = useNodeOperations({
     nodesRef,

@@ -1,3 +1,4 @@
+import { workspaceEn, workspaceZhCN } from './workspaceMessages'
 import { summaryEn, summaryZhCN } from './summaryMessages'
 import { recipeDisplayEn, recipeDisplayZhCN } from './recipeDisplayMessages'
 import { settingsEn, settingsZhCN } from './settingsMessages'
@@ -9,6 +10,7 @@ import { domainEn, domainZhCN } from './domainMessages'
 
 /** UI messages only; resource display names use their own explicit/category/ID cascade. */
 export const zhCN = {
+  ...workspaceZhCN,
   ...nodeDisplayZhCN,
   ...settingsZhCN,
   ...recipeDisplayZhCN,
@@ -107,6 +109,7 @@ export const zhCN = {
 export type UiTranslationKey = keyof typeof zhCN
 
 export const en: Record<UiTranslationKey, string> = {
+  ...workspaceEn,
   ...nodeDisplayEn,
   ...settingsEn,
   ...recipeDisplayEn,
