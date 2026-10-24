@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from 'react'
+import { useId, type ComponentProps, type ReactNode } from 'react'
 import type { Edge, Node } from 'reactflow'
 import { EditorDraftContext } from '@/common/components/EditorDraftContext'
 import { Icon } from '@/common/components/Icon'
@@ -11,6 +11,7 @@ import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 import type { EditorFailure } from '@/app/editors/editorCommit'
 import type { PropertySection, useWorkspace } from './useWorkspace'
+import { PanelTabs } from './PanelTabs'
 import styles from './Workspace.module.css'
 
 const sectionLabels: Record<PropertySection, UiTranslationKey> = {
@@ -44,6 +45,7 @@ interface WorkspacePropertiesProps {
 export function WorkspaceProperties(props: WorkspacePropertiesProps) {
   const { workspace, node, nodes, edges, recipe, endpoint, onSaveRecipe, onSaveEndpoint, registerDraft, error } = props
   const { t } = useTranslation()
+  const panelId = useId()
   const recipes = useRecipeStore(state => state.recipes)
   const entries = useGlobalResourceTable(state => state.entries)
   const typeName = (item: Node) => t(nodeLabels[item.type ?? ''] ?? 'workspace.otherNode')
@@ -75,6 +77,10 @@ export function WorkspaceProperties(props: WorkspacePropertiesProps) {
   const sections: PropertySection[] = []
   if (node?.type === 'recipeNode') sections.push('boundaries', 'recipe')
   else if (node?.type === 'sourceNode' || node?.type === 'targetNode') sections.push('boundaries', 'resources')
+  const activeTab = sections.length ? workspace.target.section : 'properties'
+  const tabs = sections.length
+    ? sections.map(section => ({ value: section, label: t(sectionLabels[section]) }))
+    : [{ value: 'properties', label: t('workspace.properties') }]
 
   let content: ReactNode = null
   if (workspace.properties) {
@@ -106,15 +112,17 @@ export function WorkspaceProperties(props: WorkspacePropertiesProps) {
     if (event.key === 'Escape' && !event.defaultPrevented) { event.stopPropagation(); workspace.closeProperties() }
     if (event.key === 'Delete' || event.key === 'Backspace' || event.ctrlKey || event.metaKey) event.stopPropagation()
   }}>
-    <header className={styles.header}>
-      <div className={styles.propertyHeading}><strong title={title}>{title}</strong>{identity && <small title={identity}>{identity}</small>}</div>
+    <PanelTabs id={panelId} label={t('workspace.properties')} items={tabs} value={activeTab} onChange={section => {
+      const target = sections.find(item => item === section)
+      if (node && target) workspace.openProperties(node.id, target)
+    }} trailing={<>
       <button aria-label={t(workspace.expanded ? 'workspace.shrinkEditor' : 'workspace.expandEditor')} onClick={() => workspace.setExpanded(!workspace.expanded)}><Icon name="fitView" /></button>
       <button aria-label={t('canvas.close')} onClick={workspace.closeProperties}><Icon name="close" /></button>
+    </>} />
+    <header className={styles.header}>
+      <div className={styles.propertyHeading}><strong title={title}>{title}</strong>{identity && <small title={identity}>{identity}</small>}</div>
     </header>
-    {sections.length > 0 && node && <nav className={styles.tabs} aria-label={t('workspace.properties')}>
-      {sections.map(section => <button key={section} aria-pressed={workspace.target.section === section} onClick={() => workspace.openProperties(node.id, section)}>{t(sectionLabels[section])}</button>)}
-    </nav>}
-    <div className={styles.body}>
+    <div className={styles.body} role="tabpanel" id={`${panelId}-panel-${activeTab}`} aria-labelledby={`${panelId}-tab-${activeTab}`}>
       {error && <div role="alert" className={styles.empty}>{t(errorLabels[error])} <button className={styles.overviewAction} onClick={() => workspace.openProperties(workspace.target.id, workspace.target.section)}>{t('workspace.reload')}</button></div>}
       <EditorDraftContext.Provider value={registerDraft}>{content}</EditorDraftContext.Provider>
     </div>

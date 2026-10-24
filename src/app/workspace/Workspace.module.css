@@ -16,12 +16,7 @@
 .selectionOverview dd { margin: 0; min-width: 0; text-align: right; overflow-wrap: anywhere; }
 .selectionOverview dd small { display: block; margin-top: 4px; color: var(--muted); }
 .overviewAction { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 6px 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text); cursor: pointer; overflow-wrap: anywhere; }
-.header button, .tabs button, .tools button, .leaveDialog button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 30px; padding: 4px 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text); cursor: pointer; }
-.tools { display: flex; align-items: center; gap: 6px; z-index: 30; font-size: 12px; }
-.tools .spacer { flex: 1; }
-.tools button:disabled { opacity: .45; cursor: default; }
-.tools button[aria-pressed='true'], .tabs button[aria-pressed='true'] { color: var(--accent); border-color: var(--accent); }
-.tabs { display: flex; gap: 6px; padding: 8px 12px; flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: 12px; }
+.header button, .leaveDialog button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 30px; padding: 4px 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text); cursor: pointer; }
 .body { flex: 1; min-height: 0; overflow: auto; padding: 0; }
 .empty { padding: 16px; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
 .leaveDialog { background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 12px; max-width: min(460px, calc(100vw - 32px)); padding: 20px; box-shadow: var(--shadow); }
@@ -32,7 +27,7 @@
   .sidebar { position: absolute; top: 0; bottom: 0; left: 0; width: min(300px, calc(100vw - 40px)); box-shadow: var(--shadow); }
   .properties, .expanded { left: auto; right: 0; width: min(680px, calc(100vw - 32px)); }
 }
-@media (max-width: 650px) { .tools { gap: 4px; } .tools button { padding: 4px 6px; } }
 
 .canvasOverlay { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 40; display: grid; gap: 10px; pointer-events: none; }
 .canvasOverlay > * { pointer-events: auto; }
+.browserBody { display: flex; flex-direction: column; flex: 1; min-height: 0; }

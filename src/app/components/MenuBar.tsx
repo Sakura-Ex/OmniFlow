@@ -45,6 +45,12 @@ export type MenuBarProps = {
   handleInvertSelection?: () => void
   handleFocusSelection?: () => void
   handleZoom100?: () => void
+  onReturnView?: () => void
+  canReturnView?: boolean
+  onToggleObjects?: () => void
+  onToggleProperties?: () => void
+  showObjects?: boolean
+  showProperties?: boolean
   onToggleResults?: () => void
   onToggleEdgeLabels?: () => void
   onOpenShortcuts?: () => void
@@ -77,7 +83,7 @@ type MenuAction = {
   danger?: boolean
 }
 
-const mainMenuIds = ['file', 'edit', 'select', 'add', 'arrange', 'view'] as const
+const mainMenuIds = ['file', 'edit', 'select', 'add', 'arrange', 'view', 'layout'] as const
 const utilityMenuIds = ['settings', 'help'] as const
 const menuIds = [...mainMenuIds, ...utilityMenuIds] as const
 
@@ -169,6 +175,7 @@ export function MenuBar(props: MenuBarProps) {
     view: [
       { label: t('action.fitView'), icon: 'fitView', action: props.handleFitView, disabled: !hasCanvasContent },
       { label: t('action.focusSelection'), icon: 'fitView', action: props.handleFocusSelection, disabled: !hasSelection },
+      { label: t('action.returnView'), icon: 'undo', action: props.onReturnView, disabled: !props.canReturnView },
       { label: t('action.zoom100'), icon: 'fitView', action: props.handleZoom100 },
       { label: t('action.locateProblemNodes'), icon: 'warning' },
       null,
@@ -181,6 +188,10 @@ export function MenuBar(props: MenuBarProps) {
         checked: nodeDisplayMode === mode,
         action: () => useNodeDisplayStore.getState().selectMode(mode),
       })),
+    ],
+    layout: [
+      { label: t('action.leftSidebar'), icon: 'folder', action: props.onToggleObjects, checked: props.showObjects ?? false },
+      { label: t('action.rightSidebar'), icon: 'settings', action: props.onToggleProperties, checked: props.showProperties ?? false },
     ],
     settings: [],
     help: [
@@ -248,6 +259,7 @@ export function MenuBar(props: MenuBarProps) {
         aria-expanded={id === 'settings' ? undefined : openMenu === id}
         aria-controls={id === 'settings' ? 'application-settings' : `canvas-menu-${id}`}
         id={`canvas-menu-trigger-${id}`}
+        data-workspace-properties-toggle={id === 'layout' ? '' : undefined}
         onClick={() => { if (id === 'settings') handleMenuAction(props.onOpenSettings); else setOpenMenu(openMenu === id ? null : id) }}
         onPointerEnter={() => { if (openMenu && openMenu !== id) switchMenu(id) }}
         onKeyDown={event => onTriggerKeyDown(event, id)}

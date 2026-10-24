@@ -1,3 +1,4 @@
+import { PanelTabs } from '@/app/workspace/PanelTabs'
 import { useTranslation } from '@/common/i18n'
 import { DocumentEditProvider } from '@/common/components/DocumentEditContext'
 import { useDocumentSession } from '@/app/document/useDocumentSession'
@@ -367,8 +368,10 @@ export default function App() {
         />
         <div className={workspaceStyles.workspace}>
           <aside className={workspaceStyles.sidebar} hidden={!workspace.objects} aria-label={t('workspace.objects')}>
-            <header className={workspaceStyles.header}><strong>{t('workspace.objects')}</strong><button aria-label={t('canvas.close')} onClick={workspace.toggleObjects}><Icon name="close" /></button></header>
-            <ObjectBrowser key={workspace.generation} onSelect={workspace.select} onLocate={workspace.locate} onReturn={workspace.returnView} canReturn={workspace.canReturn} />
+            <PanelTabs id="workspace-browser" label={t('workspace.objects')} items={[{ value: 'production', label: t('workspace.production') }, { value: 'recipes', label: t('workspace.recipes'), disabled: true, title: t('workspace.planned') }]} value="production" onChange={() => {}} trailing={<button aria-label={t('canvas.close')} onClick={workspace.toggleObjects}><Icon name="close" /></button>} />
+            <div className={workspaceStyles.browserBody} role="tabpanel" id="workspace-browser-panel-production" aria-labelledby="workspace-browser-tab-production">
+              <ObjectBrowser key={workspace.generation} onSelect={workspace.select} onLocate={workspace.locate} onReturn={workspace.returnView} canReturn={workspace.canReturn} />
+            </div>
           </aside>
           <div className={workspaceStyles.canvas}>
             <div className={workspaceStyles.canvasOverlay}>
@@ -383,6 +386,12 @@ export default function App() {
           hasSelectedRecipes={nodes.some(node => node.selected && node.type === 'recipeNode')}
           isCalculating={calculationStatus === 'running'}
           status={{ kind: calculationStatus }}
+          showObjects={workspace.objects}
+          showProperties={workspace.properties}
+          onToggleObjects={workspace.toggleObjects}
+          onToggleProperties={() => workspace.properties ? workspace.closeProperties() : workspace.openProperties(nodes.filter(n => n.selected).length === 1 && !edges.some(edge => edge.selected) ? nodes.find(n => n.selected)!.id : null)}
+          onReturnView={workspace.returnView}
+          canReturnView={workspace.canReturn}
           showResults={showResults}
           onToggleResults={() => setShowResults(value => !value)}
           onOpenShortcuts={() => setShowShortcuts(true)}
@@ -427,13 +436,6 @@ export default function App() {
           onOpenSettings={() => guard.request(() => setShowSettings(true))}
         />
 
-        <nav className={workspaceStyles.tools} aria-label={t('workspace.production')}>
-          <button aria-pressed={workspace.objects} onClick={workspace.toggleObjects}><Icon name="folder" />{t('workspace.objects')}</button>
-          <span>{t('workspace.production')}</span><button disabled title={t('workspace.planned')}>{t('workspace.recipes')}</button>
-          {workspace.canReturn && <button onClick={workspace.returnView}><Icon name="undo" />{t('workspace.returnView')}</button>}
-          <span className={workspaceStyles.spacer} />
-          <button data-workspace-properties-toggle aria-pressed={workspace.properties} onClick={() => workspace.properties ? workspace.closeProperties() : workspace.openProperties(nodes.filter(n => n.selected).length === 1 && !edges.some(edge => edge.selected) ? nodes.find(n => n.selected)!.id : null)}><Icon name="boundary" />{t('workspace.properties')}</button>
-        </nav>
         <div className="canvas-notices"><GraphIssuesPanel /><DiagnosticsPanel report={diagnosticReport} limits={activeLimits} onLocate={locateDiagnostic} /></div>
             </div>
         <CoreResultSummary showDetails={showResults} onShowDetails={() => setShowResults(true)} />
