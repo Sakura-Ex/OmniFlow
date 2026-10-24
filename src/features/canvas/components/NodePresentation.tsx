@@ -32,6 +32,8 @@ export function NodeCalculationStatus() {
   useTranslation()
   const status = useCanvasStore(state => state.calculationStatus)
   const retained = useCanvasStore(state => state.lastCalculationResult !== null)
+  // Keep the fixed slot so accepting an optimal result never resizes the node.
+  if (status === 'success') return <div className={styles.status} aria-hidden="true" />
   const labels = { idle: t('shell.idle'), running: retained ? t('shell.runningRetained') : t('shell.running'), success: t('shell.success'), feasible: t('shell.feasible'), stale: t('shell.stale'), error: retained ? t('shell.errorRetained') : t('shell.error') }
-  return <div className={styles.status} data-status={status} title={labels[status]}><Icon name={status === 'error' || status === 'stale' ? 'warning' : status === 'success' ? 'check' : 'clock'} size={12} /><span>{labels[status]}</span></div>
+  return <div className={styles.status} data-status={status} title={labels[status]}><Icon name={status === 'error' || status === 'stale' ? 'warning' : 'clock'} size={12} /><span>{labels[status]}</span></div>
 }
