@@ -40,6 +40,24 @@
   list-style: none;
 }
 
+/* Grow the resource content around its existing 18px port center. */
+.card .port[data-mode='compact'],
+.card .port[data-mode='standard'] {
+  --node-resource-main-height: 32px;
+  --node-resource-text-line-height: 32px;
+  --node-resource-padding-y: 2px;
+  --node-resource-condition-height: 18px;
+  --node-resource-detail-line-height: 10px;
+  --node-resource-unit-font-size: 11px;
+}
+
+.card .port[data-mode='compact'] { --node-resource-font-size: 22px; }
+.card .port[data-mode='standard'] {
+  --node-resource-font-size: 18px;
+  --node-resource-quantity-font-size: 16px;
+  --node-resource-quantity-width: 104px;
+}
+
 .inventoryTag {
   margin-left: auto;
   font-size: 10px;
