@@ -13,7 +13,7 @@ import { generateId } from '@/common/utils/id'
 import { useNodeData } from '@/features/canvas/contexts/NodeDataContext'
 import styles from './SplitterNode.module.css'
 import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
-import { NodeDetails, NodeCalculationStatus } from './NodePresentation'
+import { NodeDetails } from './NodePresentation'
 import { useSettingsStore } from '@/features/settings/settings.store'
 import { UnitSystem } from '@/common/units/UnitSystem'
 import { defaultResourceUnit } from '@/common/units/defaults'
@@ -105,6 +105,6 @@ export function SplitterNode({ id, data }: NodeProps<SplitterNodeData & { port_t
       <button type="button" onClick={cancel}>{t('canvas.cancel')}</button><button type="button" onClick={save}>{t('canvas.save')}</button>
     </footer>}
     {error && <p role="alert" className={styles.error}>{translateDiagnostic(error)}</p>}
-    <NodeCalculationStatus />
+
   </article>
 }

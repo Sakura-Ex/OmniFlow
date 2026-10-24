@@ -7,6 +7,3 @@
 .detailsBody dl { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(0, 2fr); gap: 6px 12px; }
 .detailsBody dt { color: var(--muted); }
 .detailsBody dd { margin: 0; }
-.status { display: flex; align-items: center; gap: 5px; height: 22px; box-sizing: border-box; padding: 2px 12px; overflow: hidden; color: var(--muted); border-top: 1px solid var(--border); font-size: 10px; line-height: 16px; }
-.status span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.status[data-status='stale'], .status[data-status='error'] { color: var(--danger); }

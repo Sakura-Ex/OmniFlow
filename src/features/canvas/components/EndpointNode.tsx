@@ -24,7 +24,7 @@ import { buildUnitSuffix } from '@/features/resource-registry/registry.units'
 import styles from './EndpointNode.module.css'
 import { groupPortsByCategory } from '../groupPortsByCategory'
 import { GlobalPortIcon } from './GlobalPortIcon'
-import { NodeDetails, NodeCalculationStatus } from './NodePresentation'
+import { NodeDetails } from './NodePresentation'
 import { PortPolicyBadge } from './PortPolicyBadge'
 import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
 
@@ -197,6 +197,6 @@ export function EndpointNode({ id, data, role }: { id: string; data: SourceNodeD
         </li>
       </Fragment>
     })}</ul>
-    <NodeCalculationStatus />
+
   </article>
 }

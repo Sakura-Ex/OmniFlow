@@ -1,7 +1,6 @@
 import { useId, useRef, type ReactNode } from 'react'
 import { Icon } from '@/common/components/Icon'
 import { t, useTranslation } from '@/common/i18n'
-import { useCanvasStore } from '../canvas.store'
 import styles from './NodePresentation.module.css'
 
 /** Explicit temporary inspection in the top layer leaves canvas geometry untouched.
@@ -23,17 +22,4 @@ export function NodeDetails({ title, children, label }: { title: string; childre
       <div className={styles.detailsBody}>{children}</div>
     </dialog>
   </>
-}
-
-/** Fixed status slot distinguishes retained results from the current calculation.
- * @returns A single-line status that cannot expand the card.
- */
-export function NodeCalculationStatus() {
-  useTranslation()
-  const status = useCanvasStore(state => state.calculationStatus)
-  const retained = useCanvasStore(state => state.lastCalculationResult !== null)
-  // Keep the fixed slot so accepting an optimal result never resizes the node.
-  if (status === 'success') return <div className={styles.status} aria-hidden="true" />
-  const labels = { idle: t('shell.idle'), running: retained ? t('shell.runningRetained') : t('shell.running'), success: t('shell.success'), feasible: t('shell.feasible'), stale: t('shell.stale'), error: retained ? t('shell.errorRetained') : t('shell.error') }
-  return <div className={styles.status} data-status={status} title={labels[status]}><Icon name={status === 'error' || status === 'stale' ? 'warning' : 'clock'} size={12} /><span>{labels[status]}</span></div>
 }

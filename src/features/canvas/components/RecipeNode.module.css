@@ -311,7 +311,5 @@
 .modifiers { display: flex; align-items: center; gap: 5px; height: 18px; font-size: 10px; color: var(--muted); }
 .modifiers > span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .modifiers button { flex-shrink: 0; max-width: 95px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bottomBar { display: flex; align-items: center; justify-content: space-between; height: 28px; gap: 8px; }
-.bottomBar > div { min-width: 0; }
 .coefficients small { display: block; color: var(--muted); margin-top: 4px; }
 .warning { height: 28px; box-sizing: border-box; padding: 5px 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
