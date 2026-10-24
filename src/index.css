@@ -129,7 +129,7 @@ select {
 }
 
 .canvas-shell {
-  padding-top: 148px;
+  padding-top: 76px;
   box-sizing: border-box;
   position: relative;
   width: 100%;
@@ -554,4 +554,4 @@ input[type='number'] {
   -moz-appearance: textfield;
 }
 
-@media (max-width: 650px) { .canvas-shell { padding-top: 184px; } }
+@media (max-width: 650px) { .canvas-shell { padding-top: 112px; } }

@@ -2,9 +2,62 @@ import { describe, expect, it } from 'vitest'
 import type { Node } from 'reactflow'
 import type { CalculateResponse } from '@/common/types/api'
 import { emptyNetworkConfiguration } from '@/common/schemas/network.schema'
-import { deliveryResources, deliverySummary, installationSummary } from './resultSummary'
+import { deliveryResources, deliverySummary, installationSummary, internalResultResources, resultQuantity, startupCanonicalAmount } from './resultSummary'
+import { documentResultEvidence, compiledResultEvidence } from './resultEvidence'
+import { DEFAULT_UNIT_SNAPSHOT } from '@/common/units/defaults'
+import { compileNetwork } from '@/features/calculation/networkCompiler'
+import { configureEndpointPorts } from '@/features/calculation/endpointConfiguration'
 
 describe('core result evidence', () => {
+  it('captures compiled delivery units and labels independently of later document edits', () => {
+    const unit = [{ baseUnitId: 'g', prefixId: 'k', exponent: 1 }]
+    const nodes: Node[] = [
+      { id: 's', type: 'sourceNode', position: { x: 0, y: 0 }, data: { mode: 'infinite', ports: [{ portId: 'out', category: 'item', id: 'ore', amount: 1, unit }] } },
+      { id: 't', type: 'targetNode', position: { x: 300, y: 0 }, data: { mode: 'demand', ports: [{ portId: 'in', category: 'item', id: 'ore', amount: 1, unit }] } },
+    ]
+    const environment = structuredClone(DEFAULT_UNIT_SNAPSHOT)
+    const configuration = nodes.reduce((current, node) => configureEndpointPorts(current, node, environment), emptyNetworkConfiguration())
+    const model = compileNetwork({ nodes, edges: [{ id: 'e', source: 's', sourceHandle: 'out', target: 't', targetHandle: 'in' }], recipes: {}, configuration, environment, requestId: 'display', documentRevision: 0 })
+    const entries = { 'item:ore': { fullId: 'item:ore', displayName: 'Old ore' } }
+    const evidence = compiledResultEvidence(model, entries)
+    entries['item:ore'].displayName = 'New ore'
+    environment.prefixes = []
+    nodes.length = 0
+    expect(evidence.resources['item:ore'].name).toBe('Old ore')
+    expect(evidence.targets).toEqual([{ resourceId: 'item:ore', unit }])
+    expect(resultQuantity('item:ore', 2000, evidence)).toEqual({ value: '2', unit: 'kg/s', unavailable: false })
+  })
+
+  it('keeps native rates, ordinary rates and material occupancy distinct', () => {
+    const evidence = documentResultEvidence([], {}, emptyNetworkConfiguration(), DEFAULT_UNIT_SNAPSHOT, {})
+    evidence.resources['energy:power'] = { unit: [{ baseUnitId: 'W', exponent: 1 }], global: false }
+    evidence.resources['item:material'] = { unit: [{ baseUnitId: 'g', prefixId: 'k', exponent: 1 }], occupancyUnit: [{ baseUnitId: 'g', exponent: 1 }], global: false }
+    expect(resultQuantity('energy:power', 15, evidence)).toEqual({ value: '15', unit: 'W', unavailable: false })
+    expect(resultQuantity('item:material', 2000, evidence)).toEqual({ value: '2', unit: 'kg/s', unavailable: false })
+    expect(resultQuantity('item:material', 2000, evidence, 'occupancy').unit).toBe('g')
+    expect(resultQuantity('item:material', undefined, evidence).value).toBe('—')
+    evidence.resources['item:material'].unit = [{ baseUnitId: 'missing', exponent: 1 }]
+    expect(resultQuantity('item:material', 2000, evidence)).toEqual({ value: '—', unit: '?', unavailable: true })
+  })
+
+  it('does not infer zero throughput or internal resources from current recipes or disposal', () => {
+    expect(internalResultResources({ status: 'success', system_spills: { 'item:waste': 3 }, net_summaries: [
+      { id: 'a', resourceId: 'item:waste', portKeys: [], source: 0, delivery: 0, spill: 3 },
+      { id: 'b', resourceId: 'item:intermediate', portKeys: [], source: 0, delivery: 0, spill: 0 },
+    ] })).toEqual(['item:intermediate'])
+  })
+
+  it('converts repeated startup declarations in their own source units', () => {
+    const evidence = documentResultEvidence([], {}, emptyNetworkConfiguration(), DEFAULT_UNIT_SNAPSHOT, {})
+    evidence.occupancyUnits.r = [[{ baseUnitId: 'g', prefixId: 'k', exponent: 1 }], [{ baseUnitId: 'g', exponent: 1 }]]
+    const result: CalculateResponse = { status: 'success', startup: { status: 'needs_confirmation', cycles: [], preheat: [], catalysts: [
+      { nodeId: 'r', resourceId: 'item:material', amount: 2 }, { nodeId: 'r', resourceId: 'item:material', amount: 3 },
+    ] } }
+    expect(startupCanonicalAmount(result, 0, evidence)).toBe(2000)
+    expect(startupCanonicalAmount(result, 1, evidence)).toBe(3)
+    expect(startupCanonicalAmount(result, 2, evidence)).toBeUndefined()
+  })
+
   it('finds explicit deliveries, deduplicates resource identity and excludes spill and capacity', () => {
     const configuration = emptyNetworkConfiguration()
     const nodes: Node[] = ['a', 'b', 'spill', 'capacity'].map(id => ({ id, type: 'targetNode', position: { x: 0, y: 0 }, data: { ports: [{ portId: 'p', category: 'item', id: id === 'spill' ? 'waste' : 'iron', amount: 1 }] } }))

@@ -1,6 +1,8 @@
 import { beforeEach, expect, it } from 'vitest'
 import { useCanvasStore } from './canvas.store'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
+import { useSettingsStore } from '@/features/settings/settings.store'
+import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 
 beforeEach(() => {
   useCanvasStore.getState().resetCanvas()
@@ -85,4 +87,33 @@ it('clears previous-document results on explicit reset', () => {
   useCanvasStore.getState().resetCalculationState()
   expect(useCanvasStore.getState().capexList).toEqual({})
   expect(useCanvasStore.getState().nodes[0].data.operating_equivalent).toBeUndefined()
+  expect(useCanvasStore.getState().resultEvidence).toBeNull()
+})
+
+it('retains result-owned labels and units across edits, panel lifetimes and failed recalculations', () => {
+  const canvas = useCanvasStore.getState()
+  const settings = useSettingsStore.getState().units
+  const entries = useGlobalResourceTable.getState().entries
+  try {
+    useGlobalResourceTable.setState({ entries: { 'item:ore': { fullId: 'item:ore', displayName: 'Original ore' } } })
+    canvas.setCalculationResult(success)
+    const evidence = useCanvasStore.getState().resultEvidence!
+    useRecipeStore.getState().updateRecipe('recipe', { machine_name: 'Changed machine' })
+    useGlobalResourceTable.setState({ entries: { 'item:ore': { fullId: 'item:ore', displayName: 'Changed ore' } } })
+    useSettingsStore.getState().setTps(40)
+    canvas.setNodes([])
+    canvas.invalidateCalculation()
+    canvas.beginCalculation()
+    canvas.setCalculationResult({ status: 'solver_error' })
+    expect(useCanvasStore.getState().resultEvidence).toBe(evidence)
+    expect(evidence.recipes.recipe.machine_name).toBe('Machine')
+    expect(evidence.resources['item:ore'].name).toBe('Original ore')
+    expect(evidence.environment).toEqual(settings)
+    expect(useCanvasStore.getState().lastCalculationResult).toBe(success)
+    canvas.resetCanvas()
+    expect(useCanvasStore.getState().resultEvidence).toBeNull()
+  } finally {
+    useSettingsStore.getState().setEnvironment(settings)
+    useGlobalResourceTable.setState({ entries })
+  }
 })

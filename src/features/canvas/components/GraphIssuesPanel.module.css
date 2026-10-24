@@ -1,10 +1,21 @@
-.panel {
+:global(.canvas-notices) {
   position: absolute;
   left: 16px;
-  bottom: 48px;
-  z-index: 12;
-  width: min(460px, 70vw);
-  max-height: 220px;
+  top: 16px;
+  z-index: 20;
+  width: min(380px, calc(100% - 32px));
+  max-height: calc(100% - 156px);
+  display: grid;
+  gap: 10px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.panel {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  max-height: min(220px, 25vh);
   overflow: auto;
   border: 1px solid var(--warning);
   border-radius: 8px;

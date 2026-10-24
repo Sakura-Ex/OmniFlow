@@ -56,6 +56,7 @@ export function useCalculation() {
     try {
       const snapshot = { recipes: useRecipeStore.getState().recipes, configuration: canvas.networkConfiguration, environment: useSettingsStore.getState().units }
       const model = compileNetwork({ nodes: canvas.nodes, edges: canvas.edges, ...snapshot, requestId, documentRevision: revision })
+      const evidence = canvas.captureResultEvidence(model)
       const isCurrent = () => pending.isCurrent() && capture() === key && useCanvasStore.getState().documentRevision === revision
       const solve = async (request: LPRequest) => {
         const remaining = deadline - performance.now()
@@ -68,7 +69,7 @@ export function useCalculation() {
       }
       const result = await solve(model.request)
       if (!isCurrent()) return
-      useCanvasStore.getState().setCalculationResult(mapCalculationResult(model, result))
+      useCanvasStore.getState().setCalculationResult(mapCalculationResult(model, result), evidence)
       useCanvasStore.getState().setActiveLimits(explainActiveLimits(model, result))
       if (result.status === 'infeasible') {
         const report = await runNetworkDiagnostics(model, result, { deadline, requestId: generateId(), solve, isCurrent })

@@ -26,7 +26,6 @@ import { nodeTypes, edgeTypes } from '@/features/canvas/canvas.flowConfig'
 import { RecipeEditorModal } from '@/features/recipe/components/RecipeEditorModal'
 import { EndpointEditorModal } from '@/features/endpoint/components/EndpointEditorModal'
 import { CoreResultSummary } from '@/features/canvas/components/CoreResultSummary'
-import { SystemHUD } from '@/features/canvas/components/SystemHUD'
 import { RecipeEditorProvider } from '@/features/recipe/contexts/RecipeEditorContext'
 import { EndpointEditorProvider } from '@/features/canvas/contexts/EndpointEditorContext'
 import { NodeDataProvider } from '@/features/canvas/contexts/NodeDataContext'
@@ -169,13 +168,8 @@ export default function App() {
   }, [nodesRef, setNodes])
 
   const {
-    systemInputs,
-    systemOutputs,
     lastSystemInputs,
     lastSystemOutputs,
-    globalInputIds,
-    globalOutputIds,
-    capexList,
     error,
     resetSystemStats,
     handleCalculate,
@@ -356,16 +350,8 @@ export default function App() {
         )}
 
         {showNetworkConfiguration && <NetworkConfigurationEditor nodeId={planningNodeId} onClose={() => setShowNetworkConfiguration(false)} takeSnapshot={takeSnapshot} />}
-        <GraphIssuesPanel />
-        <DiagnosticsPanel report={diagnosticReport} limits={activeLimits} onLocate={locateDiagnostic} />
+        <div className="canvas-notices"><GraphIssuesPanel /><DiagnosticsPanel report={diagnosticReport} limits={activeLimits} onLocate={locateDiagnostic} /></div>
         {showShortcuts && <ShortcutHelp onClose={() => setShowShortcuts(false)} />}
-        {showResults && <SystemHUD
-          systemInputs={systemInputs}
-          systemOutputs={systemOutputs}
-          globalInputIds={globalInputIds}
-          globalOutputIds={globalOutputIds}
-          capexList={capexList}
-        />}
         <input
           ref={fileInputRef}
           type="file"
@@ -428,7 +414,7 @@ export default function App() {
           onOpenSettings={() => setShowSettings(true)}
         />
 
-        <CoreResultSummary />
+        <CoreResultSummary showDetails={showResults} onShowDetails={() => setShowResults(true)} />
         <PlanningEditorProvider value={openPlanning}>
         <BoundaryCommitProvider value={commitBoundary}>
         <BoundaryBatchCommitProvider value={commitBoundaries}>

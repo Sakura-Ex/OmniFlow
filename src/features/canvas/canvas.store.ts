@@ -12,6 +12,9 @@ import type { RecipeNodeData } from '@/common/types/recipe'
 import type { CalculateResponse, NetSummary } from '@/common/types/api'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { formatCalculationError } from '@/features/calculation/calculationClient'
+import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
+import { compiledResultEvidence, documentResultEvidence, type ResultEvidence } from './resultEvidence'
+import type { CompiledNetwork } from '@/features/calculation/networkCompiler'
 
 /**
  * Remove transient calculation values while retaining editable node data.
@@ -28,6 +31,8 @@ function clearNodeResults(nodes: Node[]): Node[] {
 /** Root state and actions for the canvas Zustand store. */
 export type CanvasStore = {
   lastCalculationResult: CalculateResponse | null
+  resultEvidence: ResultEvidence | null
+  captureResultEvidence: (model: CompiledNetwork) => ResultEvidence
   beginCalculation: () => void
   diagnosticReport?: DiagnosticReport
   activeLimits: ActiveLimit[]
@@ -116,7 +121,7 @@ export type CanvasStore = {
   /** Merge partial data into a node and update its edges if a handle reconnection occurred. */
   updateNodeData: (nodeId: string, nextData: Record<string, unknown>) => void
   /** Apply a calculation result to the canvas, updating node data, system balances, and CAPEX. */
-  setCalculationResult: (result: CalculateResponse) => void
+  setCalculationResult: (result: CalculateResponse, evidence?: ResultEvidence) => void
 }
 
 /** Zustand store managing all canvas state, including nodes, edges, viewport, calculation results, and derived data. */
@@ -130,7 +135,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   calculationIssues: [],
   netSummaries: [],
   systemSpills: {},
-  lastCalculationResult: null,
+  lastCalculationResult: null, resultEvidence: null,
+  captureResultEvidence: model => compiledResultEvidence(model, useGlobalResourceTable.getState().entries),
   beginCalculation: () => set({ calculationStatus: 'running', error: null, calculationMessage: null, calculationIssues: [], activeLimits: [], diagnosticReport: undefined }),
   invalidateCalculation: () => set(state => ({ documentRevision: state.documentRevision + 1, calculationStatus: 'stale', diagnosticReport: undefined, activeLimits: [], error: null, calculationMessage: null, calculationIssues: [] })),
   networkConfiguration: emptyNetworkConfiguration(),
@@ -173,10 +179,10 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     get().resetCalculationState()
     set({ canvasId, projectId, nodes: graph.nodes, edges: graph.edges, viewport, networkConfiguration: NetworkConfigurationSchema.parse(configuration), isDirty: false })
   },
-  resetCanvas: () => set({ lastCalculationResult: null, calculationStatus: 'idle', diagnosticReport: undefined, activeLimits: [], startup: undefined, networkConfiguration: emptyNetworkConfiguration(), nodes: [], edges: [], canvasId: null, projectId: null, isDirty: false, systemInputs: {}, systemOutputs: {}, lastSystemInputs: {}, lastSystemOutputs: {}, globalInputIds: [], globalOutputIds: [], capexList: {}, error: null }),
+  resetCanvas: () => set({ lastCalculationResult: null, resultEvidence: null, calculationStatus: 'idle', diagnosticReport: undefined, activeLimits: [], startup: undefined, networkConfiguration: emptyNetworkConfiguration(), nodes: [], edges: [], canvasId: null, projectId: null, isDirty: false, systemInputs: {}, systemOutputs: {}, lastSystemInputs: {}, lastSystemOutputs: {}, globalInputIds: [], globalOutputIds: [], capexList: {}, error: null }),
 
   resetCalculationState: () => set((state) => ({
-    lastCalculationResult: null,
+    lastCalculationResult: null, resultEvidence: null,
     calculationStatus: 'idle', diagnosticReport: undefined, activeLimits: [], startup: undefined,
     calculationMessage: null,
     calculationIssues: [],
@@ -271,7 +277,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     })
   },
 
-  setCalculationResult: (result) => {
+  setCalculationResult: (result, evidence) => {
     const nodeResults = result.node_results ?? {}
     const nextSystemInputs = result.system_inputs ?? {}
     const nextSystemOutputs = result.system_outputs ?? {}
@@ -304,6 +310,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
       return {
         lastCalculationResult: result, calculationIssues: [],
+        resultEvidence: evidence ?? documentResultEvidence(state.nodes, useRecipeStore.getState().recipes, state.networkConfiguration, useSettingsStore.getState().units, useGlobalResourceTable.getState().entries),
         nodes: nextNodes, startup: result.startup,
         error: null,
         calculationStatus: result.status === 'success' ? 'success' : 'feasible',
