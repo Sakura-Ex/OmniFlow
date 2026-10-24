@@ -5,7 +5,7 @@ import { useGlobalResourceTable } from '@/features/resource-registry/registry.st
 import { resolveCategoryDef } from '@/features/recipe/recipe.endpointNorm'
 import { Icon } from '@/common/components/Icon'
 import { stripCalculationResults } from '@/common/utils/calculationState'
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { Handle, Position, useUpdateNodeInternals, type NodeProps } from 'reactflow'
 import { SplitterNodeDataSchema, type SplitterNodeData } from '@/common/schemas/splitter.schema'
 import { generateId } from '@/common/utils/id'
@@ -14,6 +14,7 @@ import styles from './SplitterNode.module.css'
 import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
 import { NodeDetails } from './NodePresentation'
 import { NodeFrame, NodeHeader, NodeResourceLayout } from './NodeFrame'
+import { NodeCategoryHeading, NodeQuantity, NodeResourceIdentity, NodeResourceRow } from './NodeResource'
 import { useSettingsStore } from '@/features/settings/settings.store'
 import { UnitSystem } from '@/common/units/UnitSystem'
 import { defaultResourceUnit } from '@/common/units/defaults'
@@ -44,7 +45,6 @@ export function SplitterNode({ id, data }: NodeProps<SplitterNodeData & { port_t
   const [error, setError] = useState('')
   const shown = dirty || advanced ? draft : data
   const category = resolveCategoryDef(shown.input.category, categories, overrides)
-  const categoryColor = { '--port-color': category.themeColor } as CSSProperties
   const outputIdentities = JSON.stringify(shown.outputs.map(output => output.portId))
   useEffect(() => updateNodeInternals(id), [id, outputIdentities, displayMode, updateNodeInternals])
   const change = (next: SplitterNodeData) => { setDraft(next); setDirty(true); setError('') }
@@ -75,28 +75,26 @@ export function SplitterNode({ id, data }: NodeProps<SplitterNodeData & { port_t
     </>} />
     <NodeResourceLayout className={styles.flow}>
       <section className={styles.input}><h3>{t('canvas.inputs')}</h3>
-        <div className={styles.categoryHeading} style={categoryColor}>{categoryDisplayName(category.id, category.displayName)}</div>
-        <div className={styles.inputPort} title={t('canvas.throughput_limit_standard_unitss', { p0: shown.input.category, p1: shown.input.id, p2: shown.capacity ?? t('canvas.unlimited') })}>
-          <Handle type="target" position={Position.Left} id={shown.input.portId} className={styles.handle} />
-          <div className={styles.resourceRow}>
-            <span tabIndex={0} className={styles.resource} title={`${resourceName} (${shown.input.id})`}>{resourceName || t('canvas.select_resource')}</span>
-            {displayMode !== 'compact' && <span className={styles.throughput} title={`${rate(inputRate)} ${suffix}`}>{rate(inputRate)} {suffix}</span>}
-          </div>
-          <div className={styles.capacity} title={`${t('canvas.throughput_limit')} ${shown.capacity === null ? t('canvas.unlimited') : `${rate(shown.capacity)} ${suffix}`}`}>{(displayMode === 'detailed' || shown.capacity !== null) && <>{t('canvas.throughput_limit')} {shown.capacity === null ? t('canvas.unlimited') : `${rate(shown.capacity)} ${suffix}`}</>}</div>
-          {displayMode === 'detailed' && <span className={styles.identity} tabIndex={0} title={shown.input.portId}>{shown.input.portId}</span>}
-        </div>
+        <NodeCategoryHeading as="div" label={categoryDisplayName(category.id, category.displayName)} color={category.themeColor} />
+        <NodeResourceRow as="div" mode={displayMode} className={styles.inputPort}
+          title={t('canvas.throughput_limit_standard_unitss', { p0: shown.input.category, p1: shown.input.id, p2: shown.capacity ?? t('canvas.unlimited') })}
+          identity={<NodeResourceIdentity name={resourceName || t('canvas.select_resource')} title={`${resourceName} (${shown.input.id})`} />}
+          actual={<NodeQuantity value={rate(inputRate)} unit={suffix} />}
+          policy={(displayMode === 'detailed' || shown.capacity !== null) && <span className={styles.capacity} title={`${t('canvas.throughput_limit')} ${shown.capacity === null ? t('canvas.unlimited') : `${rate(shown.capacity)} ${suffix}`}`}>{t('canvas.throughput_limit')} {shown.capacity === null ? t('canvas.unlimited') : `${rate(shown.capacity)} ${suffix}`}</span>}
+          details={shown.input.portId} detailsTitle={shown.input.portId}
+          port={<Handle type="target" position={Position.Left} id={shown.input.portId} className={styles.handle} />}
+        />
       </section>
       <section className={styles.output}><h3>{t('canvas.output_ratios')}</h3>
-        <div className={styles.categoryHeading} style={categoryColor}>{categoryDisplayName(category.id, category.displayName)}</div>
-        {shown.outputs.map((output, index) => <div className={styles.outputPort} key={output.portId} title={t('canvas.branch_standard_unitss', { p0: index + 1, p1: data.port_throughputs?.[output.portId]?.toPrecision(5) ?? '—' })}>
-          <div className={styles.resourceRow}>
-            <span tabIndex={0} className={styles.resource} title={`${resourceName} (${shown.input.id})`}>{resourceName || t('canvas.select_resource')}</span>
-            {displayMode !== 'compact' && <span className={styles.throughput} title={`${rate(data.port_throughputs?.[output.portId])} ${suffix}`}>{rate(data.port_throughputs?.[output.portId])} {suffix}</span>}
-          </div>
-          <label className={styles.ratioLabel}><span>{t('canvas.branch')} {index + 1}</span><input className="nodrag nopan" aria-label={t('canvas.branch_percentage', { p0: index + 1 })} type="number" min="0" max="100" step="any" value={Number((output.ratio * 100).toPrecision(12))} onChange={event => change({ ...shown, outputs: shown.outputs.map(item => item.portId === output.portId ? { ...item, ratio: Number(event.target.value) / 100 } : item) })} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancel() } else if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); save() } }} /><span>%</span></label>
-          {displayMode === 'detailed' && <span className={styles.identity} tabIndex={0} title={output.portId}>{output.portId}</span>}
-          {data.outputs.some(port => port.portId === output.portId) && <Handle type="source" position={Position.Right} id={output.portId} className={styles.handle} />}
-        </div>)}
+        <NodeCategoryHeading as="div" label={categoryDisplayName(category.id, category.displayName)} color={category.themeColor} />
+        {shown.outputs.map((output, index) => <NodeResourceRow as="div" mode={displayMode} className={styles.outputPort} key={output.portId} conditionFullWidth
+          title={t('canvas.branch_standard_unitss', { p0: index + 1, p1: data.port_throughputs?.[output.portId]?.toPrecision(5) ?? '—' })}
+          identity={<NodeResourceIdentity name={resourceName || t('canvas.select_resource')} title={`${resourceName} (${shown.input.id})`} />}
+          actual={<NodeQuantity value={rate(data.port_throughputs?.[output.portId])} unit={suffix} />}
+          condition={<label className={styles.ratioLabel}><span>{t('canvas.branch')} {index + 1}</span><input className="nodrag nopan" aria-label={t('canvas.branch_percentage', { p0: index + 1 })} type="number" min="0" max="100" step="any" value={Number((output.ratio * 100).toPrecision(12))} onChange={event => change({ ...shown, outputs: shown.outputs.map(item => item.portId === output.portId ? { ...item, ratio: Number(event.target.value) / 100 } : item) })} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancel() } else if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); save() } }} /><span>%</span></label>}
+          details={output.portId} detailsTitle={output.portId}
+          port={data.outputs.some(port => port.portId === output.portId) && <Handle type="source" position={Position.Right} id={output.portId} className={styles.handle} />}
+        />)}
       </section>
     </NodeResourceLayout>
     {advanced && <section className={`${styles.editor} nodrag nowheel`} aria-label={t('canvas.advanced_splitter_settings')}>

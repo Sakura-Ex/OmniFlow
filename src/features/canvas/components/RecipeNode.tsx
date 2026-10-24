@@ -27,6 +27,7 @@ import { GlobalPortIcon } from './GlobalPortIcon'
 import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
 import { NodeDetails } from './NodePresentation'
 import { NodeFrame, NodeHeader, NodeResourceLayout } from './NodeFrame'
+import { NodeCategoryHeading, NodeQuantity, NodeResourceIdentity, NodeResourceRow } from './NodeResource'
 import { PortPolicyBadge } from './PortPolicyBadge'
 import { PortSupplyStatus } from './PortSupplyStatus'
 import { MachineLimit } from './MachineLimit'
@@ -77,16 +78,22 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
       const input = direction === 'input'
       const previous = grouped[index - 1]
       const startsCategory = previous && (previous.utility_type ?? previous.category) !== (port.utility_type ?? port.category)
-      return <Fragment key={portId}>{(!previous || startsCategory) && <li className={`${styles.categoryHeading}${startsCategory ? ` ${styles.categoryStart}` : ''}`} style={{ '--port-color': category.themeColor } as CSSProperties}>{categoryDisplayName(category.id, category.displayName)}</li>}<li className={`${styles.port} ${styles[mode]}`} style={{ '--port-color': category.themeColor } as CSSProperties}>
-        {port.routing_mode === 'global'
-          ? <GlobalPortIcon side={input ? 'left' : 'right'} />
-          : <Handle id={portId} type={input ? 'target' : 'source'} position={input ? Position.Left : Position.Right} className={`${styles.handle} ${input ? styles.left : styles.right}`} />}
-        <div className={styles.resourceIdentity}><span tabIndex={0} className={styles.resourceName} title={`${resourceName} (${port.id})`}>{resourceName || t('canvas.unnamed_resource')}</span>{inventory && <span className={styles.inventoryTag}>{t('canvas.inventory')}</span>}<PortSupplyStatus name={resourceName || t('canvas.this_input')} policy={input && !inventory ? policy : undefined} formatAmount={amount => recipePortPresentation(port, payload, amount, units, category).rateValue} /></div>
-        {mode !== 'compact' && <div className={styles.rate} title={actual === undefined ? t('shell.idle') : presentation.rate}><strong>{actual === undefined ? '—' : presentation.rateValue}</strong></div>}
-        <div className={styles.policy}><PortPolicyBadge presentation={mode === 'detailed' ? 'detailed' : 'summary'} policy={policy} formatQuantity={presentation.formatQuantity} formatAmount={amount => recipePortPresentation(port, payload, amount, units, category).rateValue} /></div>
-        {mode === 'detailed' && <div className={styles.portDetail} tabIndex={0} title={`${presentation.amount} · ${t('recipeDisplay.probability', { value: formatProbability(port.probability ?? 1) })}`}>{presentation.amount} · {t('recipeDisplay.probability', { value: formatProbability(port.probability ?? 1) })}</div>}
-
-      </li></Fragment>
+      const details = `${presentation.amount} · ${t('recipeDisplay.probability', { value: formatProbability(port.probability ?? 1) })}`
+      return <Fragment key={portId}>
+        {(!previous || startsCategory) && <NodeCategoryHeading label={categoryDisplayName(category.id, category.displayName)} color={category.themeColor} separated={Boolean(startsCategory)} />}
+        <NodeResourceRow mode={mode} className={styles.port} style={{ '--port-color': category.themeColor } as CSSProperties}
+          identity={<NodeResourceIdentity name={resourceName || t('canvas.unnamed_resource')} title={`${resourceName} (${port.id})`}>
+            {inventory && <span className={styles.inventoryTag}>{t('canvas.inventory')}</span>}
+            <PortSupplyStatus name={resourceName || t('canvas.this_input')} policy={input && !inventory ? policy : undefined} formatAmount={amount => recipePortPresentation(port, payload, amount, units, category).rateValue} />
+          </NodeResourceIdentity>}
+          actual={<NodeQuantity value={presentation.rateNumber} unit={presentation.rateUnit} title={actual === undefined ? t('shell.idle') : presentation.rate} />}
+          policy={<PortPolicyBadge presentation={mode === 'detailed' ? 'detailed' : 'summary'} policy={policy} formatQuantity={presentation.formatQuantity} formatAmount={amount => recipePortPresentation(port, payload, amount, units, category).rateValue} />}
+          details={details} detailsTitle={details}
+          port={port.routing_mode === 'global'
+            ? <GlobalPortIcon side={input ? 'left' : 'right'} />
+            : <Handle id={portId} type={input ? 'target' : 'source'} position={input ? Position.Left : Position.Right} className={`${styles.handle} ${input ? styles.left : styles.right}`} />}
+        />
+      </Fragment>
     })}
     {!resources.length && <li className={styles.empty}>{t('canvas.none')}</li>}
   </ul>

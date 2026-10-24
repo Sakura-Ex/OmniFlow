@@ -32,10 +32,12 @@ export function recipePortPresentation(port: NormalizedResource, payload: Comput
     const quantity = occupancy.amount * units.expression(original).conversionScale(units.expression(expression))
     amount = `${occupancy.resource.occupancy_basis === 'global' ? t('canvas.globalOccupancy') : t('canvas.machineOccupancy')} ${formatOpExRate(quantity)} ${units.expression(expression).toString()}`
   }
-  const rateValue = actual === undefined || !Number.isFinite(actual) ? '—'
+  const rateUnit = semantics.kind === 'flow' ? buildUnitSuffix(expression, 'rate_per_sec', units) : units.expression(expression).toString()
+  const rateNumber = actual === undefined || !Number.isFinite(actual) ? '—'
     : semantics.kind === 'flow'
-      ? `${formatOpExRate(units.fromRate(actual, expression, 'rate_per_sec'))} ${buildUnitSuffix(expression, 'rate_per_sec', units)}`
-      : formatQuantity(actual)
+      ? formatOpExRate(units.fromRate(actual, expression, 'rate_per_sec'))
+      : formatOpExRate(actual / units.registry.normalize(expression).scale)
+  const rateValue = rateNumber === '—' ? '—' : `${rateNumber} ${rateUnit}`
   const rate = `${t('canvas.actualPrefix')} ${rateValue}`
-  return { amount, rate, rateValue, formatQuantity }
+  return { amount, rate, rateValue, rateNumber, rateUnit, formatQuantity }
 }

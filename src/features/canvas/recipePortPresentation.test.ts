@@ -13,6 +13,8 @@ it('shows verified gross throughput separately from per-machine coefficients and
   const unsolved = recipePortPresentation(payload.recipe_inputs[0], payload, undefined, units, category)
   expect(unsolved.rate).toBe('实际 —')
   expect(unsolved.rateValue).toBe('—')
+  expect(unsolved.rateNumber).toBe('—')
+  expect(unsolved.rateUnit).toBe('mL/s')
   expect(unsolved.amount).toContain('每台')
 })
 
@@ -23,6 +25,8 @@ it('retains time denominators for per-tick coefficients and canonical actual rat
   const presentation = recipePortPresentation(payload.recipe_inputs[0], payload, 640, units, category)
   expect(presentation.amount).toBe('每台 16 EU/t')
   expect(presentation.rateValue).toBe('640 EU/s')
+  expect(presentation.rateNumber).toBe('640')
+  expect(presentation.rateUnit).toBe('EU/s')
 })
 
 it('keeps capacity and state as prefixed quantities without flow time denominators', () => {
@@ -32,6 +36,8 @@ it('keeps capacity and state as prefixed quantities without flow time denominato
   const capacity = recipePortPresentation(payload.recipe_inputs[0], payload, 1.2, units, category, { kind: 'capacity', available: 3 })
   expect(capacity.amount).toBe('每台 1 000 mL')
   expect(capacity.rateValue).toBe('1 200 mL')
+  expect(capacity.rateNumber).toBe('1 200')
+  expect(capacity.rateUnit).toBe('mL')
   expect(capacity.formatQuantity(3)).toBe('3 000 mL')
   const state = recipePortPresentation(payload.recipe_inputs[0], payload, undefined, units, category, { kind: 'state', actual: 2.5 })
   expect(state.amount).toBe('状态 2 500 mL')

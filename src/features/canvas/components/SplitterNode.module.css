@@ -3,15 +3,14 @@
 .iconButton { composes: iconButton from './node-chrome.module.css'; }
 .input, .output { min-width: 0; padding: 18px 0 10px; }
 .flow h3 { margin: 0 18px 10px; font-size: 13px; line-height: 20px; font-weight: 600; color: var(--text-strong); }
-.categoryHeading { composes: categoryHeading from './shared-port.module.css'; padding: 4px 18px; height: 24px; box-sizing: border-box; white-space: nowrap; overflow: hidden; }
-.inputPort, .outputPort { position: relative; height: 86px; box-sizing: border-box; padding: 12px 18px; display: grid; grid-template-rows: 24px 28px; gap: 8px; }
-.node[data-display-mode='detailed'] .inputPort, .node[data-display-mode='detailed'] .outputPort { height: 110px; grid-template-rows: 24px 28px 16px; }
-.resourceRow { display: grid; grid-template-columns: minmax(0, 1fr) 88px; align-items: center; gap: 10px; min-width: 0; }
-.node[data-display-mode='compact'] .resourceRow { grid-template-columns: minmax(0, 1fr); }
-.resource { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
-.throughput { display: block; min-width: 0; height: 24px; line-height: 24px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; color: var(--text-strong); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.identity { font-size: 11px; line-height: 16px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.resource:focus-visible, .identity:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.inputPort, .outputPort {
+  --node-resource-height: 86px;
+  --node-resource-detail-height: 110px;
+  --node-resource-padding-y: 12px;
+  --node-resource-condition-height: 28px;
+  --node-resource-detail-line-height: 16px;
+  --node-resource-row-gap: 8px;
+}
 .handle { width: 8px; height: 8px; border: 1px solid var(--panel); background: var(--accent); top: 24px; }
 .inputPort .handle { left: -4px; }
 .outputPort .handle { right: -4px; }

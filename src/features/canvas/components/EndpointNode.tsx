@@ -1,7 +1,7 @@
 import { categoryDisplayName } from '@/common/i18n/resourceLabels'
 import { t, useTranslation } from '@/common/i18n'
 import { Icon } from '@/common/components/Icon'
-import { Fragment, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { Fragment, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Combobox } from '@/common/components/Combobox'
 import { Handle, Position, useUpdateNodeInternals } from 'reactflow'
 import type { SourceNodeData, TargetNodeData } from '@/common/types/recipe'
@@ -29,6 +29,8 @@ import { PortPolicyBadge } from './PortPolicyBadge'
 import { PortSupplyStatus } from './PortSupplyStatus'
 import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
 import { NodeFrame, NodeHeader, NodeResourceLayout } from './NodeFrame'
+import { NodeCategoryHeading, NodeQuantity, NodeResourceIdentity, NodeResourceRow } from './NodeResource'
+import type { NodeDisplayMode } from '@/common/types/nodeDisplay'
 
 /** Map authoritative boundaries to the shared card control without changing their semantics.
  * @param boundary - Explicit port boundary, if configured.
@@ -42,7 +44,7 @@ function boundaryMode(boundary?: Boundary): EndpointMode | 'unset' | 'advanced' 
 }
 
 /** One port retains its own numeric draft and actual-throughput evidence. */
-type EndpointQuantityProps = {
+type EndpointResourceRowProps = {
   nodeId: string
   portId: string
   name: string
@@ -54,13 +56,18 @@ type EndpointQuantityProps = {
   suffix: string
   remember: (amount: number) => void
   target: boolean
+  mode: NodeDisplayMode
+  identity: ReactNode
+  policy: ReactNode
+  port: ReactNode
+  color: string
 }
 
 /** Commit only confirmed quantities; automatic modes display actual flow rather than a limit.
  * @param props - Current port policy, numeric evidence and display-unit context.
  * @returns Compact numeric field with Enter/blur commit and Escape cancellation.
  */
-function EndpointQuantity(props: EndpointQuantityProps) {
+function EndpointResourceRow(props: EndpointResourceRowProps) {
   useTranslation()
   const { nodeId, portId, name, boundary, editableFlow, actual, units, expression, suffix, remember, target } = props
   const status = useCanvasStore(state => state.calculationStatus)
@@ -96,20 +103,22 @@ function EndpointQuantity(props: EndpointQuantityProps) {
       setInvalid(false)
     } catch { setInvalid(true) }
   }
-  return <div className={`${styles.quantity} ${invalid ? styles.insufficient : ''} nodrag nopan`} title={invalid ? t('canvas.invalidQuantity') : title} onClick={event => event.stopPropagation()}>
-    <div className={styles.actual} tabIndex={0} title={title} aria-label={`${name} · ${title}`} data-outcome={outcome}>
-      <div className={styles.actualValue}>{outcome === 'unmet' && <Icon name="warning" size={13} />}<strong>{actual === undefined ? '—' : display(actual)}</strong><span className={styles.unit}>{suffix}</span></div>
-    </div>
-    {editable && <label className={styles.field}><span title={fieldLabel}>{fieldCaption}</span><input type="text" inputMode="decimal"
+  const condition = editable ? <div className={`${styles.condition} ${invalid ? styles.insufficient : ''} nodrag nopan`} title={invalid ? t('canvas.invalidQuantity') : title} onClick={event => event.stopPropagation()}>
+    <label className={styles.field}><span title={fieldLabel}>{fieldCaption}</span><input type="text" inputMode="decimal"
       aria-invalid={invalid || undefined} aria-label={`${name} ${fieldLabel} ${suffix}`}
       value={draft ?? String(units.fromRate(quantity!, expression, 'rate_per_sec'))}
       onChange={event => { cancelBlur.current = false; setInvalid(false); setDraft(event.target.value) }} onBlur={confirm}
       onKeyDown={event => {
         if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur() }
         else if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancelBlur.current = true; setDraft(null); setInvalid(false); event.currentTarget.blur() }
-      }} /><span className={styles.unit}>{suffix}</span></label>}
+      }} /><span className={styles.fieldUnit} title={suffix}>{suffix}</span></label>
     {invalid && <span className={styles.fieldError} role="alert">{t('canvas.invalidQuantity')}</span>}
   </div>
+    : undefined
+  return <NodeResourceRow className={styles.port} mode={props.mode} style={{ '--port-color': props.color } as CSSProperties}
+    identity={props.identity}
+    actual={<span className="nodrag nopan" onClick={event => event.stopPropagation()}><NodeQuantity value={actual === undefined ? '—' : display(actual)} unit={suffix} title={`${name} · ${title}`} outcome={outcome} emphasis="primary" /></span>} actualInCompact
+    condition={condition} policy={props.policy} details={<span className={styles.identity}>{portId}</span>} detailsTitle={portId} port={props.port} />
 }
 
 /**
@@ -192,16 +201,11 @@ export function EndpointNode({ id, data, role }: { id: string; data: SourceNodeD
       const startsCategory = index > 0 && ports[index - 1].category !== port.category
       const boundary = configuration?.boundary
       return <Fragment key={portId}>
-        {(index === 0 || startsCategory) && <li className={`${styles.categoryHeading}${startsCategory ? ` ${styles.categoryStart}` : ''}`} style={{ '--port-color': category.themeColor } as CSSProperties}>{categoryDisplayName(category.id, category.displayName)}</li>}
-        <li className={styles.port} style={{ '--port-color': category.themeColor } as CSSProperties}>
-          <div className={styles.nameArea}>
-            <div className={styles.resourceIdentity}><span className={styles.name} tabIndex={0} title={`${name} (${port.id})`}>{name}</span><PortSupplyStatus name={name} policy={configuration} formatAmount={amount => `${formatOpExRate(units.fromRate(amount, expression, 'rate_per_sec'))} ${suffix}`} /></div>
-            <div className={styles.policy}><PortPolicyBadge presentation={displayMode === 'detailed' ? 'detailed' : 'summary'} policy={configuration} formatAmount={amount => `${formatOpExRate(units.fromRate(amount, expression, 'rate_per_sec'))} ${suffix}`} formatQuantity={amount => `${formatOpExRate(amount / units.registry.normalize(expression).scale)} ${units.expression(expression).toString()}`} /></div>
-            {displayMode === 'detailed' && <span className={styles.identity} title={portId}>{portId}</span>}
-          </div>
-          <EndpointQuantity key={`${portId}:${boundaryMode(boundary)}`} nodeId={id} portId={portId} name={name} boundary={boundary} editableFlow={(configuration?.semantics.kind ?? 'flow') === 'flow'} actual={data.actual_amounts?.[portId]} units={units} expression={expression} suffix={suffix} remember={amount => { retainedAmounts.current[portId] = amount }} target={!supply} />
-          {port.routing_mode === 'global' ? <GlobalPortIcon side={supply ? 'right' : 'left'} /> : <Handle id={portId} type={supply ? 'source' : 'target'} position={supply ? Position.Right : Position.Left} className={styles.handle} style={{ [supply ? 'right' : 'left']: '-5px' }} />}
-        </li>
+        {(index === 0 || startsCategory) && <NodeCategoryHeading label={categoryDisplayName(category.id, category.displayName)} color={category.themeColor} separated={startsCategory} className={styles.categoryHeading} />}
+        <EndpointResourceRow key={`${portId}:${boundaryMode(boundary)}`} nodeId={id} portId={portId} name={name} boundary={boundary} editableFlow={(configuration?.semantics.kind ?? 'flow') === 'flow'} actual={data.actual_amounts?.[portId]} units={units} expression={expression} suffix={suffix} remember={amount => { retainedAmounts.current[portId] = amount }} target={!supply} mode={displayMode} color={category.themeColor}
+          identity={<NodeResourceIdentity name={name} title={`${name} (${port.id})`}><PortSupplyStatus name={name} policy={configuration} formatAmount={amount => `${formatOpExRate(units.fromRate(amount, expression, 'rate_per_sec'))} ${suffix}`} /></NodeResourceIdentity>}
+          policy={<PortPolicyBadge presentation={displayMode === 'detailed' ? 'detailed' : 'summary'} policy={configuration} formatAmount={amount => `${formatOpExRate(units.fromRate(amount, expression, 'rate_per_sec'))} ${suffix}`} formatQuantity={amount => `${formatOpExRate(amount / units.registry.normalize(expression).scale)} ${units.expression(expression).toString()}`} />}
+          port={port.routing_mode === 'global' ? <GlobalPortIcon side={supply ? 'right' : 'left'} /> : <Handle id={portId} type={supply ? 'source' : 'target'} position={supply ? Position.Right : Position.Left} className={styles.handle} style={{ [supply ? 'right' : 'left']: '-5px' }} />} />
       </Fragment>
     })}</ul></NodeResourceLayout>
 
