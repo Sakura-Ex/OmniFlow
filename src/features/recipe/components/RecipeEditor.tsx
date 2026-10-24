@@ -38,6 +38,7 @@ type EditorTarget = {
 /** Props for the reusable recipe editing surface. */
 type RecipeEditorProps = {
   node: EditorTarget | null
+  presentation?: 'sidebar' | 'window'
   onClose: () => void
   onSave: (id: string, data: RecipeNodeData) => { ok: boolean } | void
 }
@@ -83,11 +84,12 @@ function buildFormDefaults(node: EditorTarget | null, stored?: RecipeNodeData): 
  *
  * @param root0 - Component props.
  * @param root0.node - The node target to edit, or null.
+ * @param root0.presentation - Original window layout or compact sidebar layout.
  * @param root0.onClose - Request to leave the editor through its container's draft guard.
  * @param root0.onSave - Callback invoked with the node ID and assembled recipe data on save.
  * @returns Embedded recipe editor, or null when no target exists.
  */
-export function RecipeEditor({ node, onClose, onSave }: RecipeEditorProps) {
+export function RecipeEditor({ node, onClose, onSave, presentation = 'sidebar' }: RecipeEditorProps) {
   const { t } = useTranslation()
   const storedRecipe = useRecipeStore((state) => state.recipes[node?.id ?? ''])
 
@@ -234,7 +236,7 @@ export function RecipeEditor({ node, onClose, onSave }: RecipeEditorProps) {
   if (!node) return null
 
   return (
-      <section className={styles.editor} aria-label={t('editor.editRecipe')}>
+      <section data-recipe-layout={presentation} className={`${styles.editor} ${presentation === 'window' ? styles.window : ''}`} aria-label={t('editor.editRecipe')}>
         <div className={styles['recipe-editor__body']}>
           {error && <p role="alert" className={styles.error}>{error}</p>}
           <FormProvider {...methods}>

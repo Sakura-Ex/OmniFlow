@@ -22,28 +22,28 @@
 .floating {
   position: fixed;
   inset: 0;
-  width: min(1200px, calc(100vw - 48px));
-  height: min(850px, calc(100dvh - 48px));
-  max-width: calc(100vw - 48px);
+  width: min(1660px, calc(100vw - 40px));
+  height: min(960px, calc(100dvh - 48px));
+  max-width: calc(100vw - 40px);
   max-height: calc(100dvh - 48px);
   margin: auto;
   border: 1px solid var(--border-strong);
-  border-radius: 12px;
-  box-shadow: 0 16px 48px var(--shadow-color);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px var(--shadow-color);
   overflow: hidden;
 }
-.floating::backdrop { background: rgb(0 0 0 / 38%); }
+.floating::backdrop { background: var(--overlay); backdrop-filter: blur(6px); }
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex: 0 0 auto;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 18px 20px;
   border-bottom: 1px solid var(--border);
 }
 .header[hidden] { display: none; }
-.header h2 { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.header h2 { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 20px; }
 .dockButton {
   composes: button from '@/common/styles/primitives.module.css';
   display: inline-flex;
@@ -63,3 +63,6 @@
   .floating { width: calc(100vw - 16px); height: calc(100dvh - 16px); max-width: calc(100vw - 16px); max-height: calc(100dvh - 16px); }
   .header { padding: 10px; gap: 8px; }
 }
+
+.actions { display: flex; align-items: center; gap: 12px; }
+.closeButton { composes: closeBtn from "@/common/components/Modal.module.css"; display: inline-flex; align-items: center; justify-content: center; }

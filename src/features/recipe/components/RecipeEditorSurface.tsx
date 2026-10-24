@@ -34,11 +34,11 @@ export function RecipeEditorSurface({ floating, onDock, ...editorProps }: Recipe
     onKeyDown={event => { event.stopPropagation() }}
     onCancel={event => { event.preventDefault(); onDock() }}>
     <header className={styles.header} hidden={!floating}>
-      <h2 id={headingId} title={editorProps.node?.data.machine_name}>{editorProps.node?.data.machine_name || t('editor.editRecipe')}</h2>
-      <button type="button" className={styles.dockButton} onClick={onDock}>
+      <h2 id={headingId} title={editorProps.node?.data.machine_name}>{t('editor.editRecipe')}</h2>
+      <div className={styles.actions}><button type="button" className={styles.dockButton} onClick={onDock}>
         <Icon name="chevronRight" size={16} />{t('workspace.returnToSidebar')}
-      </button>
+      </button><button type="button" className={styles.closeButton} aria-label={t('editor.close')} onClick={editorProps.onClose}><Icon name="close" /></button></div>
     </header>
-    <div className={styles.content}><RecipeEditor {...editorProps} /></div>
+    <div className={styles.content}><RecipeEditor {...editorProps} presentation={floating ? 'window' : 'sidebar'} /></div>
   </dialog>
 }

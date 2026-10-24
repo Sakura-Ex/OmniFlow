@@ -58,3 +58,20 @@
 @container recipe-editor (min-width: 780px) {
   .settingsLayout { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); align-items: start; }
 }
+
+/* Restore the original four fixed panes in the independent recipe window. */
+.window .recipe-editor__body { padding: 20px; display: grid; grid-template-rows: minmax(0, 1fr); overflow: hidden; scrollbar-color: var(--border-strong) var(--panel-soft); }
+.window .settingsLayout { grid-template-columns: minmax(0, 1.75fr) minmax(320px, 1fr); align-items: stretch; gap: 16px; }
+.window .settingsStack { grid-template-rows: repeat(2, minmax(0, 1fr)); align-content: stretch; gap: 16px; }
+.window .settingsLayout .settingsSection { flex: none; height: 100%; max-height: 100%; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.window .recipe-editor__footer { gap: 12px; padding: 14px 20px; }
+.window .recipe-editor__btn { padding: 9px 16px; font-size: 13px; }
+@media (max-width: 1100px) {
+  .window .recipe-editor__body { display: block; overflow-y: auto; }
+  .window .settingsLayout { grid-template-columns: minmax(0, 1fr); }
+  .window .settingsStack { grid-template-rows: repeat(2, clamp(240px, 36dvh, 360px)); }
+}
+@media (max-width: 600px) {
+  .window .recipe-editor__body, .window .recipe-editor__footer { padding: 12px; }
+  .window .recipe-editor__btn { min-height: 40px; }
+}
