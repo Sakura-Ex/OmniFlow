@@ -25,7 +25,7 @@
 
 .flowGroup h3 {
   margin: 0 18px 10px;
-  font-size: 13px;
+  font-size: 16px;
   line-height: 20px;
   font-weight: 600;
   color: var(--text-strong);
@@ -41,30 +41,17 @@
   list-style: none;
 }
 
-/* All densities share the same resource pitch and 18px anchor. */
-.port { --node-resource-height: 56px; }
-.card .port[data-mode='compact'],
-.card .port[data-mode='standard'] {
-  --node-resource-main-height: 32px;
-  --node-resource-text-line-height: 32px;
-  --node-resource-padding-y: 2px;
-  --node-resource-condition-height: 14px;
-  --node-resource-detail-line-height: 0px;
-}
-
-.outputSection { text-align: right; --node-category-direction: row-reverse; }
-
-.card .port[data-mode='detailed'] {
-  padding-bottom: 0;
+/* Modes vary content inside the same two-line group; the anchor stays at 18px. */
+.port {
+  --node-resource-height: 44px;
   --node-resource-main-height: 20px;
-  --node-resource-padding-y: 8px;
-  --node-resource-details-row: 2;
-  --node-resource-policy-row: 3;
+  --node-resource-text-line-height: 20px;
+  --node-resource-padding-top: 8px;
+  --node-resource-padding-bottom: 2px;
+  --node-resource-quantity-width: 102px;
+  --node-resource-column-gap: 8px;
 }
-
-.card .port[data-mode='standard'] {
-  --node-resource-quantity-width: 104px;
-}
+.outputSection { text-align: right; --node-category-direction: row-reverse; }
 
 .inventoryTag {
   margin-left: auto;

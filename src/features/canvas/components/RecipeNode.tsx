@@ -91,6 +91,11 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
           actual={<NodeQuantity value={presentation.rateNumber} unit={presentation.rateUnit} title={actual === undefined ? t('shell.idle') : presentation.rate} />}
           policy={<PortPolicyBadge presentation={mode === 'detailed' ? 'detailed' : 'summary'} policy={policy} formatQuantity={presentation.formatQuantity} formatAmount={amount => recipePortPresentation(port, payload, amount, units, category).rateValue} />}
           details={details} detailsTitle={details}
+          auxiliaryAction={mode === 'detailed' && <NodeDetails inline title={resourceName || port.id} label={`${resourceName || port.id} · ${t('canvas.nodeDetails')}`}>
+            <p>{details}</p>
+            <p>{actual === undefined ? t('shell.idle') : presentation.rate}</p>
+            <PortPolicyBadge policy={policy} formatQuantity={presentation.formatQuantity} formatAmount={amount => recipePortPresentation(port, payload, amount, units, category).rateValue} />
+          </NodeDetails>}
           port={port.routing_mode === 'global'
             ? <GlobalPortIcon side={input ? 'left' : 'right'} />
             : <Handle id={portId} type={input ? 'target' : 'source'} position={input ? Position.Left : Position.Right} className={`${styles.handle} ${input ? styles.left : styles.right}`} />}

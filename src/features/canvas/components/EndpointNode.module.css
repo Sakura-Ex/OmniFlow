@@ -8,19 +8,17 @@
 .ports { list-style: none; padding: 12px 0 8px; margin: 0; }
 .categoryHeading { --node-category-height: 18px; --node-category-padding-x: 16px; --node-category-padding-y: 0px; }
 .port {
-  --node-resource-height: 64px;
-  --node-resource-padding-y: 2px;
+  --node-resource-height: 48px;
+  --node-resource-padding-top: 4px;
+  --node-resource-padding-bottom: 2px;
   --node-resource-padding-x: 16px;
-  --node-resource-main-height: 32px;
-  --node-resource-condition-height: 14px;
-  --node-resource-detail-line-height: 14px;
+  --node-resource-main-height: 28px;
   --node-resource-column-gap: 8px;
-  --node-resource-row-gap: 0px;
   --node-resource-quantity-width: 156px;
   --endpoint-port-y: 18px;
 }
 .editablePort { --node-resource-quantity-width: 258px; }
-.quantities { display: grid; grid-template-columns: 106px 42px; align-items: center; gap: 8px; min-width: 0; height: 32px; }
+.quantities { display: grid; grid-template-columns: 106px 42px; align-items: center; gap: 8px; min-width: 0; height: 28px; }
 .quantities[data-editable] { grid-template-columns: 106px 94px 42px; }
 .field { display: grid; grid-template-columns: 14px var(--node-input-width); align-items: center; gap: 8px; min-width: 0; }
 .field > span { color: var(--muted); text-align: center; font-size: var(--node-input-font-size); }

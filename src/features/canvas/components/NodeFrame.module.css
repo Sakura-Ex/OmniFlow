@@ -40,9 +40,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 650;
-  line-height: 21px;
+  line-height: 24px;
 }
 
 .controls,
@@ -78,5 +78,5 @@
   display: block;
 }
 
-.frame[data-display-mode='compact'] { --node-name-font-size: 22px; --node-name-weight: 600; }
-.frame[data-display-mode='standard'] { --node-name-font-size: 18px; --node-name-weight: 550; --node-quantity-font-size: 16px; }
+.frame[data-display-mode='compact'] { --node-name-font-size: 14px; --node-name-weight: 500; }
+.frame[data-display-mode='standard'] { --node-name-font-size: 14px; --node-name-weight: 500; --node-quantity-font-size: 14px; }
