@@ -43,12 +43,22 @@
 /* Grow the resource content around its existing 18px port center. */
 .card .port[data-mode='compact'],
 .card .port[data-mode='standard'] {
+  --node-resource-height: 48px;
   --node-resource-main-height: 32px;
   --node-resource-text-line-height: 32px;
   --node-resource-padding-y: 2px;
-  --node-resource-condition-height: 18px;
-  --node-resource-detail-line-height: 10px;
+  --node-resource-condition-height: 12px;
+  --node-resource-detail-line-height: 0px;
   --node-resource-unit-font-size: 11px;
+}
+
+.outputSection { text-align: right; --node-category-direction: row-reverse; }
+
+.card .port[data-mode='detailed'] {
+  --node-resource-main-height: 20px;
+  --node-resource-padding-y: 8px;
+  --node-resource-details-row: 2;
+  --node-resource-policy-row: 3;
 }
 
 .card .port[data-mode='compact'] { --node-resource-font-size: 22px; }

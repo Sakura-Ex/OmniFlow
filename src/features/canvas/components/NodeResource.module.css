@@ -1,5 +1,6 @@
 .category {
   display: flex;
+  flex-direction: var(--node-category-direction, row);
   align-items: center;
   gap: 8px;
   height: var(--node-category-height, 24px);
@@ -33,11 +34,11 @@
 .identity { min-width: 0; display: flex; align-items: center; gap: 5px; }
 .name { display: block; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-strong); font-size: var(--node-resource-font-size, 13px); font-weight: var(--node-resource-name-weight, 500); line-height: var(--node-resource-text-line-height, 24px); }
 .actual { grid-row: 1; grid-column: 2; min-width: 0; }
-.policy { grid-row: 2; grid-column: 1 / -1; min-width: 0; }
+.policy { grid-row: var(--node-resource-policy-row, 2); grid-column: 1 / -1; min-width: 0; }
 .row[data-condition] .policy { grid-column: 1; }
 .condition { grid-row: 2; grid-column: 2; min-width: 0; }
 .row[data-condition-full-width] .condition { grid-column: 1 / -1; }
-.details { grid-row: 3; grid-column: 1 / -1; min-width: 0; color: var(--muted); font-size: 11px; line-height: var(--node-resource-detail-line-height, 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.details { grid-row: var(--node-resource-details-row, 3); grid-column: 1 / -1; min-width: 0; color: var(--muted); font-size: 11px; line-height: var(--node-resource-detail-line-height, 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .quantity { display: flex; align-items: baseline; justify-content: flex-end; gap: var(--node-resource-value-gap, 5px); min-width: 0; color: var(--text-strong); font-variant-numeric: tabular-nums; }
 .quantity strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--node-resource-quantity-font-size, var(--node-resource-font-size, 13px)); font-weight: 600; line-height: var(--node-resource-text-line-height, 24px); }
 .quantity .unit { flex-shrink: 0; max-width: 62px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: var(--node-resource-unit-font-size, 10px); }
