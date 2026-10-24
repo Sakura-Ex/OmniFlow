@@ -28,6 +28,7 @@ import { NodeDetails } from './NodePresentation'
 import { PortPolicyBadge } from './PortPolicyBadge'
 import { PortSupplyStatus } from './PortSupplyStatus'
 import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
+import { NodeFrame, NodeHeader, NodeResourceLayout } from './NodeFrame'
 
 /** Map authoritative boundaries to the shared card control without changing their semantics.
  * @param boundary - Explicit port boundary, if configured.
@@ -153,15 +154,14 @@ export function EndpointNode({ id, data, role }: { id: string; data: SourceNodeD
   const updateNodeInternals = useUpdateNodeInternals()
   const handleSignature = JSON.stringify(ports.map(port => [portIdentity(port), port.routing_mode ?? 'wired']))
   useLayoutEffect(() => { updateNodeInternals(id) }, [id, role, handleSignature, displayMode, updateNodeInternals])
-  return <article className={`${styles.card} ${supply ? styles.supply : styles.demand}`} data-display-mode={displayMode}>
-    <header className={styles.header}>
-      <span className={styles.title}>{supply ? t('canvas.source') : t('canvas.target')}</span>
+  return <NodeFrame className={`${styles.card} ${supply ? styles.supply : styles.demand}`} mode={displayMode}>
+    <NodeHeader title={supply ? t('canvas.source') : t('canvas.target')} controls={
       <div className={`${styles.mode} nodrag nopan`} title={hasNonFlow ? t('canvas.contains_capacity_or_state_ports_use_advanced') : undefined}>
         <Combobox aria-label={supply ? t('canvas.supply_mode') : t('canvas.target_mode')} value={sharedMode} disabled={hasNonFlow || !ports.length} onChange={selected => changeMode(selected as EndpointMode)} options={[
           ...(['mixed', 'advanced', 'unset'].includes(sharedMode) ? [{ value: sharedMode, label: sharedMode === 'mixed' ? t('canvas.mixed') : sharedMode === 'advanced' ? t('canvas.advanced_settings') : t('canvas.select'), disabled: true }] : []),
           ...(supply ? [{ value: 'unlimited', label: t('canvas.unlimited_supply') }, { value: 'limited', label: t('canvas.supplyCap') }] : [{ value: 'demand', label: t('canvas.demand_minimum') }, { value: 'maximize', label: t('canvas.maximize_output') }, { value: 'spill', label: t('canvas.overflow_disposal') }, { value: 'exact', label: t('canvas.fixed_output_exact') }, { value: 'export', label: t('canvas.receive_surplus') }]),
         ]} />
-      </div>
+      </div>} actions={<>
       <button className={`${styles.iconButton} nodrag nopan`} onClick={() => onEdit(id, role, data)} title={t('canvas.edit_resources')} aria-label={t('canvas.edit_resources')}><Icon name="settings" size={15} /></button>
       <button className={`${styles.iconButton} nodrag nopan`} onClick={() => openPlanning(id)} title={supply ? t('canvas.supply_settings') : t('canvas.demand_settings')} aria-label={supply ? t('canvas.supply_settings') : t('canvas.demand_settings')}><Icon name="boundary" size={16} /></button>
       <NodeDetails title={supply ? t('canvas.source') : t('canvas.target')}>
@@ -181,8 +181,8 @@ export function EndpointNode({ id, data, role }: { id: string; data: SourceNodeD
           </dl></section>
         })}
       </NodeDetails>
-    </header>
-    <ul className={styles.ports}>{ports.map((port, index) => {
+    </>} />
+    <NodeResourceLayout columns="single"><ul className={styles.ports}>{ports.map((port, index) => {
       const portId = portIdentity(port)
       const configuration = policies[portKey(id, portId)]
       const category = resolveCategoryDef(port.category, categories, overrides)
@@ -203,7 +203,7 @@ export function EndpointNode({ id, data, role }: { id: string; data: SourceNodeD
           {port.routing_mode === 'global' ? <GlobalPortIcon side={supply ? 'right' : 'left'} /> : <Handle id={portId} type={supply ? 'source' : 'target'} position={supply ? Position.Right : Position.Left} className={styles.handle} style={{ [supply ? 'right' : 'left']: '-5px' }} />}
         </li>
       </Fragment>
-    })}</ul>
+    })}</ul></NodeResourceLayout>
 
-  </article>
+  </NodeFrame>
 }

@@ -1,21 +1,3 @@
-.card {
-  position: relative;
-  color: var(--text-strong);
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 6px 20px var(--shadow-color);
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
-}
-
 .iconButton {
   display: inline-flex;
   align-items: center;

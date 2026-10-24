@@ -1,39 +1,9 @@
 .card {
-  composes: card from './node-chrome.module.css';
   width: 480px;
-  box-sizing: border-box;
-}
-
-:global(.react-flow__node.selected) .card {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-soft), 0 6px 20px var(--shadow-color);
 }
 
 .blocked {
   border-color: var(--danger);
-}
-
-.header {
-  composes: header from './node-chrome.module.css';
-  padding: 12px 16px;
-}
-
-.heading {
-  min-width: 0;
-  max-width: 260px;
-}
-
-.headerActions { flex-shrink: 0; display: flex; align-items: center; gap: 5px; }
-.headerActions button[aria-pressed='true'] { color: var(--success); border-color: var(--success); }
-
-.heading h2 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 650;
-  line-height: 1.4;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .editButton {
@@ -45,10 +15,7 @@
   color: var(--accent);
 }
 
-.flowGroup {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
+.editButton[aria-pressed='true'] { color: var(--success); border-color: var(--success); }
 
 .inputSection,
 .outputSection {

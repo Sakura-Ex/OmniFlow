@@ -26,6 +26,7 @@ import { groupPortsByCategory } from '../groupPortsByCategory'
 import { GlobalPortIcon } from './GlobalPortIcon'
 import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
 import { NodeDetails } from './NodePresentation'
+import { NodeFrame, NodeHeader, NodeResourceLayout } from './NodeFrame'
 import { PortPolicyBadge } from './PortPolicyBadge'
 import { PortSupplyStatus } from './PortSupplyStatus'
 import { MachineLimit } from './MachineLimit'
@@ -90,10 +91,8 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
     {!resources.length && <li className={styles.empty}>{t('canvas.none')}</li>}
   </ul>
 
-  return <article className={`${styles.card}${!payload.eligibility.eligible ? ` ${styles.blocked}` : ''}`} data-display-mode={mode}>
-    <header className={styles.header}>
-      <div className={styles.heading}><h2 title={machineName}>{machineName || t('canvas.unnamed_machine')}</h2></div>
-      <div className={`${styles.headerActions} nodrag`}><button className={styles.editButton} onClick={() => commitEdit(() => useRecipeStore.getState().updateRecipe(id, { is_implemented: !implemented }))} aria-label={t('canvas.toggle_built_status')} aria-pressed={implemented} title={implemented ? t('canvas.remove_built_mark') : t('canvas.mark_built')}><Icon name="check" size={15} /></button><button className={styles.editButton} onClick={() => onAutoFill(id)} aria-label={t('canvas.fill_ports')} title={t('canvas.fill_unconnected_ports')}><Icon name="wand" size={15} /></button><button className={styles.editButton} onClick={() => openPlanning(id)} aria-label={t('canvas.supplyAndBoundaries')} title={t('canvas.supplyAndBoundaries')}><Icon name="boundary" size={15} /></button><button className={styles.editButton} onClick={() => onEdit(id, data)} aria-label={t('canvas.edit_recipe')} title={t('canvas.edit_recipe')}><Icon name="settings" /></button><NodeDetails title={machineName || t('canvas.unnamed_machine')}>
+  return <NodeFrame className={`${styles.card}${!payload.eligibility.eligible ? ` ${styles.blocked}` : ''}`} mode={mode}>
+    <NodeHeader title={machineName || t('canvas.unnamed_machine')} actions={<><button className={styles.editButton} onClick={() => commitEdit(() => useRecipeStore.getState().updateRecipe(id, { is_implemented: !implemented }))} aria-label={t('canvas.toggle_built_status')} aria-pressed={implemented} title={implemented ? t('canvas.remove_built_mark') : t('canvas.mark_built')}><Icon name="check" size={15} /></button><button className={styles.editButton} onClick={() => onAutoFill(id)} aria-label={t('canvas.fill_ports')} title={t('canvas.fill_unconnected_ports')}><Icon name="wand" size={15} /></button><button className={styles.editButton} onClick={() => openPlanning(id)} aria-label={t('canvas.supplyAndBoundaries')} title={t('canvas.supplyAndBoundaries')}><Icon name="boundary" size={15} /></button><button className={styles.editButton} onClick={() => onEdit(id, data)} aria-label={t('canvas.edit_recipe')} title={t('canvas.edit_recipe')}><Icon name="settings" /></button><NodeDetails title={machineName || t('canvas.unnamed_machine')}>
         <p>{t('recipeDisplay.cycle', { value: formatMachineExact(payload.duration_seconds) })}</p>
         <p>{t('canvas.running_machines_installed_machines_utilization', { p0: data.operating_equivalent === undefined ? '—' : formatMachineExact(data.operating_equivalent), p1: data.planned_installed === undefined ? '—' : formatCapEx(data.planned_installed), p2: data.utilization == null ? '—' : formatProbability(data.utilization) })}</p>
         <dl className={styles.equipment}>
@@ -108,8 +107,7 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
           return <li key={portIdentity(port)}><span>{port.id}<small>{port.routing_mode === 'global' ? `${t('canvas.global_bus')}: ${policy?.scopeId ?? 'document'} / ${policy?.busId ?? 'default'}` : portIdentity(port)}</small></span><span>{presentation.amount}<small>{data.port_throughputs?.[portIdentity(port)] === undefined ? t('shell.idle') : presentation.rate}</small><small>{t('recipeDisplay.probability', { value: formatProbability(port.probability ?? 1) })}</small><PortPolicyBadge policy={policy} formatQuantity={presentation.formatQuantity} formatAmount={amount => recipePortPresentation(port, payload, amount, units, category).rateValue} /></span></li>
         })}</ul>
         <p>{t('recipeDisplay.modifiers', { count: modifiers.length })}</p><ol>{modifierNames.map((name, index) => <li key={modifiers[index].instance_id}>{name}</li>)}</ol>
-      </NodeDetails></div>
-    </header>
+      </NodeDetails></>} />
     <section className={`${styles.machineOverview} ${styles[mode]}`}>
       <div className={`${styles.machineSummary} ${styles[mode]}`}>
         <div className={styles.primaryCount}><span>{data.planned_installed === undefined && data.operating_equivalent !== undefined ? t('canvas.running') : t('recipeDisplay.installed')}</span><strong>{data.planned_installed !== undefined ? formatCapEx(data.planned_installed) : data.operating_equivalent !== undefined ? formatMachineExact(data.operating_equivalent) : '—'}</strong><small>{t('canvas.machines')}</small></div>
@@ -120,14 +118,14 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
 
     </section>
     {!payload.eligibility.eligible && <div className={styles.warning} title={payload.eligibility.reasons.map(reason => translateDiagnostic(reason)).join('; ')}>{t('canvas.cannot_run')} {translateDiagnostic(payload.eligibility.reasons[0] ?? t('canvas.check_recipe_settings'))}</div>}
-    <div className={styles.flowGroup}>
+    <NodeResourceLayout className={styles.flowGroup}>
       <section className={styles.inputSection}><h3>{t('canvas.inputs')}</h3>{renderPorts(payload.recipe_inputs, 'input')}</section>
       <section className={styles.outputSection}><h3>{t('canvas.outputs')}</h3>{renderPorts(payload.recipe_outputs, 'output')}</section>
-    </div>
-    {hasUtilities && <div className={`${styles.flowGroup} ${styles.utilities}`}>
+    </NodeResourceLayout>
+    {hasUtilities && <NodeResourceLayout className={`${styles.flowGroup} ${styles.utilities}`}>
       <section className={styles.inputSection}><h3>{t('canvas.utility_inputs')}</h3>{renderPorts(payload.utility_inputs, 'input')}</section>
       <section className={styles.outputSection}><h3>{t('canvas.utility_outputs')}</h3>{renderPorts(payload.utility_outputs, 'output')}</section>
-    </div>}
+    </NodeResourceLayout>}
 
-  </article>
+  </NodeFrame>
 }

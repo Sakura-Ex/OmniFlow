@@ -1,11 +1,8 @@
-.card { composes: card from './node-chrome.module.css'; width: 360px; box-sizing: border-box; border-color: color-mix(in srgb, var(--endpoint-color) 32%, var(--border)); font-size: 12px; }
-.supply { --endpoint-color: var(--source); }
-.demand { --endpoint-color: var(--target); }
+.card { width: 360px; border-color: color-mix(in srgb, var(--endpoint-color) 32%, var(--border)); }
+.supply { --endpoint-color: var(--source); --node-accent: var(--source); }
+.demand { --endpoint-color: var(--target); --node-accent: var(--target); }
 :global(.react-flow__node.selected) .card { border-color: var(--endpoint-color); box-shadow: 0 0 0 2px color-mix(in srgb, var(--endpoint-color) 15%, transparent); }
-.header { composes: header from './node-chrome.module.css'; gap: 6px; padding: 12px 14px; border-bottom-color: color-mix(in srgb, var(--endpoint-color) 18%, var(--border)); background: color-mix(in srgb, var(--endpoint-color) 4%, transparent); border-radius: 11px 11px 0 0; }
-.title { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 12px; font-weight: 650; color: var(--endpoint-color); }
-.title::before { content: ''; width: 5px; height: 14px; border-radius: 3px; background: currentColor; flex-shrink: 0; }
-.mode { flex: 0 0 134px; min-width: 0; }
+.mode { width: 134px; min-width: 0; }
 .iconButton { composes: iconButton from './node-chrome.module.css'; background: transparent; border-color: transparent; color: var(--muted); }
 .iconButton:hover { border-color: var(--border); color: var(--endpoint-color); background: var(--surface); }
 .ports { list-style: none; padding: 12px 0 8px; margin: 0; }
