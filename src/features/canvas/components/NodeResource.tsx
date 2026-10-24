@@ -61,7 +61,7 @@ export function NodeQuantity({ value, unit, title, className, outcome, emphasis 
  * @returns Fixed three-slot row; mode changes only content density, never port geometry.
  */
 export function NodeResourceRow({ as: Tag = 'li', mode, identity, actual, actualInCompact = false, condition, conditionFullWidth = false, policy, details, detailsTitle, port, className, style, title }: { as?: 'li' | 'div'; mode: NodeDisplayMode; identity: ReactNode; actual?: ReactNode; actualInCompact?: boolean; condition?: ReactNode; conditionFullWidth?: boolean; policy?: ReactNode; details?: ReactNode; detailsTitle?: string; port?: ReactNode; className?: string; style?: CSSProperties; title?: string }) {
-  const showActual = mode !== 'compact' || actualInCompact
+  const showActual = actual != null && (mode !== 'compact' || actualInCompact)
   return <Tag className={`${styles.row}${className ? ` ${className}` : ''}`} data-mode={mode} data-actual={showActual || undefined} data-condition={Boolean(condition) || undefined} data-condition-full-width={conditionFullWidth || undefined} style={style} title={title}>
     {port}
     <div className={styles.identityCell}>{identity}</div>
