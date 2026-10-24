@@ -7,7 +7,7 @@
 .iconButton:hover { border-color: var(--border); color: var(--endpoint-color); background: var(--surface); }
 .ports { list-style: none; padding: 12px 0 8px; margin: 0; }
 .categoryHeading { --node-category-height: 18px; --node-category-padding-x: 16px; --node-category-padding-y: 0px; }
-.port { --node-resource-height: 104px; --node-resource-detail-height: 126px; --node-resource-padding-y: 16px; --node-resource-padding-x: 16px; --node-resource-main-height: 32px; --node-resource-condition-height: 26px; --node-resource-detail-line-height: 18px; --node-resource-column-gap: 16px; --node-resource-row-gap: 4px; --node-resource-quantity-width: 160px; --endpoint-port-y: 32px; }
+.port { --node-resource-height: 118px; --node-resource-padding-y: 16px; --node-resource-padding-x: 16px; --node-resource-main-height: 32px; --node-resource-condition-height: 26px; --node-resource-detail-line-height: 18px; --node-resource-column-gap: 16px; --node-resource-row-gap: 4px; --node-resource-quantity-width: 160px; --endpoint-port-y: 32px; }
 .condition { position: relative; min-width: 0; width: 100%; }
 .identity { display: block; max-width: calc(100% - 176px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .field { display: grid; grid-template-columns: minmax(0, 1fr) 64px 42px; align-items: center; gap: 5px; min-width: 0; }

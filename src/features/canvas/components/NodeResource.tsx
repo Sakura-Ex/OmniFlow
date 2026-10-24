@@ -58,7 +58,7 @@ export function NodeQuantity({ value, unit, title, className, outcome, emphasis 
  * @param props.className - Node-specific geometry or semantic styling.
  * @param props.style - Resolved resource color and geometry variables.
  * @param props.title - Optional full row context.
- * @returns Fixed-capacity row whose presentation does not change when evidence arrives.
+ * @returns Fixed three-slot row; mode changes only content density, never port geometry.
  */
 export function NodeResourceRow({ as: Tag = 'li', mode, identity, actual, actualInCompact = false, condition, conditionFullWidth = false, policy, details, detailsTitle, port, className, style, title }: { as?: 'li' | 'div'; mode: NodeDisplayMode; identity: ReactNode; actual?: ReactNode; actualInCompact?: boolean; condition?: ReactNode; conditionFullWidth?: boolean; policy?: ReactNode; details?: ReactNode; detailsTitle?: string; port?: ReactNode; className?: string; style?: CSSProperties; title?: string }) {
   const showActual = mode !== 'compact' || actualInCompact

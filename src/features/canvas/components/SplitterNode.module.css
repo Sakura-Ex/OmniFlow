@@ -4,12 +4,11 @@
 .input, .output { min-width: 0; padding: 18px 0 10px; }
 .flow h3 { margin: 0 18px 10px; font-size: 13px; line-height: 20px; font-weight: 600; color: var(--text-strong); }
 .inputPort, .outputPort {
-  --node-resource-height: 86px;
-  --node-resource-detail-height: 110px;
+  --node-resource-height: 104px;
   --node-resource-padding-y: 12px;
   --node-resource-condition-height: 28px;
   --node-resource-detail-line-height: 16px;
-  --node-resource-row-gap: 8px;
+  --node-resource-row-gap: 4px;
 }
 .handle { width: 8px; height: 8px; border: 1px solid var(--panel); background: var(--accent); top: 24px; }
 .inputPort .handle { left: -4px; }
