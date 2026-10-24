@@ -1,4 +1,12 @@
 .frame {
+  --node-name-font-size: 12px;
+  --node-name-weight: 500;
+  --node-quantity-font-size: 12px;
+  --node-core-font-size: 24px;
+  --node-unit-font-size: 11px;
+  --node-input-font-size: 12px;
+  --node-input-width: 72px;
+  --node-input-height: 28px;
   position: relative;
   box-sizing: border-box;
   color: var(--text-strong);
@@ -69,3 +77,6 @@
 .single {
   display: block;
 }
+
+.frame[data-display-mode='compact'] { --node-name-font-size: 22px; --node-name-weight: 600; }
+.frame[data-display-mode='standard'] { --node-name-font-size: 18px; --node-name-weight: 550; --node-quantity-font-size: 16px; }

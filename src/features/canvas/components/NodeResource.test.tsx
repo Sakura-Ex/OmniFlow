@@ -29,4 +29,13 @@ describe('shared resource presentation', () => {
     expect(markup).not.toContain('data-outcome="met"')
     expect(markup).not.toContain('<strong>0</strong>')
   })
+
+  it.each<NodeDisplayMode>(['compact', 'standard', 'detailed'])('keeps validation feedback visible instead of identity details in %s', mode => {
+    const markup = renderToStaticMarkup(<NodeResourceRow mode={mode}
+      identity={<NodeResourceIdentity name="Product" />}
+      feedback={<span role="alert">Invalid amount</span>} details="internal port identity" />)
+    expect(markup).toContain('role="alert"');
+    expect(markup).toContain('Invalid amount');
+    expect(markup).not.toContain('internal port identity');
+  })
 })

@@ -1,7 +1,7 @@
 import { categoryDisplayName } from '@/common/i18n/resourceLabels'
 import { t, useTranslation } from '@/common/i18n'
 import { Icon } from '@/common/components/Icon'
-import { Fragment, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Combobox } from '@/common/components/Combobox'
 import { Handle, Position, useUpdateNodeInternals } from 'reactflow'
 import type { SourceNodeData, TargetNodeData } from '@/common/types/recipe'
@@ -75,6 +75,7 @@ function EndpointResourceRow(props: EndpointResourceRowProps) {
   const commit = useBoundaryCommit()
   const [draft, setDraft] = useState<string | null>(null)
   const [invalid, setInvalid] = useState(false)
+  const errorId = useId()
   const cancelBlur = useRef(false)
   const quantity = boundary?.kind === 'source' ? boundary.capacity : boundary?.kind === 'delivery' && ['at_least', 'exact'].includes(boundary.mode) ? boundary.amount : null
   const editable = editableFlow && quantity !== null && quantity !== undefined
@@ -86,7 +87,7 @@ function EndpointResourceRow(props: EndpointResourceRowProps) {
   const met = actual !== undefined && hasGoal && (boundary.mode === 'exact' ? Math.abs(actual - boundary.amount) <= Math.max(1, boundary.amount) * 1e-7 : !insufficient)
   const actualDescription = t('canvas.actual', { p0: actual === undefined ? '—' : display(actual), p1: suffix })
   const fieldLabel = boundary?.kind === 'delivery' ? t(boundary.mode === 'exact' ? 'canvas.fixed_output_exact' : 'canvas.demand_minimum') : t('canvas.supply_limit')
-  const fieldCaption = boundary?.kind === 'delivery' ? t(boundary.mode === 'exact' ? 'canvas.exactAmount' : 'canvas.minimumAmount') : t('canvas.limit')
+  const relation = boundary?.kind === 'delivery' ? boundary.mode === 'exact' ? '=' : '≥' : '≤'
   const outcome = target && hasGoal ? !verified || actual === undefined ? 'unverified' : met ? 'met' : 'unmet' : undefined
   const outcomeDescription = outcome === 'met' ? t('canvas.targetMet') : outcome === 'unmet' ? t('canvas.targetUnmet') : outcome === 'unverified' ? t('canvas.targetUnverified') : ''
   const title = `${actualDescription}${outcomeDescription ? ` · ${outcomeDescription}` : ''}${editable ? `；${fieldLabel} ${display(quantity!)} ${suffix}` : ''}${verified && insufficient ? t('canvas.shortfall', { p0: display(missing), p1: suffix }) : ''}`
@@ -104,22 +105,25 @@ function EndpointResourceRow(props: EndpointResourceRowProps) {
       setInvalid(false)
     } catch { setInvalid(true) }
   }
-  const condition = editable ? <div className={`${styles.condition} ${invalid ? styles.insufficient : ''} nodrag nopan`} title={invalid ? t('canvas.invalidQuantity') : title} onClick={event => event.stopPropagation()}>
-    <label className={styles.field}><span title={fieldLabel}>{fieldCaption}</span><input type="text" inputMode="decimal"
+  const condition = editable ? <label className={`${styles.field} ${invalid ? styles.insufficient : ''}`} title={fieldLabel}>
+    <span aria-hidden="true">{relation}</span><input type="text" inputMode="decimal"
       aria-invalid={invalid || undefined} aria-label={`${name} ${fieldLabel} ${suffix}`}
+      aria-describedby={invalid ? errorId : undefined}
       value={draft ?? String(units.fromRate(quantity!, expression, 'rate_per_sec'))}
       onChange={event => { cancelBlur.current = false; setInvalid(false); setDraft(event.target.value) }} onBlur={confirm}
       onKeyDown={event => {
         if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur() }
         else if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancelBlur.current = true; setDraft(null); setInvalid(false); event.currentTarget.blur() }
-      }} /><span className={styles.fieldUnit} title={suffix}>{suffix}</span></label>
-    {invalid && <span className={styles.fieldError} role="alert">{t('canvas.invalidQuantity')}</span>}
-  </div>
+      }} /></label>
     : undefined
-  return <NodeResourceRow className={styles.port} mode={props.mode} style={{ '--port-color': props.color } as CSSProperties}
+  return <NodeResourceRow className={`${styles.port}${editable ? ` ${styles.editablePort}` : ''}`} mode={props.mode} style={{ '--port-color': props.color } as CSSProperties}
     identity={props.identity}
-    actual={<span className="nodrag nopan" onClick={event => event.stopPropagation()}><NodeQuantity value={actual === undefined ? '—' : display(actual)} unit={suffix} title={`${name} · ${title}`} outcome={outcome} emphasis="primary" /></span>} actualInCompact
-    condition={condition} policy={props.policy} details={<span className={styles.identity}>{portId}</span>} detailsTitle={portId} port={props.port} />
+    actual={<div className={`${styles.quantities} nodrag nopan`} data-editable={editable || undefined} onClick={event => event.stopPropagation()}>
+      <NodeQuantity value={actual === undefined ? '—' : display(actual)} title={`${name} · ${title}`} outcome={outcome} emphasis="primary" />
+      {condition}<span className={styles.unit} title={suffix}>{suffix}</span>
+    </div>} actualInCompact
+    policy={props.policy}
+    feedback={invalid ? <span id={errorId} className={styles.fieldError} role="alert">{t('canvas.invalidQuantity')}</span> : undefined} port={props.port} />
 }
 
 /**

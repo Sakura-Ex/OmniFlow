@@ -53,6 +53,7 @@ export function NodeQuantity({ value, unit, title, className, outcome, emphasis 
  * @param props.conditionFullWidth - Let a branch editor use the full secondary row.
  * @param props.policy - Mode-aware policy or non-flow semantics.
  * @param props.details - Additional information shown only in detailed mode.
+ * @param props.feedback - Validation feedback occupying the detail slot in every mode.
  * @param props.detailsTitle - Accessible full text for an abbreviated detail.
  * @param props.port - Existing wired handle or global port; kept as a direct child.
  * @param props.className - Node-specific geometry or semantic styling.
@@ -60,7 +61,7 @@ export function NodeQuantity({ value, unit, title, className, outcome, emphasis 
  * @param props.title - Optional full row context.
  * @returns Fixed three-slot row; mode changes only content density, never port geometry.
  */
-export function NodeResourceRow({ as: Tag = 'li', mode, identity, actual, actualInCompact = false, condition, conditionFullWidth = false, policy, details, detailsTitle, port, className, style, title }: { as?: 'li' | 'div'; mode: NodeDisplayMode; identity: ReactNode; actual?: ReactNode; actualInCompact?: boolean; condition?: ReactNode; conditionFullWidth?: boolean; policy?: ReactNode; details?: ReactNode; detailsTitle?: string; port?: ReactNode; className?: string; style?: CSSProperties; title?: string }) {
+export function NodeResourceRow({ as: Tag = 'li', mode, identity, actual, actualInCompact = false, condition, conditionFullWidth = false, policy, details, feedback, detailsTitle, port, className, style, title }: { as?: 'li' | 'div'; mode: NodeDisplayMode; identity: ReactNode; actual?: ReactNode; actualInCompact?: boolean; condition?: ReactNode; conditionFullWidth?: boolean; policy?: ReactNode; details?: ReactNode; feedback?: ReactNode; detailsTitle?: string; port?: ReactNode; className?: string; style?: CSSProperties; title?: string }) {
   const showActual = actual != null && (mode !== 'compact' || actualInCompact)
   return <Tag className={`${styles.row}${className ? ` ${className}` : ''}`} data-mode={mode} data-actual={showActual || undefined} data-condition={Boolean(condition) || undefined} data-condition-full-width={conditionFullWidth || undefined} style={style} title={title}>
     {port}
@@ -68,6 +69,6 @@ export function NodeResourceRow({ as: Tag = 'li', mode, identity, actual, actual
     {showActual && <div className={styles.actual}>{actual}</div>}
     <div className={styles.policy}>{policy}</div>
     {condition && <div className={styles.condition}>{condition}</div>}
-    {mode === 'detailed' && <div className={styles.details} tabIndex={detailsTitle ? 0 : undefined} title={detailsTitle}>{details}</div>}
+    {(feedback || mode === 'detailed') && <div className={styles.details} tabIndex={!feedback && detailsTitle ? 0 : undefined} title={feedback ? undefined : detailsTitle}>{feedback ?? details}</div>}
   </Tag>
 }

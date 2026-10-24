@@ -26,6 +26,7 @@
 .flowGroup h3 {
   margin: 0 18px 10px;
   font-size: 13px;
+  line-height: 20px;
   font-weight: 600;
   color: var(--text-strong);
 }
@@ -40,31 +41,28 @@
   list-style: none;
 }
 
-/* Grow the resource content around its existing 18px port center. */
+/* All densities share the same resource pitch and 18px anchor. */
+.port { --node-resource-height: 56px; }
 .card .port[data-mode='compact'],
 .card .port[data-mode='standard'] {
-  --node-resource-height: 48px;
   --node-resource-main-height: 32px;
   --node-resource-text-line-height: 32px;
   --node-resource-padding-y: 2px;
-  --node-resource-condition-height: 12px;
+  --node-resource-condition-height: 14px;
   --node-resource-detail-line-height: 0px;
-  --node-resource-unit-font-size: 11px;
 }
 
 .outputSection { text-align: right; --node-category-direction: row-reverse; }
 
 .card .port[data-mode='detailed'] {
+  padding-bottom: 0;
   --node-resource-main-height: 20px;
   --node-resource-padding-y: 8px;
   --node-resource-details-row: 2;
   --node-resource-policy-row: 3;
 }
 
-.card .port[data-mode='compact'] { --node-resource-font-size: 22px; }
 .card .port[data-mode='standard'] {
-  --node-resource-font-size: 18px;
-  --node-resource-quantity-font-size: 16px;
   --node-resource-quantity-width: 104px;
 }
 
@@ -184,17 +182,16 @@
 .machineSummary { position: relative; flex: 0 0 58px; padding-right: 150px; height: 58px; box-sizing: border-box; }
 .primaryCount { height: 34px; display: flex; gap: 8px; align-items: baseline; white-space: nowrap; overflow: hidden; }
 .primaryCount > span, .primaryCount small { font-size: 11px; color: var(--muted); flex-shrink: 0; }
-.primaryCount strong { font: 650 26px/34px var(--mono); overflow: hidden; text-overflow: ellipsis; }
+.primaryCount strong { font: 650 var(--node-core-font-size)/32px var(--mono); overflow: hidden; text-overflow: ellipsis; }
 .auxiliaryCount { height: 24px; line-height: 24px; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .machineOverview[data-density='detailed'] .auxiliaryCount { position: absolute; bottom: 0; left: 0; right: 0; }
 .machineOverview[data-density='compact'] .primaryCount { height: 58px; align-items: center; }
-.machineOverview[data-density='compact'] .primaryCount strong { font-size: 32px; line-height: 42px; }
 .machineOverview[data-density='compact'] .primaryCount > span,
-.machineOverview[data-density='compact'] .primaryCount small { font-size: 12px; }
+.machineOverview[data-density='compact'] .primaryCount small { font-size: 11px; }
 .machineOverview[data-density='compact'] .machineLimit { top: 15px; }
 .machineLimit { position: absolute; right: 0; top: 3px; display: flex; align-items: center; gap: 6px; font-size: 11px; height: 28px; width: 140px; }
 .machineLimit span { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.machineLimit input { width: 60px; box-sizing: border-box; border: 1px solid var(--border); border-radius: 5px; padding: 3px; background: var(--panel-soft); color: var(--text-strong); font: 12px var(--mono); }
+.machineLimit input { width: var(--node-input-width); height: var(--node-input-height); flex-shrink: 0; box-sizing: border-box; border: 1px solid var(--border); border-radius: 5px; padding: 3px; background: var(--panel-soft); color: var(--text-strong); font: 12px var(--mono); }
 .machineLimit input[aria-invalid='true'] { border-color: var(--danger); }
 .modifiers { display: flex; flex: 0 0 24px; align-items: center; gap: 8px; height: 24px; font-size: 11px; color: var(--muted); }
 .modifiers > span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
