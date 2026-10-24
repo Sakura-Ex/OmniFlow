@@ -6,6 +6,7 @@ import { captureSnapshot, restoreSnapshot } from '@/features/canvas/hooks/useUnd
 import { createHistory } from '@/common/utils/history'
 import { commitEndpointEditor, commitRecipeEditor, nodeEditorBaseline } from './editorCommit'
 import type { RecipeNodeData } from '@/common/types/recipe'
+import { useSettingsStore } from '@/features/settings/settings.store'
 
 /** Create a minimal editable machine with stable port identities.
  * @returns A valid recipe fixture.
@@ -101,6 +102,39 @@ describe('node editor document transactions', () => {
     expect(useCanvasStore.getState().nodes[0].data.ports[0].amount).toBe(1)
     expect(useCanvasStore.getState().networkConfiguration.machines.s.installed).toBe(7)
   })
+
+  it('accepts consecutive saves with refreshed baselines and records each complete change', () => {
+    const edits = history()
+    const firstBaseline = nodeEditorBaseline('r')
+    const first = { ...useRecipeStore.getState().recipes.r, machine_name: 'first' }
+    expect(commitRecipeEditor('r', first, firstBaseline, edits.commit, setNodes).ok).toBe(true)
+    const nextBaseline = nodeEditorBaseline('r')
+    const second = { ...useRecipeStore.getState().recipes.r, machine_name: 'second' }
+    expect(commitRecipeEditor('r', second, firstBaseline, edits.commit, setNodes)).toEqual({ ok: false, reason: 'conflict' })
+    expect(commitRecipeEditor('r', second, nextBaseline, edits.commit, setNodes).ok).toBe(true)
+    edits.undo()
+    expect(useRecipeStore.getState().recipes.r.machine_name).toBe('first')
+    edits.undo()
+    expect(useRecipeStore.getState().recipes.r.machine_name).toBe('r')
+  })
+
+  it('requires reloading a draft after its unit environment changes', () => {
+    const baseline = nodeEditorBaseline('r')
+    const environment = useSettingsStore.getState().units
+    useSettingsStore.getState().setEnvironment({ ...environment, ticksPerSecond: environment.ticksPerSecond + 1 })
+    const edits = history()
+    expect(commitRecipeEditor('r', useRecipeStore.getState().recipes.r, baseline, edits.commit, setNodes)).toEqual({ ok: false, reason: 'conflict' })
+    expect(edits.canUndo()).toBe(false)
+    expect(commitRecipeEditor('r', { ...useRecipeStore.getState().recipes.r, machine_name: 'reloaded' }, nodeEditorBaseline('r'), edits.commit, setNodes).ok).toBe(true)
+  })
+
+  it('preserves endpoint identity and explicit units across repeated resource saves', () => {
+    const port = { portId: 'stable-port', _uid: 'stable-row', category: 'fluid', id: 'water', amount: 2, unit: [{ baseUnitId: 'L', exponent: 1 }] }
+    useCanvasStore.getState().setNodes([{ id: 's', type: 'sourceNode', position: { x: 0, y: 0 }, data: { ports: [port] } }])
+    const edits = history()
+    expect(commitEndpointEditor('s', { ports: [{ ...port, amount: 4 }] }, nodeEditorBaseline('s'), edits.commit, setNodes).ok).toBe(true)
+    expect(commitEndpointEditor('s', { ports: [{ ...port, amount: 6 }] }, nodeEditorBaseline('s'), edits.commit, setNodes).ok).toBe(true)
+    expect(useCanvasStore.getState().nodes[0].data.ports[0]).toEqual({ ...port, amount: 6 })
+    expect(Object.keys(useCanvasStore.getState().networkConfiguration.ports)).toContain(JSON.stringify(['s', 'stable-port']))
+  })
 })
-
-

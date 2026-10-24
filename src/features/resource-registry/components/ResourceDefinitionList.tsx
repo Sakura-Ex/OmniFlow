@@ -1,9 +1,8 @@
 import { useTranslation } from '@/common/i18n'
 import { Icon } from '@/common/components/Icon'
-import { useMemo } from 'react'
+import { useMemo, type CSSProperties } from 'react'
 import { ResourceDefinitionRow, type ResourceDefinitionRowProps } from './ResourceDefinitionRow'
 import type { ColumnDef } from './ResourceDefinitionRow.config'
-import { formatOpExRate } from '@/common/utils/format'
 import styles from './ResourceDefinitionRow.module.css'
 
 
@@ -36,16 +35,6 @@ type ResourceDefinitionListProps<T extends Record<string, unknown> & { _uid?: st
   getTimeBaseLocked?: (index: number) => boolean
   getProbabilityLocked?: (index: number) => boolean
   getIoToggleLocked?: (index: number) => boolean
-}
-
-/**
- * Format a numeric rate value into a human-readable string.
- * @param value - The rate value, or undefined.
- * @returns A formatted rate string.
- */
-function formatRate(value: number | undefined): string {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return '0.00'
-  return formatOpExRate(value)
 }
 
 /**
@@ -112,7 +101,7 @@ export function ResourceDefinitionList<T extends Record<string, unknown> & { _ui
     <div className={styles.tableViewport}>
       <div
         className={`${styles.row} ${styles['row--resource-route-header']}`}
-        style={{ gridTemplateColumns: gridTemplate }}
+        style={{ '--resource-columns': gridTemplate } as CSSProperties}
       >
         {columns.map((col) => (
           <span className={styles['row-header-item']} key={col.id} title={col.headerKey ? t(col.headerKey) : undefined}>
@@ -132,9 +121,7 @@ export function ResourceDefinitionList<T extends Record<string, unknown> & { _ui
           onRemove: onRemoveItem,
           onToggleRouting: onToggleRoutingItem,
           onIoTToggle: onIoTToggleItem,
-          rateText: rateMap
-            ? formatRate(rateMap.get(String(item.portId ?? '')))
-            : undefined,
+          previewRate: rateMap?.get(String(item.portId ?? '')),
           suggestions,
           categoryOptions,
           probabilityLabel,

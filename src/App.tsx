@@ -7,7 +7,6 @@ import { PlanningEditorProvider, BoundaryCommitProvider, BoundaryBatchCommitProv
 import { replaceEndpointBoundaries } from '@/features/calculation/endpointBoundary'
 import type { Boundary } from '@/features/calculation/networkConfig'
 import { DiagnosticsPanel } from '@/features/calculation/components/DiagnosticsPanel'
-import { NetworkConfigurationEditor } from '@/features/calculation/components/NetworkConfigurationEditor'
 import { GraphIssuesPanel } from '@/features/canvas/components/GraphIssuesPanel'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactFlow, {
@@ -23,8 +22,6 @@ import ReactFlow, {
   type Edge as RFEdge,
 } from 'reactflow'
 import { nodeTypes, edgeTypes } from '@/features/canvas/canvas.flowConfig'
-import { RecipeEditorModal } from '@/features/recipe/components/RecipeEditorModal'
-import { EndpointEditorModal } from '@/features/endpoint/components/EndpointEditorModal'
 import { CoreResultSummary } from '@/features/canvas/components/CoreResultSummary'
 import { RecipeEditorProvider } from '@/features/recipe/contexts/RecipeEditorContext'
 import { EndpointEditorProvider } from '@/features/canvas/contexts/EndpointEditorContext'
@@ -48,6 +45,12 @@ import { SettingsPage } from '@/app/components/SettingsPage'
 import { ShortcutHelp } from '@/app/components/ShortcutHelp'
 import { initialNodes, initialEdges, initialConfiguration, initialEnvironment } from '@/features/canvas/canvas.initialState'
 import { normalizeCanvasNode } from '@/features/canvas/canvas.validators'
+import { ObjectBrowser } from '@/features/canvas/components/ObjectBrowser'
+import { useEditorGuard } from '@/app/workspace/useEditorGuard'
+import { DraftLeaveDialog } from '@/app/workspace/DraftLeaveDialog'
+import { useWorkspace } from '@/app/workspace/useWorkspace'
+import { WorkspaceProperties } from '@/app/workspace/WorkspaceProperties'
+import workspaceStyles from '@/app/workspace/Workspace.module.css'
 import './App.css'
 
 const defaultEdgeOptions = {
@@ -100,6 +103,7 @@ function UpdateInternalsBridge({ onReady }: { onReady: (fn: (nodeId: string) => 
  */
 export default function App() {
   const { t } = useTranslation()
+  const [editorError, setEditorError] = useState<'missing' | 'conflict' | 'invalid' | null>(null)
   const {
     nodes,
     setNodes: _setNodes,
@@ -118,9 +122,6 @@ export default function App() {
   const calculationStatus = useCanvasStore(state => state.calculationStatus)
   const isDirty = useCanvasStore(state => state.isDirty)
   const { theme, toggleTheme } = useTheme()
-  const [showNetworkConfiguration, setShowNetworkConfiguration] = useState(false)
-  const [planningNodeId, setPlanningNodeId] = useState<string | undefined>()
-  const openPlanning = useCallback((nodeId?: string) => { setPlanningNodeId(nodeId); setShowNetworkConfiguration(true) }, [])
   const [showSettings, setShowSettings] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const reactFlowRef = useRef<ReactFlowInstance | null>(null)
@@ -239,7 +240,20 @@ export default function App() {
     handleEditEndpoint,
     handleCloseEndpointEditor,
     handleSaveEndpoint,
-  } = useNodeEditor({ setNodes, commitEdit, updateNodeInternals, onError: reason => window.alert(t(`workspace.${reason}`)) })
+  } = useNodeEditor({ setNodes, commitEdit, updateNodeInternals, onError: setEditorError })
+  const guard = useEditorGuard()
+  const workspace = useWorkspace({ nodes, edges, flow: reactFlowRef, request: guard.request, activate: (id, section) => {
+    setEditorError(null)
+    handleCloseEditor()
+    handleCloseEndpointEditor()
+    const node = useCanvasStore.getState().nodes.find(item => item.id === id)
+    if (!node) return
+    if (section === 'recipe' && node.type === 'recipeNode') handleEditNode(node.id, useRecipeStore.getState().recipes[node.id])
+    if (section === 'resources' && (node.type === 'sourceNode' || node.type === 'targetNode')) handleEditEndpoint(node.id, node.type === 'sourceNode' ? 'source' : 'target', node.data)
+  } })
+  const openPlanning = (id?: string) => id ? workspace.openProperties(id, 'boundaries') : guard.request(() => setShowSettings(true))
+  const propertyNode = nodes.find(node => node.id === workspace.target.id)
+
 
   const { updateNodeData, autoFillEndpoints, handleAutoFillSelected } = useNodeOperations({
     nodesRef,
@@ -251,11 +265,15 @@ export default function App() {
     lastSystemOutputs,
   })
 
+  const resetWorkspace = workspace.reset
+  const resetGuard = guard.reset
   const { markSaved, confirmReplace } = useDocumentSession()
   const onLoaded = useCallback((snapshot: Parameters<typeof markSaved>[0]) => {
     markSaved(snapshot)
     clearHistory()
-  }, [markSaved, clearHistory])
+    resetGuard()
+    resetWorkspace()
+  }, [markSaved, clearHistory, resetWorkspace, resetGuard])
   const {
     handleSaveCanvas,
     handleLoadCanvas,
@@ -276,16 +294,16 @@ export default function App() {
 
   useKeyboardShortcuts({
     takeSnapshot,
-    undo,
-    redo,
-    handleSelectAll,
-    handleClearSelection,
+    undo: () => guard.request(undo),
+    redo: () => guard.request(redo),
+    handleSelectAll: () => guard.request(handleSelectAll),
+    handleClearSelection: () => guard.request(handleClearSelection),
     handleCopy,
-    handleCut,
-    handlePaste,
-    handleDuplicate,
-    onDelete: handleDeleteSelected,
-    isEditing: editingNode !== null || editingEndpoint !== null || showSettings || showNetworkConfiguration || showShortcuts || openMenu !== null,
+    handleCut: async () => guard.request(() => { void handleCut() }),
+    handlePaste: async () => guard.request(() => { void handlePaste() }),
+    handleDuplicate: () => guard.request(handleDuplicate),
+    onDelete: () => guard.request(handleDeleteSelected),
+    isEditing: guard.asking || showSettings || showShortcuts || openMenu !== null,
   })
 
   const handleFitView = useCallback(() => {
@@ -321,19 +339,9 @@ export default function App() {
     <DocumentEditProvider value={commitEdit}>
     <main className="app-shell" data-theme={theme}>
       <section className="canvas-shell">
-        <RecipeEditorModal
-          key={editingNode?.id ?? 'editor-closed'}
-          node={editingNode}
-          onClose={handleCloseEditor}
-          onSave={handleSaveEditor}
-        />
-        <EndpointEditorModal
-          key={editingEndpoint?.id ?? 'endpoint-closed'}
-          node={editingEndpoint}
-          onClose={handleCloseEndpointEditor}
-          onSave={handleSaveEndpoint}
-        />
-        {showSettings && <SettingsPage theme={theme} toggleTheme={toggleTheme} takeSnapshot={takeSnapshot} onClose={() => setShowSettings(false)} />}
+        {showSettings && <SettingsPage theme={theme} toggleTheme={toggleTheme} onClose={() => setShowSettings(false)} />}
+        {guard.asking && <DraftLeaveDialog saving={guard.saving} onSave={guard.save} onDiscard={guard.discard} onCancel={guard.cancel} />}
+
 
         {error && (
           <div className="toast-error" onClick={dismissError}>
@@ -349,16 +357,21 @@ export default function App() {
           </div>
         )}
 
-        {showNetworkConfiguration && <NetworkConfigurationEditor nodeId={planningNodeId} onClose={() => setShowNetworkConfiguration(false)} takeSnapshot={takeSnapshot} />}
-        <div className="canvas-notices"><GraphIssuesPanel /><DiagnosticsPanel report={diagnosticReport} limits={activeLimits} onLocate={locateDiagnostic} /></div>
         {showShortcuts && <ShortcutHelp onClose={() => setShowShortcuts(false)} />}
         <input
           ref={fileInputRef}
           type="file"
           accept="application/json"
-          onChange={handleImportJson}
+          onChange={event => { const input = event.currentTarget; guard.request(() => { void handleImportJson({ target: input } as React.ChangeEvent<HTMLInputElement>) }) }}
           style={{ display: 'none' }}
         />
+        <div className={workspaceStyles.workspace}>
+          <aside className={workspaceStyles.sidebar} hidden={!workspace.objects} aria-label={t('workspace.objects')}>
+            <header className={workspaceStyles.header}><strong>{t('workspace.objects')}</strong><button aria-label={t('canvas.close')} onClick={workspace.toggleObjects}><Icon name="close" /></button></header>
+            <ObjectBrowser key={workspace.generation} onSelect={workspace.select} onLocate={workspace.locate} onReturn={workspace.returnView} canReturn={workspace.canReturn} />
+          </aside>
+          <div className={workspaceStyles.canvas}>
+            <div className={workspaceStyles.canvasOverlay}>
         <MenuBar
           isDirty={isDirty}
           canUndo={canUndo}
@@ -388,38 +401,47 @@ export default function App() {
           setOpenMenu={setOpenMenu}
           handleMenuAction={handleMenuAction}
           handleSaveCanvas={handleSaveCanvas}
-          handleLoadCanvas={handleLoadCanvas}
+          handleLoadCanvas={() => guard.request(handleLoadCanvas)}
           handleExportJson={handleExportJson}
-          handleImportClick={handleImportClick}
-          undo={undo}
-          redo={redo}
+          handleImportClick={() => guard.request(handleImportClick)}
+          undo={() => guard.request(undo)}
+          redo={() => guard.request(redo)}
           handleCopy={handleCopy}
-          handleCut={handleCut}
-          handlePaste={handlePaste}
-          handleDuplicate={handleDuplicate}
-          handleSelectAll={handleSelectAll}
-          handleClearSelection={handleClearSelection}
-          handleDeleteSelected={handleDeleteSelected}
-          handleDeleteSelectedNodes={handleDeleteSelectedNodes}
-          handleDeleteSelectedEdges={handleDeleteSelectedEdges}
-          handleClear={() => { if (confirmReplace()) handleClear() }}
+          handleCut={async () => guard.request(() => { void handleCut() })}
+          handlePaste={async () => guard.request(() => { void handlePaste() })}
+          handleDuplicate={() => guard.request(handleDuplicate)}
+          handleSelectAll={() => guard.request(handleSelectAll)}
+          handleClearSelection={() => guard.request(handleClearSelection)}
+          handleDeleteSelected={() => guard.request(handleDeleteSelected)}
+          handleDeleteSelectedNodes={() => guard.request(handleDeleteSelectedNodes)}
+          handleDeleteSelectedEdges={() => guard.request(handleDeleteSelectedEdges)}
+          handleClear={() => guard.request(() => { if (confirmReplace()) { handleClear(); guard.reset(); workspace.reset() } })}
           handleAddSplitter={handleAddSplitter}
           handleAddSource={handleAddSource}
           handleAddFurnace={handleAddFurnace}
           handleAddTarget={handleAddTarget}
           handleAddCustomRecipe={handleAddCustomRecipe}
-          handleAutoFillSelected={handleAutoFillSelected}
+          handleAutoFillSelected={() => guard.request(handleAutoFillSelected)}
           handleFitView={handleFitView}
           handleCalculate={handleCalculate}
-          onOpenSettings={() => setShowSettings(true)}
+          onOpenSettings={() => guard.request(() => setShowSettings(true))}
         />
 
+        <nav className={workspaceStyles.tools} aria-label={t('workspace.production')}>
+          <button aria-pressed={workspace.objects} onClick={workspace.toggleObjects}><Icon name="folder" />{t('workspace.objects')}</button>
+          <span>{t('workspace.production')}</span><button disabled title={t('workspace.planned')}>{t('workspace.recipes')}</button>
+          {workspace.canReturn && <button onClick={workspace.returnView}><Icon name="undo" />{t('workspace.returnView')}</button>}
+          <span className={workspaceStyles.spacer} />
+          <button data-workspace-properties-toggle aria-pressed={workspace.properties} onClick={() => workspace.properties ? workspace.closeProperties() : workspace.openProperties(nodes.filter(n => n.selected).length === 1 && !edges.some(edge => edge.selected) ? nodes.find(n => n.selected)!.id : null)}><Icon name="boundary" />{t('workspace.properties')}</button>
+        </nav>
+        <div className="canvas-notices"><GraphIssuesPanel /><DiagnosticsPanel report={diagnosticReport} limits={activeLimits} onLocate={locateDiagnostic} /></div>
+            </div>
         <CoreResultSummary showDetails={showResults} onShowDetails={() => setShowResults(true)} />
         <PlanningEditorProvider value={openPlanning}>
         <BoundaryCommitProvider value={commitBoundary}>
         <BoundaryBatchCommitProvider value={commitBoundaries}>
-        <RecipeEditorProvider value={{ onEdit: handleEditNode, onAutoFill: autoFillEndpoints }}>
-          <EndpointEditorProvider value={{ onEdit: handleEditEndpoint }}>
+        <RecipeEditorProvider value={{ onEdit: id => workspace.openProperties(id, 'recipe'), onAutoFill: autoFillEndpoints }}>
+          <EndpointEditorProvider value={{ onEdit: id => workspace.openProperties(id, 'resources') }}>
           <NodeDataProvider value={{ updateNodeData }}>
             <ReactFlow
               deleteKeyCode={null}
@@ -456,6 +478,11 @@ export default function App() {
         </BoundaryBatchCommitProvider>
         </BoundaryCommitProvider>
         </PlanningEditorProvider>
+          </div>
+          <WorkspaceProperties workspace={workspace} node={propertyNode} nodes={nodes} edges={edges}
+            recipe={editingNode} endpoint={editingEndpoint} onSaveRecipe={handleSaveEditor} onSaveEndpoint={handleSaveEndpoint}
+            registerDraft={guard.register} error={editorError} />
+        </div>
       </section>
     </main>
     </DocumentEditProvider>

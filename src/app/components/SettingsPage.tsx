@@ -20,7 +20,6 @@ const sections = [
 type SettingsPageProps = {
   theme: ThemeMode
   toggleTheme: () => void
-  takeSnapshot: () => void
   onClose: () => void
 }
 
@@ -28,11 +27,10 @@ type SettingsPageProps = {
  * @param props - Canvas return, history and appearance controls.
  * @param props.theme - Current UI theme.
  * @param props.toggleTheme - Switch the current UI theme.
- * @param props.takeSnapshot - Record history before saving network settings.
  * @param props.onClose - Return to the canvas.
  * @returns A native modal page that contains focus while open.
  */
-export function SettingsPage({ theme, toggleTheme, takeSnapshot, onClose }: SettingsPageProps) {
+export function SettingsPage({ theme, toggleTheme, onClose }: SettingsPageProps) {
   const { t, locale, setLocale } = useTranslation()
   const [drafts, setDrafts] = useState<Record<string, boolean>>({})
   const reportDraft = useCallback((id: string, dirty: boolean) => {
@@ -81,7 +79,7 @@ export function SettingsPage({ theme, toggleTheme, takeSnapshot, onClose }: Sett
             </div>
           </section>
         </div>
-        <div className={styles.pane} hidden={activeSection !== 'production'}><NetworkConfigurationEditor embedded onClose={onClose} takeSnapshot={takeSnapshot} /></div>
+        <div className={styles.pane} hidden={activeSection !== 'production'}><NetworkConfigurationEditor embedded onClose={onClose} /></div>
         <div className={styles.pane} hidden={activeSection !== 'resources'}><ResourceRegistryPanel embedded onClose={onClose} /></div>
         <div className={styles.pane} hidden={activeSection !== 'units'}><TpsSettingsPanel embedded onClose={onClose} /></div>
       </main>

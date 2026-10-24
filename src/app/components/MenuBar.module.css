@@ -10,10 +10,8 @@
   background: var(--panel);
   color: var(--text);
   box-shadow: 0 4px 14px var(--shadow-color);
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  right: 16px;
+  position: relative;
+  width: 100%;
   max-width: 1120px;
   margin-inline: auto;
   z-index: 40;
@@ -131,13 +129,13 @@
 .error { color: var(--danger, #d66a70); }
 .idle { color: var(--muted); }
 
-@media (max-width: 850px) {
+@container workspace-canvas (max-width: 850px) {
   .bar { gap: 6px; padding: 6px; }
   .trigger { padding-inline: 7px; }
   .status { max-width: 130px; }
 }
 
-@media (max-width: 650px) {
+@container workspace-canvas (max-width: 650px) {
   .bar { flex-wrap: wrap; }
   .menus { order: 0; }
   .utilities { order: 1; }

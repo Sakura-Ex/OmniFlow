@@ -12,6 +12,10 @@ import type { ColumnDef } from './ResourceDefinitionRow.config'
 import { TIME_BASE_OPTIONS } from './ResourceDefinitionRow.config'
 import { parseResourceId } from '@/common/utils/resourceId'
 import styles from './ResourceDefinitionRow.module.css'
+import { useState, type CSSProperties } from 'react'
+import { useSettingsStore } from '@/features/settings/settings.store'
+import { UnitSystem } from '@/common/units/UnitSystem'
+import { formatPreviewRate } from '../registry.units'
 
 /**
  *
@@ -44,7 +48,7 @@ export interface ResourceDefinitionRowProps {
   onToggleRouting?: (index: number) => void
   onIoTToggle?: (index: number) => void
 
-  rateText?: string
+  previewRate?: number
   unitSuffix?: string
   suggestions?: string[]
   categoryOptions?: { id: string; displayName: string }[]
@@ -76,7 +80,7 @@ export interface ResourceDefinitionRowProps {
  * @param root0.onRemove
  * @param root0.onToggleRouting
  * @param root0.onIoTToggle
- * @param root0.rateText
+ * @param root0.previewRate
  * @param root0.unitSuffix
  * @param root0.suggestions
  * @param root0.categoryOptions
@@ -99,7 +103,7 @@ export function ResourceDefinitionRow({
   onRemove,
   onToggleRouting,
   onIoTToggle,
-  rateText,
+  previewRate,
   unitSuffix,
   suggestions,
   categoryOptions,
@@ -118,11 +122,14 @@ export function ResourceDefinitionRow({
   const unitOverrides = useGlobalResourceTable((s) => s.overrides)
   const declaredLabel = unitOverrides[`${item.category}:${item.id}`]?.unit_override ?? categoryDefinitions[item.category ?? 'item']?.base_unit
   const expression = item.unit ?? (declaredLabel ? legacyUnit(declaredLabel) : defaultResourceUnit(item.category ?? 'item', item.id ?? ''))
+  const environment = useSettingsStore(state => state.units)
+  const rateText = formatPreviewRate(previewRate, item.displayUnit ?? expression, new UnitSystem(environment))
   const gridTemplate = columns.map((c) => c.width ?? 'auto').join(' ')
+  const [expanded, setExpanded] = useState(false)
+  const advancedColumns = columns.filter(column => column.id === 'probability')
+  const primaryColumns = columns.filter(column => column.id !== 'probability')
 
-  return (
-    <div className={`${styles.row} ${styles['row--resource-route']}`} style={{ gridTemplateColumns: gridTemplate }}>
-      {columns.map((col) => {
+  const renderControl = (col: ColumnDef) => {
         switch (col.id) {
           case 'id':
             return <Combobox key={col.id} aria-label={t('editor.resourceId')} placeholder={t('editor.resourceId')} value={item.id ?? ''} disabled={idLocked} allowCustom
@@ -143,6 +150,7 @@ export function ResourceDefinitionRow({
                 <input
                   type="number"
                   min={0}
+                  aria-label={col.headerKey ? t(col.headerKey) : t('editor.amount')}
                   value={item.amount ?? 1}
                   disabled={amountLocked}
                   onChange={(e) => onUpdate(index, { amount: Number(e.target.value) })}
@@ -167,6 +175,7 @@ export function ResourceDefinitionRow({
                   type="number"
                   min={0}
                   max={1}
+                  aria-label={col.headerKey ? t(col.headerKey) : t('editor.consumptionChance')}
                   step={0.01}
                   disabled={probabilityLocked}
                   value={item.consumable === false ? 0 : (item.probability ?? 1)}
@@ -207,7 +216,7 @@ export function ResourceDefinitionRow({
 
           case 'preview_rate':
             return (
-              <span className={styles['row-rate']} title={rateText} key={col.id}>{rateText ?? ''}</span>
+              <span className={styles['row-rate']} title={`${t('editor.previewRateHint')} · ${rateText}`} key={col.id}>{rateText}</span>
             )
 
           case 'label':
@@ -235,7 +244,22 @@ export function ResourceDefinitionRow({
           default:
             return null
         }
-      })}
+  }
+  const renderCell = (col: ColumnDef) => <div key={col.id} className={styles.cell} data-column={col.id} style={{ '--field-order': columns.indexOf(col) } as CSSProperties}>
+    {col.headerKey && <span className={styles.cellLabel}>{t(col.headerKey)}</span>}
+    {renderControl(col)}
+  </div>
+
+  return (
+    <div className={`${styles.row} ${styles['row--resource-route']}`} style={{ '--resource-columns': gridTemplate } as CSSProperties}>
+      {primaryColumns.map(renderCell)}
+      {advancedColumns.length > 0 && <>
+        <button type="button" className={styles.moreFields} aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>
+          <span>{t('canvas.advanced_settings')}{(item.probability ?? 1) !== 1 || item.consumable === false ? ` · ${item.consumable === false ? 0 : item.probability}` : ''}</span>
+          <Icon name={expanded ? 'chevronUp' : 'chevronDown'} size={12} />
+        </button>
+        <div className={styles.advancedFields} data-expanded={expanded}>{advancedColumns.map(renderCell)}</div>
+      </>}
     </div>
   )
 }

@@ -94,4 +94,3 @@ export function commitEndpointEditor(id: string, patch: Partial<SourceNodeData &
     return { ok: true }
   } catch { return { ok: false, reason: 'invalid' } }
 }
-

@@ -1,6 +1,6 @@
 .row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 74px 82px auto;
+  grid-template-columns: var(--resource-columns, minmax(0, 1fr) 74px 82px auto);
   gap: 6px;
   min-width: 0;
 }
@@ -14,8 +14,10 @@
 }
 
 .row--resource-route .row-rate {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  height: auto;
+  min-height: 32px;
 }
 
 .row-header-item {
@@ -238,24 +240,44 @@
   font-family: var(--mono);
 }
 
-@media (max-width: 500px) {
-  .row,
-  .row--resource-route,
-  .row--resource-route-header {
-    grid-template-columns: 1fr;
-  }
-
-  .row input:not([type='checkbox']),
-  .row select,
-  .btn,
-  .route-btn,
-  .icon-action {
-    width: 100%;
-    min-height: 40px;
-  }
-}
-
 .tableViewport {
   min-width: 0;
-  overflow-x: auto;
+  container: resource-fields / inline-size;
+}
+
+.cell { min-width: 0; order: var(--field-order); }
+.cellLabel, .moreFields { display: none; }
+.advancedFields { display: contents; }
+
+/* Follow the editor region's width, including narrow panes on a wide display. */
+@container resource-fields (max-width: 699px) {
+  .row--resource-route-header { display: none; }
+  .row--resource-route {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel-soft);
+    align-items: end;
+  }
+  .cell { grid-column: span 2; display: grid; gap: 4px; order: 10; }
+  .cellLabel { display: block; min-width: 0; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+  .cell[data-column='category'] { grid-column: span 2; order: 0; }
+  .cell[data-column='id'] { grid-column: span 4; order: 1; }
+  .cell[data-column='label'] { grid-column: 1 / -1; order: 0; }
+  .cell[data-column='unit'], .cell[data-column='amount'], .cell[data-column='time_base'] { order: 2; }
+  .cell[data-column='routing'] { grid-column: span 2; }
+  .cell[data-column='delete'], .cell[data-column='io_toggle'] { grid-column: span 1; justify-items: start; }
+  .cell[data-column='spacer'] { display: none; }
+  .cell[data-column='preview_rate'] { grid-column: 1 / -1; order: 20; grid-template-columns: auto minmax(0, 1fr); align-items: center; }
+  .cell[data-column='preview_rate'] .row-rate { justify-content: flex-end; }
+  .routingCell { justify-content: flex-start; }
+  .routingMark { left: 11px; }
+  .row-label { white-space: normal; overflow-wrap: anywhere; }
+  .moreFields { display: flex; grid-column: 1 / -1; order: 30; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; border: 0; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; }
+  .advancedFields { display: none; }
+  .advancedFields[data-expanded='true'] { display: grid; grid-column: 1 / -1; order: 40; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .advancedFields .cell { grid-column: auto; }
 }

@@ -5,6 +5,7 @@
 | First use | [English README](../README.md), [中文 README](README_CN.md), [Windows launcher](starting.md) |
 | Development | [Contributing](../CONTRIBUTING.md), [repository guidelines](../AGENTS.md), [docstring conventions](DOCSTRING_GUIDELINES.md) |
 | Interaction and next-stage plans | [Interaction handbook](interaction-design-handbook.md) |
+| Workspace implementation and future recipe-page boundaries | [Workspace layout plan](workspace-layout-implementation.md) |
 | Calculation architecture | [v2 design](technical-design-v2-proposal.md), [solver contract](solver-lp.md) |
 | Current implementation limits | [Gap assessment](v2-code-gap-assessment.md) |
 | Verification | [Testing](testing.md), [CI](ci.md), [manual browser harness](../tests/browser/README.md) |

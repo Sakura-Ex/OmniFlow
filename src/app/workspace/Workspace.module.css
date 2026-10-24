@@ -1,0 +1,38 @@
+.workspace { display: flex; position: relative; height: 100%; min-width: 0; overflow: clip; }
+.canvas { isolation: isolate; container-type: inline-size; container-name: workspace-canvas; position: relative; min-width: 0; flex: 1; height: 100%; }
+.sidebar { width: 248px; flex-shrink: 0; min-width: 0; display: flex; flex-direction: column; background: var(--panel); border-right: 1px solid var(--border); z-index: 25; }
+.properties { width: 420px; border-right: 0; border-left: 1px solid var(--border); }
+.expanded { width: min(900px, 65vw); }
+.sidebar[hidden] { display: none; }
+.header { display: flex; align-items: center; gap: 8px; padding: 12px; border-bottom: 1px solid var(--border); }
+.header strong { flex: 1; min-width: 0; }
+.propertyHeading { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.propertyHeading strong, .propertyHeading small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.propertyHeading small { color: var(--muted); font-size: 10px; }
+.selectionOverview { margin: 0; padding: 16px; font-size: 12px; }
+.empty .selectionOverview { padding: 0; }
+.selectionOverview > div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; }
+.selectionOverview dt { color: var(--muted); flex-shrink: 0; }
+.selectionOverview dd { margin: 0; min-width: 0; text-align: right; overflow-wrap: anywhere; }
+.selectionOverview dd small { display: block; margin-top: 4px; color: var(--muted); }
+.overviewAction { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 6px 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text); cursor: pointer; overflow-wrap: anywhere; }
+.header button, .tabs button, .tools button, .leaveDialog button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 30px; padding: 4px 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text); cursor: pointer; }
+.tools { display: flex; align-items: center; gap: 6px; z-index: 30; font-size: 12px; }
+.tools .spacer { flex: 1; }
+.tools button:disabled { opacity: .45; cursor: default; }
+.tools button[aria-pressed='true'], .tabs button[aria-pressed='true'] { color: var(--accent); border-color: var(--accent); }
+.tabs { display: flex; gap: 6px; padding: 8px 12px; flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: 12px; }
+.body { flex: 1; min-height: 0; overflow: auto; padding: 0; }
+.empty { padding: 16px; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.leaveDialog { background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 12px; max-width: min(460px, calc(100vw - 32px)); padding: 20px; box-shadow: var(--shadow); }
+.leaveDialog::backdrop { background: rgb(0 0 0 / .4); }
+.leaveDialog h3 { margin-top: 0; }
+.leaveDialog footer { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+@media (max-width: 1100px) {
+  .sidebar { position: absolute; top: 0; bottom: 0; left: 0; width: min(300px, calc(100vw - 40px)); box-shadow: var(--shadow); }
+  .properties, .expanded { left: auto; right: 0; width: min(680px, calc(100vw - 32px)); }
+}
+@media (max-width: 650px) { .tools { gap: 4px; } .tools button { padding: 4px 6px; } }
+
+.canvasOverlay { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 40; display: grid; gap: 10px; pointer-events: none; }
+.canvasOverlay > * { pointer-events: auto; }

@@ -1,5 +1,6 @@
 import { t, useTranslation } from '@/common/i18n'
-import { Icon } from '@/common/components/Icon'
+import { useEditorDraft } from '@/common/components/EditorDraftContext'
+import { documentKey } from '@/common/utils/saveBaseline'
 import { useState, useMemo } from 'react'
 import type { SourceNodeData, TargetNodeData, EndpointPort } from '@/common/types/recipe'
 import type { EndpointEditorTarget } from '@/features/canvas/contexts/EndpointEditorContext'
@@ -9,30 +10,29 @@ import { generateId } from '@/common/utils/id'
 import { DEFAULT_RESOURCE_CATEGORY } from '@/common/utils/resourceId'
 import { ResourceDefinitionList } from '@/features/resource-registry/components/ResourceDefinitionList'
 import { ENDPOINT_COLUMNS } from '@/features/resource-registry/components/ResourceDefinitionRow.config'
-import modalStyles from '@/common/components/Modal.module.css'
-import styles from './EndpointEditorModal.module.css'
+import styles from './EndpointEditor.module.css'
 
 /**
- *
+ * Props for an endpoint resource editing session.
  */
 type Props = {
   node: EndpointEditorTarget | null
   onClose: () => void
-  onSave: (id: string, data: Partial<SourceNodeData & TargetNodeData>) => void
+  onSave: (id: string, data: Partial<SourceNodeData & TargetNodeData>) => { ok: boolean } | void
 }
 
 /**
- * Modal dialog for editing endpoint (source/target) node port configurations.
+ * Edit endpoint resource definitions inside the workspace properties panel.
  * Allows adding, removing, and modifying endpoint ports including their resource category,
  * identifier, amount, routing mode (wired/global), and other column-defined properties.
  *
  * @param props - Component props
  * @param props.node - The endpoint editor target containing the node ID, role (source/target), and current data
- * @param props.onClose - Callback to close the modal without saving
+ * @param props.onClose - Request to leave through the container's draft guard
  * @param props.onSave - Callback invoked with the node ID and partial data patch when save is confirmed
- * @returns Rendered JSX element for the endpoint editor modal, or null if no node is provided.
+ * @returns Embedded endpoint editor, or null if no node is provided.
  */
-export function EndpointEditorModal({ node, onClose, onSave }: Props) {
+export function EndpointEditor({ node, onClose, onSave }: Props) {
   useTranslation()
   const resourceIndex = useGlobalResourceTable((state) => state.entries)
   const registryCategories = useGlobalResourceTable((state) => state.categories)
@@ -49,9 +49,8 @@ export function EndpointEditorModal({ node, onClose, onSave }: Props) {
       : [emptyEndpointPort()]
   )
 
-  if (!node) return null
-
-  const isSource = node.role === 'source'
+  const [baseline, setBaseline] = useState(ports)
+  const [error, setError] = useState(false)
 
   const handleUpdatePort = (index: number, patch: Partial<EndpointPort>) => {
     setPorts((prev) => prev.map((p, i) => i === index ? { ...p, ...patch } : p))
@@ -73,28 +72,23 @@ export function EndpointEditorModal({ node, onClose, onSave }: Props) {
   }
 
   const handleSave = () => {
-    const validPorts = ports.filter((p) => p.id.trim().length > 0)
-    onSave(node.id, {
-      ports: validPorts.length > 0 ? validPorts : ports,
-    })
+    if (!node) return false
+    if (ports.some(port => !port.id.trim() || !Number.isFinite(port.amount) || port.amount < 0)) { setError(true); return false }
+    const result = onSave(node.id, { ports })
+    if (result && !result.ok) return false
+    setBaseline(ports)
+    setError(false)
+    return true
   }
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) onClose()
-  }
+  useEditorDraft({ dirty: documentKey(ports) !== documentKey(baseline), save: handleSave, discard: () => { setPorts(baseline); setError(false) } })
+
+  if (!node) return null
 
   return (
-    <div className={modalStyles.overlay} onClick={handleOverlayClick}>
-      <div className={`${modalStyles.panel} ${styles['ep-editor__modal']}`}>
-        <header className={modalStyles.header}>
-          <div>
-            <p className={modalStyles.eyebrow}>{isSource ? t('canvas.supply_resources') : t('canvas.demand_resources')}</p>
-            <h3 className={styles['ep-editor__title']}>{t('canvas.edit_resources')}</h3>
-          </div>
-          <button className={modalStyles.closeBtn} onClick={onClose} title={t('canvas.close')}><Icon name="close" /></button>
-        </header>
-
+      <section className={styles.editor} aria-label={t('canvas.edit_resources')}>
         <div className={styles['ep-editor__body']}>
+          {error && <p role="alert" className={styles.error}>{t('workspace.invalid')}</p>}
           <ResourceDefinitionList<EndpointPort>
             items={ports}
             columns={ENDPOINT_COLUMNS}
@@ -115,7 +109,6 @@ export function EndpointEditorModal({ node, onClose, onSave }: Props) {
           <button className={`${styles['ep-editor__btn']} ${styles['ep-editor__btn--cancel']}`} onClick={onClose}>{t('canvas.cancel')}</button>
           <button className={`${styles['ep-editor__btn']} ${styles['ep-editor__btn--save']}`} onClick={handleSave}>{t('canvas.save')}</button>
         </footer>
-      </div>
-    </div>
+      </section>
   )
 }

@@ -1,5 +1,10 @@
 /** Workspace navigation and editing messages. */
 export const workspaceZhCN = {
+  'workspace.edge': '连线',
+  'workspace.selection': '选中对象',
+  'workspace.noBatchEditing': '暂不支持批量编辑，请选择单个对象。',
+  'workspace.source': '起点',
+  'workspace.target': '终点',
   'workspace.objects': '对象',
   'workspace.searchObjects': '搜索名称、ID 或资源',
   'workspace.objectCount': '{shown} / {total} 个节点',
@@ -37,6 +42,11 @@ export const workspaceZhCN = {
 } as const
 
 export const workspaceEn: Record<keyof typeof workspaceZhCN, string> = {
+  'workspace.edge': 'Connection',
+  'workspace.selection': 'Selection',
+  'workspace.noBatchEditing': 'Select one object to edit its properties.',
+  'workspace.source': 'Source',
+  'workspace.target': 'Target',
   'workspace.objects': 'Objects',
   'workspace.searchObjects': 'Search name, ID or resource',
   'workspace.objectCount': '{shown} / {total} nodes',

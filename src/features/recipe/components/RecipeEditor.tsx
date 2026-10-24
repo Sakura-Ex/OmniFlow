@@ -1,8 +1,9 @@
 import { useTranslation } from '@/common/i18n'
 import { translateDiagnostic } from '@/common/i18n/translateDiagnostic'
-import { Icon } from '@/common/components/Icon'
+import { useEditorDraft } from '@/common/components/EditorDraftContext'
+import { documentKey } from '@/common/utils/saveBaseline'
 import { useSettingsStore } from '@/features/settings/settings.store'
-import { useMemo, useEffect } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm, useFieldArray, FormProvider, useWatch } from 'react-hook-form'
 import type { RecipeNodeData, ActiveModifier } from '@/common/types/recipe'
 import type { Resource } from '@/common/types/resource'
@@ -13,8 +14,7 @@ import { ensureRecipeDataShape } from '@/features/modifier/modifier.normalize'
 import { generateId } from '@/common/utils/id'
 import { createDefaultModifierState } from '@/features/modifier/modifier.state'
 import { applyArchetypeToInputs, getDefaultArchetypeIdForSystem, getMachineArchetype } from '@/data/archetypes/index'
-import modalStyles from '@/common/components/Modal.module.css'
-import styles from './RecipeEditorModal.module.css'
+import styles from './RecipeEditor.module.css'
 
 /** Form data shape for the recipe editor modal. */
 export type RecipeFormData = {
@@ -35,11 +35,11 @@ type EditorTarget = {
   data: RecipeNodeData
 }
 
-/** Props for the `RecipeEditorModal` component. */
-type RecipeEditorModalProps = {
+/** Props for the reusable recipe editing surface. */
+type RecipeEditorProps = {
   node: EditorTarget | null
   onClose: () => void
-  onSave: (id: string, data: RecipeNodeData) => void
+  onSave: (id: string, data: RecipeNodeData) => { ok: boolean } | void
 }
 
 /**
@@ -78,16 +78,16 @@ function buildFormDefaults(node: EditorTarget | null, stored?: RecipeNodeData): 
 }
 
 /**
- * Modal dialog for editing a recipe node's configuration.
+ * Edit recipe configuration inside the workspace properties panel.
  * Provides a full form with machine settings, resource I/O, modifier slots and real-time preview.
  *
  * @param root0 - Component props.
- * @param root0.node - The node target to edit, or null (modal hidden).
- * @param root0.onClose - Callback to dismiss the modal.
+ * @param root0.node - The node target to edit, or null.
+ * @param root0.onClose - Request to leave the editor through its container's draft guard.
  * @param root0.onSave - Callback invoked with the node ID and assembled recipe data on save.
- * @returns Rendered JSX element for the recipe editor modal, or null when closed.
+ * @returns Embedded recipe editor, or null when no target exists.
  */
-export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalProps) {
+export function RecipeEditor({ node, onClose, onSave }: RecipeEditorProps) {
   const { t } = useTranslation()
   const storedRecipe = useRecipeStore((state) => state.recipes[node?.id ?? ''])
 
@@ -95,19 +95,14 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
     defaultValues: buildFormDefaults(node, storedRecipe),
   })
   const { reset, handleSubmit, setValue, getValues } = methods
+  const [baseline, setBaseline] = useState(() => buildFormDefaults(node, storedRecipe))
+  const [error, setError] = useState<string | null>(null)
+  const formValues = useWatch({ control: methods.control })
 
   const inputFields = useFieldArray({ control: methods.control, name: 'base_inputs' })
   const outputFields = useFieldArray({ control: methods.control, name: 'base_outputs' })
   const utilityInputFields = useFieldArray({ control: methods.control, name: 'base_utility_inputs' })
   const utilityOutputFields = useFieldArray({ control: methods.control, name: 'base_utility_outputs' })
-
-  useEffect(() => {
-    if (node) {
-      const currentStored = useRecipeStore.getState().recipes[node.id]
-      const defaults = buildFormDefaults(node, currentStored)
-      reset(defaults)
-    }
-  }, [node, reset])
 
   const normalized = node ? ensureRecipeDataShape(node.data) : undefined
   const metadata = useMemo(() => normalized?.metadata ? { ...normalized.metadata } : {}, [normalized])
@@ -145,8 +140,6 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
       }
     }
   }
-
-  const isOpen = Boolean(node)
 
   const watchedArchetypeId = useWatch({ control: methods.control, name: 'archetype_id' })
   const watchedMachineName = useWatch({ control: methods.control, name: 'machine_name' })
@@ -204,7 +197,7 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
   )
 
   const onSubmit = (formData: RecipeFormData) => {
-    if (!node) return
+    if (!node) return false
 
     const assembled: RecipeNodeData = {
       ...node.data,
@@ -222,25 +215,28 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
     }
 
     const preview = previewModifierPipeline(assembled, environment)
-    if (!preview.trace.length && !preview.eligibility.eligible) { alert(preview.eligibility.reasons.map(reason => translateDiagnostic(reason)).join('; ')); return }
-    onSave(node.id, assembled)
+    if (!preview.trace.length && !preview.eligibility.eligible) { setError(preview.eligibility.reasons.map(reason => translateDiagnostic(reason)).join('; ')); return false }
+    const result = onSave(node.id, assembled)
+    if (result && !result.ok) return false
+    setBaseline(formData)
+    reset(formData)
+    setError(null)
+    return true
   }
 
-  if (!isOpen) return null
+  const save = async () => {
+    let saved = false
+    await handleSubmit(values => { saved = onSubmit(values) })()
+    return saved
+  }
+  useEditorDraft({ dirty: documentKey(formValues) !== documentKey(baseline), save, discard: () => { reset(baseline); setError(null) } })
+
+  if (!node) return null
 
   return (
-    <div className={modalStyles.overlay} role="presentation">
-      <div className={`${modalStyles.panel} ${styles['recipe-editor__modal']}`} role="dialog" aria-modal="true" aria-labelledby="recipe-editor-title">
-        <header className={modalStyles.header}>
-          <div>
-            <h3 id="recipe-editor-title" className={styles['recipe-editor__title']}>{t('editor.editRecipe')}</h3>
-          </div>
-          <button className={modalStyles.closeBtn} onClick={onClose} title={t('editor.close')}>
-            <Icon name="close" />
-          </button>
-        </header>
-
+      <section className={styles.editor} aria-label={t('editor.editRecipe')}>
         <div className={styles['recipe-editor__body']}>
+          {error && <p role="alert" className={styles.error}>{error}</p>}
           <FormProvider {...methods}>
             <RecipeSettings
               inputFields={inputFields}
@@ -257,9 +253,8 @@ export function RecipeEditorModal({ node, onClose, onSave }: RecipeEditorModalPr
 
         <footer className={styles['recipe-editor__footer']}>
           <button type="button" className={styles['recipe-editor__btn']} onClick={onClose}>{t('editor.cancel')}</button>
-          <button type="button" className={`${styles['recipe-editor__btn']} ${styles['recipe-editor__btn--primary']}`} onClick={handleSubmit(onSubmit)}>{t('editor.saveRecipe')}</button>
+          <button type="button" className={`${styles['recipe-editor__btn']} ${styles['recipe-editor__btn--primary']}`} onClick={() => { void save() }}>{t('editor.saveRecipe')}</button>
         </footer>
-      </div>
-    </div>
+      </section>
   )
 }

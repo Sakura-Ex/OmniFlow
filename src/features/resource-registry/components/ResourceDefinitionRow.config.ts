@@ -19,7 +19,7 @@ export const RECIPE_INPUT_COLUMNS: ColumnDef[] = [
   { id: 'probability', headerKey: 'editor.consumptionChance', width: 'minmax(0, 56px)' },
   { id: 'routing', headerKey: 'editor.global', width: '40px' },
   { id: 'delete', width: 'minmax(0, 34px)' },
-  { id: 'preview_rate', headerKey: 'editor.actualRate', width: 'minmax(0, 80px)' },
+  { id: 'preview_rate', headerKey: 'editor.previewRate', width: 'minmax(0, 80px)' },
 ]
 
 export const RECIPE_OUTPUT_COLUMNS: ColumnDef[] = [
@@ -31,7 +31,7 @@ export const RECIPE_OUTPUT_COLUMNS: ColumnDef[] = [
   { id: 'probability', headerKey: 'editor.outputChance', width: 'minmax(0, 56px)' },
   { id: 'routing', headerKey: 'editor.global', width: '40px' },
   { id: 'delete', width: 'minmax(0, 34px)' },
-  { id: 'preview_rate', headerKey: 'editor.actualRate', width: 'minmax(0, 80px)' },
+  { id: 'preview_rate', headerKey: 'editor.previewRate', width: 'minmax(0, 80px)' },
 ]
 
 export const UTILITY_COLUMNS: ColumnDef[] = [
@@ -44,7 +44,7 @@ export const UTILITY_COLUMNS: ColumnDef[] = [
   { id: 'probability', headerKey: 'editor.consumptionChance', width: 'minmax(0, 56px)' },
   { id: 'routing', headerKey: 'editor.global', width: '40px' },
   { id: 'delete', width: 'minmax(0, 34px)' },
-  { id: 'preview_rate', headerKey: 'editor.actualRate', width: 'minmax(0, 80px)' },
+  { id: 'preview_rate', headerKey: 'editor.previewRate', width: 'minmax(0, 80px)' },
 ]
 
 export const MACHINE_UTILITY_COLUMNS: ColumnDef[] = [
@@ -54,7 +54,7 @@ export const MACHINE_UTILITY_COLUMNS: ColumnDef[] = [
   { id: 'spacer', width: 'auto' },
   { id: 'routing', headerKey: 'editor.global', width: '40px' },
   { id: 'delete', width: '34px' },
-  { id: 'preview_rate', headerKey: 'editor.actualRate', width: 'auto' },
+  { id: 'preview_rate', headerKey: 'editor.previewRate', width: 'auto' },
 ]
 
 export const ENDPOINT_COLUMNS: ColumnDef[] = [

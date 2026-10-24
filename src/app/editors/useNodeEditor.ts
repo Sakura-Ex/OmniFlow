@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { Node } from 'reactflow'
 import type { EndpointRole, RecipeNodeData, SourceNodeData, TargetNodeData } from '@/common/types/recipe'
 import type { EndpointEditorTarget } from '@/features/canvas/contexts/EndpointEditorContext'
@@ -23,8 +23,9 @@ type UseNodeEditorParams = {
  * @returns Editor targets and consistent open, close and save actions.
  */
 export function useNodeEditor({ setNodes, commitEdit, updateNodeInternals, onError }: UseNodeEditorParams) {
-  const [editingNode, setEditingNode] = useState<{ id: string; data: RecipeNodeData } | null>(null)
-  const [editingEndpoint, setEditingEndpoint] = useState<EndpointEditorTarget | null>(null)
+  const sessionId = useRef(0)
+  const [editingNode, setEditingNode] = useState<{ id: string; data: RecipeNodeData; sessionId: number } | null>(null)
+  const [editingEndpoint, setEditingEndpoint] = useState<(EndpointEditorTarget & { sessionId: number }) | null>(null)
   const [recipeBaseline, setRecipeBaseline] = useState<string | null>(null)
   const [endpointBaseline, setEndpointBaseline] = useState<string | null>(null)
 
@@ -32,13 +33,14 @@ export function useNodeEditor({ setNodes, commitEdit, updateNodeInternals, onErr
     const baseline = nodeEditorBaseline(id)
     if (baseline === null) { onError('missing'); return }
     setRecipeBaseline(baseline)
-    setEditingNode({ id, data: structuredClone(useRecipeStore.getState().recipes[id] ?? data) })
+    setEditingNode({ id, data: structuredClone(useRecipeStore.getState().recipes[id] ?? data), sessionId: ++sessionId.current })
   }, [onError])
   const handleCloseEditor = useCallback(() => setEditingNode(null), [])
   const handleSaveEditor = useCallback((id: string, data: RecipeNodeData) => {
     const result = commitRecipeEditor(id, data, editingNode?.id === id ? recipeBaseline : null, commitEdit, setNodes)
     if (!result.ok) { onError(result.reason); return result }
-    setEditingNode(null)
+    setRecipeBaseline(nodeEditorBaseline(id))
+    setEditingNode(previous => previous && { ...previous, data: structuredClone(useRecipeStore.getState().recipes[id]) })
     updateNodeInternals(id)
     return result
   }, [editingNode, recipeBaseline, commitEdit, setNodes, updateNodeInternals, onError])
@@ -48,13 +50,15 @@ export function useNodeEditor({ setNodes, commitEdit, updateNodeInternals, onErr
     if (baseline === null) { onError('missing'); return }
     setEndpointBaseline(baseline)
     const current = useCanvasStore.getState().nodes.find(node => node.id === id)?.data ?? data
-    setEditingEndpoint({ id, role, data: structuredClone(current) })
+    setEditingEndpoint({ id, role, data: structuredClone(current), sessionId: ++sessionId.current })
   }, [onError])
   const handleCloseEndpointEditor = useCallback(() => setEditingEndpoint(null), [])
   const handleSaveEndpoint = useCallback((id: string, patch: Partial<SourceNodeData & TargetNodeData>) => {
     const result = commitEndpointEditor(id, patch, editingEndpoint?.id === id ? endpointBaseline : null, commitEdit, setNodes)
     if (!result.ok) { onError(result.reason); return result }
-    setEditingEndpoint(null)
+    setEndpointBaseline(nodeEditorBaseline(id))
+    const current = useCanvasStore.getState().nodes.find(node => node.id === id)!
+    setEditingEndpoint(previous => previous && { ...previous, data: structuredClone(current.data) })
     updateNodeInternals(id)
     return result
   }, [editingEndpoint, endpointBaseline, commitEdit, setNodes, updateNodeInternals, onError])
@@ -62,4 +66,3 @@ export function useNodeEditor({ setNodes, commitEdit, updateNodeInternals, onErr
   return { editingNode, handleEditNode, handleCloseEditor, handleSaveEditor,
     editingEndpoint, handleEditEndpoint, handleCloseEndpointEditor, handleSaveEndpoint }
 }
-

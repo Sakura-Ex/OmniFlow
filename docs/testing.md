@@ -28,6 +28,7 @@ On macOS/Linux use `python3` to create the environment and `.venv/bin/python` th
 | Document lifecycle | File-IO tests cover validation/migration, clipboard remapping, atomic replacement, rollback and captured save identity. Canvas history tests cover authoritative recipes, unit/registry/network restoration and real undo/redo transactions. |
 | Display presentation | `recipePortPresentation.test.ts`, `PortPolicyBadge.test.ts`, `resultSummary.test.ts`: unknown evidence, delivery/spill separation, installation evidence and capacity/state units. |
 | Editing and result lifecycle | Canvas calculation, node operations and document-session tests cover stale results, selection/delete scope, batch atomicity, dirty tracking and leave-guard decisions. Hook tests with mocked React do not prove DOM/native-dialog behavior. |
+| Workspace editing | `editorCommit.test.ts`, `planningDraft.test.ts`, `editorGuard.test.ts` and workspace hook tests cover conflict-checked atomic saves, pending-action protection, focus intent and local-only sidebar preferences. Object browser tests cover search and accepted-result issue evidence. |
 | UI helpers and architecture | Combobox keyboard/search behavior, translation coverage/interpolation/custom-name preservation, and `tests/config/eslint-boundaries.test.ts` for actual import resolution. |
 | First run | `canvas.initialState.test.ts` verifies that the starter line compiles with a feasible witness for its advertised target. |
 

@@ -9,7 +9,7 @@ import { toggleRouting } from '@/common/utils/routing'
 import { generateId } from '@/common/utils/id'
 import { DEFAULT_RESOURCE_CATEGORY } from '@/common/utils/resourceId'
 import type { UseFieldArrayReturn } from 'react-hook-form'
-import type { RecipeFormData } from '@/features/recipe/components/RecipeEditorModal'
+import type { RecipeFormData } from '@/features/recipe/components/RecipeEditor'
 import type { ActiveModifier } from '@/common/types/recipe'
 import type { Resource } from '@/common/types/resource'
 import {
@@ -40,7 +40,7 @@ import { ResourceDefinitionList } from '@/features/resource-registry/components/
 import { RECIPE_INPUT_COLUMNS, RECIPE_OUTPUT_COLUMNS, UTILITY_COLUMNS } from '@/features/resource-registry/components/ResourceDefinitionRow.config'
 import { formatOpExRate } from '@/common/utils/format'
 import editorStyles from './RecipeSettings.module.css'
-import layoutStyles from '@/features/recipe/components/RecipeEditorModal.module.css'
+import layoutStyles from '@/features/recipe/components/RecipeEditor.module.css'
 import { Combobox } from '@/common/components/Combobox'
 
 /**
@@ -189,6 +189,7 @@ export function RecipeSettings(props: RecipeSettingsProps) {
 
   const inputRateMap = useMemo(() => buildRateMap(previewInputRates), [previewInputRates])
   const outputRateMap = useMemo(() => buildRateMap(previewOutputRates), [previewOutputRates])
+  const utilityRateMap = useMemo(() => new Map([...inputRateMap, ...outputRateMap]), [inputRateMap, outputRateMap])
   const availableModifiers = useMemo(
     () => modifiers.filter((modifier) => {
       const count = activeModifiers.filter((m) => m.definition_id === modifier.id).length
@@ -554,7 +555,7 @@ export function RecipeSettings(props: RecipeSettingsProps) {
               onRemoveItem={handleRemoveUtilityMerged}
               onToggleRoutingItem={handleToggleUtilityRoutingMerged}
               onIoTToggleItem={handleToggleUtilityIO}
-              rateMap={inputRateMap}
+              rateMap={utilityRateMap}
               categoryOptions={categoryOptions}
               getCanDelete={(i) => !(utilityItems[i]?._uid?.startsWith('utility-'))}
               getAmountLocked={(i) => !(utilityItems[i]?.amount_mutable)}
