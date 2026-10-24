@@ -23,15 +23,17 @@ function portPolicyLabel(policy: NetworkPortConfiguration | undefined, formatAmo
   return t(boundary.kind === 'spill' ? 'recipeDisplay.spill' : 'recipeDisplay.supply', { value: boundary.capacity === null ? '∞' : formatAmount(boundary.capacity) })
 }
 
-/** Keep nondefault boundary and semantic identity visible in every display mode.
+/** Expand routine policy text only in detailed views; retain non-flow quantity semantics.
  * @param props - Policy and display-unit formatter.
  * @param props.policy - Explicit policy for this independent port.
  * @param props.formatAmount - Canonical flow to display quantity formatter.
  * @param props.formatQuantity - Canonical capacity or state display formatter.
+ * @param props.presentation - Summary hides routine flow policies without hiding capacity/state identity.
  * @returns Keyboard-readable, fixed-height policy badge.
  */
-export function PortPolicyBadge({ policy, formatAmount, formatQuantity = String }: { policy?: NetworkPortConfiguration; formatAmount: (amount: number) => string; formatQuantity?: (amount: number) => string }) {
+export function PortPolicyBadge({ policy, formatAmount, formatQuantity = String, presentation = 'detailed' }: { policy?: NetworkPortConfiguration; formatAmount: (amount: number) => string; formatQuantity?: (amount: number) => string; presentation?: 'summary' | 'detailed' }) {
   useTranslation()
+  if (presentation === 'summary' && (!policy || policy.semantics.kind === 'flow')) return null
   const label = portPolicyLabel(policy, formatAmount, formatQuantity)
   return label ? <span className={`${styles.badge} nodrag nopan`} tabIndex={0} title={label} aria-label={label}>{label}</span> : null
 }

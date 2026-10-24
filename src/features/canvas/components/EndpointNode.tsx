@@ -26,6 +26,7 @@ import { groupPortsByCategory } from '../groupPortsByCategory'
 import { GlobalPortIcon } from './GlobalPortIcon'
 import { NodeDetails } from './NodePresentation'
 import { PortPolicyBadge } from './PortPolicyBadge'
+import { PortSupplyStatus } from './PortSupplyStatus'
 import { useNodeDisplayStore } from '@/features/settings/nodeDisplay.store'
 
 /** Map authoritative boundaries to the shared card control without changing their semantics.
@@ -51,7 +52,6 @@ type EndpointQuantityProps = {
   expression: UnitExpression
   suffix: string
   remember: (amount: number) => void
-  showActual: boolean
   target: boolean
 }
 
@@ -61,7 +61,7 @@ type EndpointQuantityProps = {
  */
 function EndpointQuantity(props: EndpointQuantityProps) {
   useTranslation()
-  const { nodeId, portId, name, boundary, editableFlow, actual, units, expression, suffix, remember, showActual, target } = props
+  const { nodeId, portId, name, boundary, editableFlow, actual, units, expression, suffix, remember, target } = props
   const status = useCanvasStore(state => state.calculationStatus)
   const commit = useBoundaryCommit()
   const [draft, setDraft] = useState<string | null>(null)
@@ -76,7 +76,11 @@ function EndpointQuantity(props: EndpointQuantityProps) {
   const hasGoal = boundary?.kind === 'delivery' && ['at_least', 'exact'].includes(boundary.mode)
   const met = actual !== undefined && hasGoal && (boundary.mode === 'exact' ? Math.abs(actual - boundary.amount) <= Math.max(1, boundary.amount) * 1e-7 : !insufficient)
   const actualDescription = t('canvas.actual', { p0: actual === undefined ? '—' : display(actual), p1: suffix })
-  const title = `${actualDescription}${editable ? `；${boundary?.kind === 'source' ? t('canvas.limit') : t('canvas.demand')} ${display(quantity!)} ${suffix}` : ''}${insufficient ? t('canvas.shortfall', { p0: display(missing), p1: suffix }) : ''}`
+  const fieldLabel = boundary?.kind === 'delivery' ? t(boundary.mode === 'exact' ? 'canvas.fixed_output_exact' : 'canvas.demand_minimum') : t('canvas.supply_limit')
+  const fieldCaption = boundary?.kind === 'delivery' ? t(boundary.mode === 'exact' ? 'canvas.exactAmount' : 'canvas.minimumAmount') : t('canvas.limit')
+  const outcome = target && hasGoal ? !verified || actual === undefined ? 'unverified' : met ? 'met' : 'unmet' : undefined
+  const outcomeDescription = outcome === 'met' ? t('canvas.targetMet') : outcome === 'unmet' ? t('canvas.targetUnmet') : outcome === 'unverified' ? t('canvas.targetUnverified') : ''
+  const title = `${actualDescription}${outcomeDescription ? ` · ${outcomeDescription}` : ''}${editable ? `；${fieldLabel} ${display(quantity!)} ${suffix}` : ''}${verified && insufficient ? t('canvas.shortfall', { p0: display(missing), p1: suffix }) : ''}`
   const confirm = () => {
     if (cancelBlur.current) { cancelBlur.current = false; return }
     if (draft === null || !boundary || !editable) return
@@ -91,21 +95,19 @@ function EndpointQuantity(props: EndpointQuantityProps) {
       setInvalid(false)
     } catch { setInvalid(true) }
   }
-  const outcome = target && hasGoal ? !verified || actual === undefined ? 'unverified' : met ? 'met' : 'unmet' : undefined
-  return <div className={`${styles.quantity} ${showActual ? styles.withActual : ''} ${invalid || outcome === 'unmet' ? styles.insufficient : ''} nodrag nopan`} title={invalid ? t('canvas.invalidQuantity') : title} onClick={event => event.stopPropagation()}>
-    <div className={styles.actual} title={actualDescription}>
-      {showActual && <span className={styles.actualLabel}>{t('canvas.actualPrefix')}</span>}
-      <div className={styles.actualValue}><strong>{actual === undefined ? '—' : display(actual)}</strong><span className={styles.unit}>{suffix}</span></div>
+  return <div className={`${styles.quantity} ${invalid ? styles.insufficient : ''} nodrag nopan`} title={invalid ? t('canvas.invalidQuantity') : title} onClick={event => event.stopPropagation()}>
+    <div className={styles.actual} tabIndex={0} title={title} aria-label={`${name} · ${title}`} data-outcome={outcome}>
+      <div className={styles.actualValue}>{outcome === 'unmet' && <Icon name="warning" size={13} />}<strong>{actual === undefined ? '—' : display(actual)}</strong><span className={styles.unit}>{suffix}</span></div>
     </div>
-    {editable && <label className={styles.field}><span>{target ? t('canvas.settingAmount') : t('canvas.limit')}</span><input type="text" inputMode="decimal"
-      aria-invalid={invalid || undefined} aria-label={`${name} ${boundary?.kind === 'source' ? t('canvas.supply_limit') : t('canvas.demandAmount')} ${suffix}`}
+    {editable && <label className={styles.field}><span title={fieldLabel}>{fieldCaption}</span><input type="text" inputMode="decimal"
+      aria-invalid={invalid || undefined} aria-label={`${name} ${fieldLabel} ${suffix}`}
       value={draft ?? String(units.fromRate(quantity!, expression, 'rate_per_sec'))}
       onChange={event => { cancelBlur.current = false; setInvalid(false); setDraft(event.target.value) }} onBlur={confirm}
       onKeyDown={event => {
         if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur() }
         else if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancelBlur.current = true; setDraft(null); setInvalid(false); event.currentTarget.blur() }
       }} /><span className={styles.unit}>{suffix}</span></label>}
-    <span className={styles.shortage} data-outcome={invalid ? 'unmet' : outcome} role={invalid ? 'alert' : undefined}>{invalid ? t('canvas.invalidQuantity') : outcome === 'unverified' ? t('canvas.targetUnverified') : outcome === 'met' ? t('canvas.targetMet') : outcome === 'unmet' ? `${t('canvas.targetUnmet')}${insufficient ? ` · ${display(missing)}` : ''}` : ''}</span>
+    {invalid && <span className={styles.fieldError} role="alert">{t('canvas.invalidQuantity')}</span>}
   </div>
 }
 
@@ -192,8 +194,12 @@ export function EndpointNode({ id, data, role }: { id: string; data: SourceNodeD
       return <Fragment key={portId}>
         {(index === 0 || startsCategory) && <li className={`${styles.categoryHeading}${startsCategory ? ` ${styles.categoryStart}` : ''}`} style={{ '--port-color': category.themeColor } as CSSProperties}>{categoryDisplayName(category.id, category.displayName)}</li>}
         <li className={styles.port} style={{ '--port-color': category.themeColor } as CSSProperties}>
-          <div className={styles.nameArea}><span className={styles.name} title={`${name} (${port.id})`}>{name}</span><PortPolicyBadge policy={configuration} formatAmount={amount => `${formatOpExRate(units.fromRate(amount, expression, 'rate_per_sec'))} ${suffix}`} formatQuantity={amount => `${formatOpExRate(amount / units.registry.normalize(expression).scale)} ${units.expression(expression).toString()}`} />{displayMode === 'detailed' && <span className={styles.identity} title={portId}>{port.routing_mode ?? 'wired'} · {portId}</span>}</div>
-          <EndpointQuantity key={`${portId}:${boundaryMode(boundary)}`} nodeId={id} portId={portId} name={name} boundary={boundary} editableFlow={(configuration?.semantics.kind ?? 'flow') === 'flow'} actual={data.actual_amounts?.[portId]} units={units} expression={expression} suffix={suffix} remember={amount => { retainedAmounts.current[portId] = amount }} showActual={!supply || displayMode !== 'compact'} target={!supply} />
+          <div className={styles.nameArea}>
+            <div className={styles.resourceIdentity}><span className={styles.name} tabIndex={0} title={`${name} (${port.id})`}>{name}</span><PortSupplyStatus name={name} policy={configuration} formatAmount={amount => `${formatOpExRate(units.fromRate(amount, expression, 'rate_per_sec'))} ${suffix}`} /></div>
+            <div className={styles.policy}><PortPolicyBadge presentation={displayMode === 'detailed' ? 'detailed' : 'summary'} policy={configuration} formatAmount={amount => `${formatOpExRate(units.fromRate(amount, expression, 'rate_per_sec'))} ${suffix}`} formatQuantity={amount => `${formatOpExRate(amount / units.registry.normalize(expression).scale)} ${units.expression(expression).toString()}`} /></div>
+            {displayMode === 'detailed' && <span className={styles.identity} title={portId}>{portId}</span>}
+          </div>
+          <EndpointQuantity key={`${portId}:${boundaryMode(boundary)}`} nodeId={id} portId={portId} name={name} boundary={boundary} editableFlow={(configuration?.semantics.kind ?? 'flow') === 'flow'} actual={data.actual_amounts?.[portId]} units={units} expression={expression} suffix={suffix} remember={amount => { retainedAmounts.current[portId] = amount }} target={!supply} />
           {port.routing_mode === 'global' ? <GlobalPortIcon side={supply ? 'right' : 'left'} /> : <Handle id={portId} type={supply ? 'source' : 'target'} position={supply ? Position.Right : Position.Left} className={styles.handle} style={{ [supply ? 'right' : 'left']: '-5px' }} />}
         </li>
       </Fragment>

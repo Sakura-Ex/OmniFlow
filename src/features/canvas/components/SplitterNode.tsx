@@ -3,7 +3,6 @@ import { categoryDisplayName } from '@/common/i18n/resourceLabels'
 import { t, useTranslation } from '@/common/i18n'
 import { useGlobalResourceTable } from '@/features/resource-registry/registry.store'
 import { resolveCategoryDef } from '@/features/recipe/recipe.endpointNorm'
-import shared from './shared-port.module.css'
 import { Icon } from '@/common/components/Icon'
 import { stripCalculationResults } from '@/common/utils/calculationState'
 import { useEffect, useState, type CSSProperties } from 'react'
@@ -76,23 +75,30 @@ export function SplitterNode({ id, data }: NodeProps<SplitterNodeData & { port_t
     </header>
     <div className={styles.flow}>
       <section className={styles.input}><h3>{t('canvas.inputs')}</h3>
-        <div className={shared.categoryHeading} style={categoryColor}>{categoryDisplayName(category.id, category.displayName)}</div>
+        <div className={styles.categoryHeading} style={categoryColor}>{categoryDisplayName(category.id, category.displayName)}</div>
         <div className={styles.inputPort} title={t('canvas.throughput_limit_standard_unitss', { p0: shown.input.category, p1: shown.input.id, p2: shown.capacity ?? t('canvas.unlimited') })}>
           <Handle type="target" position={Position.Left} id={shown.input.portId} className={styles.handle} />
-          <span className={styles.resource} title={`${resourceName} (${shown.input.id})`}>{resourceName || t('canvas.select_resource')}</span>
-          {displayMode !== 'compact' && <span className={styles.throughput} title={`${rate(inputRate)} ${suffix}`}>{rate(inputRate)} {suffix}</span>}
+          <div className={styles.resourceRow}>
+            <span tabIndex={0} className={styles.resource} title={`${resourceName} (${shown.input.id})`}>{resourceName || t('canvas.select_resource')}</span>
+            {displayMode !== 'compact' && <span className={styles.throughput} title={`${rate(inputRate)} ${suffix}`}>{rate(inputRate)} {suffix}</span>}
+          </div>
+          <div className={styles.capacity} title={`${t('canvas.throughput_limit')} ${shown.capacity === null ? t('canvas.unlimited') : `${rate(shown.capacity)} ${suffix}`}`}>{(displayMode === 'detailed' || shown.capacity !== null) && <>{t('canvas.throughput_limit')} {shown.capacity === null ? t('canvas.unlimited') : `${rate(shown.capacity)} ${suffix}`}</>}</div>
+          {displayMode === 'detailed' && <span className={styles.identity} tabIndex={0} title={shown.input.portId}>{shown.input.portId}</span>}
         </div>
       </section>
       <section className={styles.output}><h3>{t('canvas.output_ratios')}</h3>
-        <div className={shared.categoryHeading} style={categoryColor}>{categoryDisplayName(category.id, category.displayName)}</div>
+        <div className={styles.categoryHeading} style={categoryColor}>{categoryDisplayName(category.id, category.displayName)}</div>
         {shown.outputs.map((output, index) => <div className={styles.outputPort} key={output.portId} title={t('canvas.branch_standard_unitss', { p0: index + 1, p1: data.port_throughputs?.[output.portId]?.toPrecision(5) ?? '—' })}>
-          <label className={styles.ratioLabel}><span>{index + 1}</span><input className="nodrag nopan" aria-label={t('canvas.branch_percentage', { p0: index + 1 })} type="number" min="0" max="100" step="any" value={Number((output.ratio * 100).toPrecision(12))} onChange={event => change({ ...shown, outputs: shown.outputs.map(item => item.portId === output.portId ? { ...item, ratio: Number(event.target.value) / 100 } : item) })} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancel() } else if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); save() } }} /><span>%</span></label>
-          {displayMode !== 'compact' && <span className={styles.throughput} title={`${rate(data.port_throughputs?.[output.portId])} ${suffix}`}>{rate(data.port_throughputs?.[output.portId])} {suffix}</span>}
+          <div className={styles.resourceRow}>
+            <span tabIndex={0} className={styles.resource} title={`${resourceName} (${shown.input.id})`}>{resourceName || t('canvas.select_resource')}</span>
+            {displayMode !== 'compact' && <span className={styles.throughput} title={`${rate(data.port_throughputs?.[output.portId])} ${suffix}`}>{rate(data.port_throughputs?.[output.portId])} {suffix}</span>}
+          </div>
+          <label className={styles.ratioLabel}><span>{t('canvas.branch')} {index + 1}</span><input className="nodrag nopan" aria-label={t('canvas.branch_percentage', { p0: index + 1 })} type="number" min="0" max="100" step="any" value={Number((output.ratio * 100).toPrecision(12))} onChange={event => change({ ...shown, outputs: shown.outputs.map(item => item.portId === output.portId ? { ...item, ratio: Number(event.target.value) / 100 } : item) })} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancel() } else if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); save() } }} /><span>%</span></label>
+          {displayMode === 'detailed' && <span className={styles.identity} tabIndex={0} title={output.portId}>{output.portId}</span>}
           {data.outputs.some(port => port.portId === output.portId) && <Handle type="source" position={Position.Right} id={output.portId} className={styles.handle} />}
         </div>)}
       </section>
     </div>
-    <div className={styles.capacity} title={`${t('canvas.throughput_limit')} ${shown.capacity === null ? t('canvas.unlimited') : `${rate(shown.capacity)} ${suffix}`}`}>{t('canvas.throughput_limit')} {shown.capacity === null ? t('canvas.unlimited') : `${rate(shown.capacity)} ${suffix}`}</div>
     {advanced && <section className={`${styles.editor} nodrag nowheel`} aria-label={t('canvas.advanced_splitter_settings')}>
       <label>{t('canvas.resource_category')}<input value={shown.input.category} onChange={event => setResource('category', event.target.value)} /></label>
       <label>{t('canvas.resource_id')}<input value={shown.input.id} onChange={event => setResource('id', event.target.value)} /></label>
