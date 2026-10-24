@@ -5,17 +5,17 @@ import { captureDocument } from '@/features/file-io/captureDocument'
 import { calculationDocumentKey } from '@/features/calculation/calculationSession'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
 import { useSettingsStore } from '@/features/settings/settings.store'
-import { useWorkspace, workspaceSelection } from './useWorkspace'
+import { compatiblePropertySection, useWorkspace, workspaceSelection } from './useWorkspace'
 import { useWorkspacePreferences } from './workspacePreferences'
 
-const lifecycle = vi.hoisted(() => ({ cleanups: [] as (() => void)[], layouts: [] as (() => void | (() => void))[] }))
+const lifecycle = vi.hoisted(() => ({ cleanups: [] as (() => void)[], effects: [] as (() => void | (() => void))[], layouts: [] as (() => void | (() => void))[] }))
 vi.mock('react', async original => ({
   ...await original<typeof import('react')>(),
   useCallback: (callback: unknown) => callback,
   useRef: (current: unknown) => ({ current }),
   useState: (initial: unknown) => [typeof initial === 'function' ? initial() : initial, vi.fn()],
   useLayoutEffect: (effect: () => void | (() => void)) => { lifecycle.layouts.push(effect); const cleanup = effect(); if (cleanup) lifecycle.cleanups.push(cleanup) },
-  useEffect: (effect: () => void | (() => void)) => { const cleanup = effect(); if (cleanup) lifecycle.cleanups.push(cleanup) },
+  useEffect: (effect: () => void | (() => void)) => { lifecycle.effects.push(effect); const cleanup = effect(); if (cleanup) lifecycle.cleanups.push(cleanup) },
 }))
 vi.mock('./workspacePreferences', async original => {
   const module = await original<typeof import('./workspacePreferences')>()
@@ -26,6 +26,7 @@ const initial = useCanvasStore.getState()
 let narrow = false
 beforeEach(() => {
   lifecycle.layouts.length = 0
+  lifecycle.effects.length = 0
   narrow = false
   useCanvasStore.getState().resetCanvas()
   useCanvasStore.getState().setNodes([
@@ -189,4 +190,41 @@ it('focuses only an explicitly accepted editor and restores its original externa
   requests.shift()!()
   renderAcceptedNavigation()
   expect(documentStub.activeElement).toBe(fallback)
+})
+
+it('preserves the explicit tab when selection follows another machine, behind the draft guard', () => {
+  vi.stubGlobal('HTMLElement', class {})
+  vi.stubGlobal('document', { activeElement: null })
+  useCanvasStore.getState().setNodes([
+    { id: 'a', type: 'recipeNode', position: { x: 0, y: 0 }, data: {} },
+    { id: 'b', type: 'recipeNode', selected: true, position: { x: 100, y: 0 }, data: {} },
+  ])
+  useWorkspacePreferences.setState({ properties: true })
+  const requests: (() => void)[] = []
+  const activate = vi.fn()
+  const workspace = useWorkspace({ nodes: useCanvasStore.getState().nodes, edges: [], flow: { current: null }, request: action => requests.push(action), activate })
+  requests.length = 0
+  workspace.openProperties('a', 'recipe')
+  requests.shift()!()
+  activate.mockClear()
+  lifecycle.effects.forEach(effect => effect())
+  expect(activate).not.toHaveBeenCalled()
+  requests.shift()!()
+  expect(activate).toHaveBeenCalledWith('b', 'recipe')
+  expect(useCanvasStore.getState().nodes.filter(node => node.selected).map(node => node.id)).toEqual(['b'])
+
+  // A generic panel reopening also preserves the explicitly chosen tab.
+  workspace.openProperties('b')
+  requests.shift()!()
+  expect(activate).toHaveBeenLastCalledWith('b', 'recipe')
+})
+
+it('retains compatible machine and endpoint tabs and falls back for incompatible selections', () => {
+  expect(compatiblePropertySection('recipe', 'recipeNode')).toBe('recipe')
+  expect(compatiblePropertySection('resources', 'sourceNode')).toBe('resources')
+  expect(compatiblePropertySection('resources', 'targetNode')).toBe('resources')
+  expect(compatiblePropertySection('recipe', 'sourceNode')).toBe('boundaries')
+  expect(compatiblePropertySection('resources', 'recipeNode')).toBe('boundaries')
+  expect(compatiblePropertySection('recipe', undefined)).toBe('boundaries')
+  expect(compatiblePropertySection('recipe', 'splitterNode')).toBe('boundaries')
 })

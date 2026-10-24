@@ -17,6 +17,17 @@ export function workspaceSelection(nodes: Node[], edges: Edge[]): string {
   return JSON.stringify([nodes.filter(node => node.selected).map(node => node.id).sort(), edges.filter(edge => edge.selected).map(edge => edge.id).sort()])
 }
 
+/** Keep the chosen editor where supported, without replacing its preference on fallback.
+ * @param preferred - Last explicitly chosen editor section.
+ * @param nodeType - New selection's node type, absent for empty or mixed selections.
+ * @returns A section supported by the selected object.
+ */
+export function compatiblePropertySection(preferred: PropertySection, nodeType?: string): PropertySection {
+  if (preferred === 'recipe' && nodeType === 'recipeNode') return preferred
+  if (preferred === 'resources' && (nodeType === 'sourceNode' || nodeType === 'targetNode')) return preferred
+  return 'boundaries'
+}
+
 /** Coordinate selection and view state while keeping the canvas instance mounted.
  * @param options - Current graph, guarded navigation and node editor activation.
  * @param options.nodes - Current authoritative nodes.
@@ -37,6 +48,7 @@ export function useWorkspace({ nodes, edges, flow, request, activate }: {
   const [generation, setGeneration] = useState(0)
   const [canReturn, setCanReturn] = useState(false)
   const [focusToken, setFocusToken] = useState(0)
+  const preferredSection = useRef<PropertySection>('boundaries')
   const pendingFocus = useRef<'editor' | 'trigger' | null>(null)
   const editorTrigger = useRef<HTMLElement | null>(null)
   const previousView = useRef<Viewport | null>(null)
@@ -84,8 +96,9 @@ export function useWorkspace({ nodes, edges, flow, request, activate }: {
     request(() => {
       // A later ReactFlow selection event must not replace an already pending navigation.
       restoreSelection(selection)
-      setTarget({ id, section: 'boundaries', selection })
-      activateRef.current(id, 'boundaries')
+      const section = compatiblePropertySection(preferredSection.current, useCanvasStore.getState().nodes.find(node => node.id === id)?.type)
+      setTarget({ id, section, selection })
+      activateRef.current(id, section)
     }, () => restoreSelection(target.selection))
   }, [selection, panels.properties, target.selection, request])
 
@@ -100,13 +113,15 @@ export function useWorkspace({ nodes, edges, flow, request, activate }: {
     return () => media.removeEventListener('change', adapt)
   }, [])
 
-  const openProperties = (id: string | null, section: PropertySection = 'boundaries') => {
+  const openProperties = (id: string | null, requestedSection?: PropertySection) => {
     // Capture before the draft guard opens a modal, and keep the original external
     // trigger when switching tabs inside an already-open property panel.
     const active = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const inPanel = Boolean(active?.closest('[data-workspace-properties]'))
     const trigger = !inPanel && active?.matches('button, a[href], input, textarea, select, [tabindex]') ? active : null
     request(() => {
+      if (requestedSection) preferredSection.current = requestedSection
+      const section = compatiblePropertySection(preferredSection.current, useCanvasStore.getState().nodes.find(node => node.id === id)?.type)
       const selected = id ? JSON.stringify([[id], []]) : selection
       if (id) select(id)
       setTarget({ id, section, selection: selected })
@@ -146,6 +161,7 @@ export function useWorkspace({ nodes, edges, flow, request, activate }: {
     setCanReturn(false)
   }
   const reset = useCallback(() => {
+    preferredSection.current = 'boundaries'
     pendingFocus.current = null
     editorTrigger.current = null
     previousView.current = null
