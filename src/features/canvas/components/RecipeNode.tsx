@@ -115,8 +115,8 @@ export function RecipeNode({ id, data }: NodeProps<RecipeNodeData>) {
         })}</ul>
         <p>{t('recipeDisplay.modifiers', { count: modifiers.length })}</p><ol>{modifierNames.map((name, index) => <li key={modifiers[index].instance_id}>{name}</li>)}</ol>
       </NodeDetails></>} />
-    <section className={`${styles.machineOverview} ${styles[mode]}`}>
-      <div className={`${styles.machineSummary} ${styles[mode]}`}>
+    <section className={styles.machineOverview} data-density={mode}>
+      <div className={styles.machineSummary}>
         <div className={styles.primaryCount}><span>{data.planned_installed === undefined && data.operating_equivalent !== undefined ? t('canvas.running') : t('recipeDisplay.installed')}</span><strong>{data.planned_installed !== undefined ? formatCapEx(data.planned_installed) : data.operating_equivalent !== undefined ? formatMachineExact(data.operating_equivalent) : '—'}</strong><small>{t('canvas.machines')}</small></div>
         {mode !== 'compact' && <div className={styles.auxiliaryCount}>{t('canvas.running')} <strong>{data.operating_equivalent === undefined ? '—' : formatMachineExact(data.operating_equivalent)}</strong>{mode === 'detailed' && <span> · {t('canvas.utilization')} {data.utilization == null ? '—' : formatProbability(data.utilization)}</span>}</div>}
         <MachineLimit id={id} />

@@ -57,6 +57,8 @@ The HTTP runner owns a temporary-port backend. Compare identical datasets, versi
 
 ## Verification boundary
 
+For node content groups, compare each node's width, height, position and port offsets across all three display modes; counting visible rows alone cannot detect a shifted connection anchor. Chrome inspection covers recipe, source, target and splitter groups, plus unchanged geometry and connection counts in the 41-node fixture. Typography changes are verified visually; static markup tests do not prove layout geometry.
+
 The suites cover executable contracts, not proof of every UI workflow. Native confirmation cancellation, browser unload/file selection, accessibility, cross-browser behavior and database recovery still need broader acceptance. Display preference save/restore, legacy fallback, dirty tracking, history/calculation isolation and quantity-aware presentation have automated regression coverage. Chrome checks cover all three modes on the starter line and a 41-node pressure fixture, including a 5-modifier/14-resource machine; recalculation, selection, temporary details and Chinese/English changes preserve node geometry. Browser checks also cover endpoint invalid drafts/Escape/valid commit/undo, splitter editing, Delete and click-to-connect ports, 720px/480px layouts, and saving/reopening the document mode. Native-dialog and cross-browser coverage is still incomplete. This is functional inspection, not a usability study or performance guarantee.
 
 The production build retains its main-bundle warning. SciPy warns that the server-owned `threads` option is forwarded to HiGHS; runtime tests verify that forwarding. Neither warning is suppressed. Historical test totals, screenshots and per-step reports live in Git, not in this guide.
