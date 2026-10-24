@@ -93,17 +93,18 @@ function EndpointQuantity(props: EndpointQuantityProps) {
   }
   const outcome = target && hasGoal ? !verified || actual === undefined ? 'unverified' : met ? 'met' : 'unmet' : undefined
   return <div className={`${styles.quantity} ${showActual ? styles.withActual : ''} ${invalid || outcome === 'unmet' ? styles.insufficient : ''} nodrag nopan`} title={invalid ? t('canvas.invalidQuantity') : title} onClick={event => event.stopPropagation()}>
-    {showActual && <strong className={styles.actual} title={actualDescription}>{t('canvas.actualPrefix')} {editable ? actual === undefined ? '—' : display(actual) : ''}</strong>}
-    <label className={styles.field}><span>{editable ? target ? t('canvas.settingAmount') : t('canvas.limit') : ''}</span><input type="text" inputMode={editable ? 'decimal' : undefined}
-      readOnly={!editable} aria-invalid={invalid || undefined} aria-label={`${name} ${editable ? boundary?.kind === 'source' ? t('canvas.supply_limit') : t('canvas.demandAmount') : t('canvas.actual_flow')} ${suffix}`}
-      value={editable ? draft ?? String(units.fromRate(quantity!, expression, 'rate_per_sec')) : actual === undefined ? '—' : display(actual)}
-      onChange={event => { if (editable) { cancelBlur.current = false; setInvalid(false); setDraft(event.target.value) } }} onBlur={confirm}
+    <div className={styles.actual} title={actualDescription}>
+      {showActual && <span className={styles.actualLabel}>{t('canvas.actualPrefix')}</span>}
+      <div className={styles.actualValue}><strong>{actual === undefined ? '—' : display(actual)}</strong><span className={styles.unit}>{suffix}</span></div>
+    </div>
+    {editable && <label className={styles.field}><span>{target ? t('canvas.settingAmount') : t('canvas.limit')}</span><input type="text" inputMode="decimal"
+      aria-invalid={invalid || undefined} aria-label={`${name} ${boundary?.kind === 'source' ? t('canvas.supply_limit') : t('canvas.demandAmount')} ${suffix}`}
+      value={draft ?? String(units.fromRate(quantity!, expression, 'rate_per_sec'))}
+      onChange={event => { cancelBlur.current = false; setInvalid(false); setDraft(event.target.value) }} onBlur={confirm}
       onKeyDown={event => {
-        if (!editable) return
         if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur() }
         else if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancelBlur.current = true; setDraft(null); setInvalid(false); event.currentTarget.blur() }
-      }} /></label>
-    <span className={styles.unit}>{suffix}</span>
+      }} /><span className={styles.unit}>{suffix}</span></label>}
     <span className={styles.shortage} data-outcome={invalid ? 'unmet' : outcome} role={invalid ? 'alert' : undefined}>{invalid ? t('canvas.invalidQuantity') : outcome === 'unverified' ? t('canvas.targetUnverified') : outcome === 'met' ? t('canvas.targetMet') : outcome === 'unmet' ? `${t('canvas.targetUnmet')}${insufficient ? ` · ${display(missing)}` : ''}` : ''}</span>
   </div>
 }
@@ -190,7 +191,7 @@ export function EndpointNode({ id, data, role }: { id: string; data: SourceNodeD
       const boundary = configuration?.boundary
       return <Fragment key={portId}>
         {(index === 0 || startsCategory) && <li className={`${styles.categoryHeading}${startsCategory ? ` ${styles.categoryStart}` : ''}`} style={{ '--port-color': category.themeColor } as CSSProperties}>{categoryDisplayName(category.id, category.displayName)}</li>}
-        <li className={`${styles.port} ${supply ? styles.sourceRow : styles.targetRow}`} style={{ '--port-color': category.themeColor } as CSSProperties}>
+        <li className={styles.port} style={{ '--port-color': category.themeColor } as CSSProperties}>
           <div className={styles.nameArea}><span className={styles.name} title={`${name} (${port.id})`}>{name}</span><PortPolicyBadge policy={configuration} formatAmount={amount => `${formatOpExRate(units.fromRate(amount, expression, 'rate_per_sec'))} ${suffix}`} formatQuantity={amount => `${formatOpExRate(amount / units.registry.normalize(expression).scale)} ${units.expression(expression).toString()}`} />{displayMode === 'detailed' && <span className={styles.identity} title={portId}>{port.routing_mode ?? 'wired'} · {portId}</span>}</div>
           <EndpointQuantity key={`${portId}:${boundaryMode(boundary)}`} nodeId={id} portId={portId} name={name} boundary={boundary} editableFlow={(configuration?.semantics.kind ?? 'flow') === 'flow'} actual={data.actual_amounts?.[portId]} units={units} expression={expression} suffix={suffix} remember={amount => { retainedAmounts.current[portId] = amount }} showActual={!supply || displayMode !== 'compact'} target={!supply} />
           {port.routing_mode === 'global' ? <GlobalPortIcon side={supply ? 'right' : 'left'} /> : <Handle id={portId} type={supply ? 'source' : 'target'} position={supply ? Position.Right : Position.Left} className={styles.handle} style={{ [supply ? 'right' : 'left']: '-5px' }} />}
