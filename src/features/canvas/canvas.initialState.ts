@@ -13,13 +13,13 @@ export const initialEnvironment: UnitSnapshot = {
 
 /** Pre-configured demo nodes for the canvas, including source, recipe, and target nodes. */
 export const initialNodes: Node[] = [
-  { id: 'source-ore', type: 'sourceNode', position: { x: -380, y: 0 }, data: { mode: 'infinite', ports: [{ id: 'iron_ore', category: 'item', amount: 1 }] } },
-  { id: 'spill-hydrogen', type: 'targetNode', position: { x: 510, y: 520 }, data: { mode: 'overflow', ports: [{ id: 'hydrogen', category: 'fluid', amount: 0 }] } },
-  { id: 'spill-ashes', type: 'targetNode', position: { x: 970, y: 220 }, data: { mode: 'overflow', ports: [{ id: 'tiny_dark_ashes', category: 'item', amount: 0 }] } },
+  { id: 'source-ore', type: 'sourceNode', position: { x: -440, y: 0 }, data: { mode: 'infinite', ports: [{ id: 'iron_ore', category: 'item', amount: 1 }] } },
+  { id: 'spill-hydrogen', type: 'targetNode', position: { x: 640, y: 760 }, data: { mode: 'overflow', ports: [{ id: 'hydrogen', category: 'fluid', amount: 0 }] } },
+  { id: 'spill-ashes', type: 'targetNode', position: { x: 1240, y: 300 }, data: { mode: 'overflow', ports: [{ id: 'tiny_dark_ashes', category: 'item', amount: 0 }] } },
   {
     id: 'source-1',
     type: 'sourceNode',
-    position: { x: -380, y: 380 },
+    position: { x: -440, y: 640 },
     data: {
       mode: 'infinite',
       ports: [{ id: 'water', amount: 1000, category: 'fluid' }],
@@ -28,7 +28,7 @@ export const initialNodes: Node[] = [
   {
     id: 'node-1',
     type: 'recipeNode',
-    position: { x: 40, y: 380 },
+    position: { x: 40, y: 640 },
     data: {
       recipe_id: 'electrolyzer_water',
       machine_name: '电解机',
@@ -61,7 +61,7 @@ export const initialNodes: Node[] = [
   {
     id: 'node-3',
     type: 'recipeNode',
-    position: { x: 510, y: 0 },
+    position: { x: 640, y: 0 },
     data: {
       recipe_id: 'blast_furnace_steel_01',
       machine_name: '电力高炉',
@@ -83,7 +83,7 @@ export const initialNodes: Node[] = [
   {
     id: 'target-1',
     type: 'targetNode',
-    position: { x: 970, y: 0 },
+    position: { x: 1240, y: 0 },
     data: {
       mode: 'demand',
       ports: [{ id: 'steel_ingot', amount: 10, category: 'item', unit: [{ baseUnitId: 'item', exponent: 1 }, { baseUnitId: 'min', exponent: -1 }] }],
