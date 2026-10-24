@@ -39,6 +39,8 @@ export const workspaceZhCN = {
   'workspace.missing': '对象已不存在，无法保存。',
   'workspace.invalid': '无法保存，请检查输入。',
   'workspace.reload': '重新载入',
+  'workspace.openRecipeWindow': '在独立窗口编辑配方',
+  'workspace.returnToSidebar': '返回侧栏',
 } as const
 
 export const workspaceEn: Record<keyof typeof workspaceZhCN, string> = {
@@ -81,4 +83,6 @@ export const workspaceEn: Record<keyof typeof workspaceZhCN, string> = {
   'workspace.missing': 'This object no longer exists and cannot be saved.',
   'workspace.invalid': 'Unable to save. Check the input.',
   'workspace.reload': 'Reload',
+  'workspace.openRecipeWindow': 'Edit recipe in a separate window',
+  'workspace.returnToSidebar': 'Return to sidebar',
 }

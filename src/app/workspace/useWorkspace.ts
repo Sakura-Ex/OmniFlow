@@ -45,6 +45,7 @@ export function useWorkspace({ nodes, edges, flow, request, activate }: {
   const panels = useWorkspacePreferences()
   const [target, setTarget] = useState<PropertyTarget>({ id: null, section: 'boundaries', selection: '' })
   const [expanded, setExpanded] = useState(false)
+  const [recipeWindow, setRecipeWindow] = useState(false)
   const [generation, setGeneration] = useState(0)
   const [canReturn, setCanReturn] = useState(false)
   const [focusToken, setFocusToken] = useState(0)
@@ -97,6 +98,7 @@ export function useWorkspace({ nodes, edges, flow, request, activate }: {
       // A later ReactFlow selection event must not replace an already pending navigation.
       restoreSelection(selection)
       const section = compatiblePropertySection(preferredSection.current, useCanvasStore.getState().nodes.find(node => node.id === id)?.type)
+      setRecipeWindow(false)
       setTarget({ id, section, selection })
       activateRef.current(id, section)
     }, () => restoreSelection(target.selection))
@@ -113,7 +115,7 @@ export function useWorkspace({ nodes, edges, flow, request, activate }: {
     return () => media.removeEventListener('change', adapt)
   }, [])
 
-  const openProperties = (id: string | null, requestedSection?: PropertySection) => {
+  const openProperties = (id: string | null, requestedSection?: PropertySection, presentation: 'sidebar' | 'window' = 'sidebar') => {
     // Capture before the draft guard opens a modal, and keep the original external
     // trigger when switching tabs inside an already-open property panel.
     const active = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -124,6 +126,7 @@ export function useWorkspace({ nodes, edges, flow, request, activate }: {
       const section = compatiblePropertySection(preferredSection.current, useCanvasStore.getState().nodes.find(node => node.id === id)?.type)
       const selected = id ? JSON.stringify([[id], []]) : selection
       if (id) select(id)
+      setRecipeWindow(section === 'recipe' && presentation === 'window')
       setTarget({ id, section, selection: selected })
       activateRef.current(id, section)
       panels.setPanels({ properties: true, ...(narrow() ? { objects: false } : {}) })
@@ -133,6 +136,7 @@ export function useWorkspace({ nodes, edges, flow, request, activate }: {
     })
   }
   const closeProperties = () => request(() => {
+    setRecipeWindow(false)
     activateRef.current(null, 'boundaries')
     panels.setPanels({ properties: false })
     pendingFocus.current = 'trigger'
@@ -168,10 +172,11 @@ export function useWorkspace({ nodes, edges, flow, request, activate }: {
     setCanReturn(false)
     setGeneration(value => value + 1)
     setExpanded(false)
+    setRecipeWindow(false)
     restoreSelection('[[],[]]')
     setTarget({ id: null, section: 'boundaries', selection: '[[],[]]' })
     activateRef.current(null, 'boundaries')
   }, [])
-  return { ...panels, target, expanded, setExpanded, generation, openProperties, closeProperties, toggleObjects,
+  return { ...panels, target, expanded, setExpanded, recipeWindow, setRecipeWindow, generation, openProperties, closeProperties, toggleObjects,
     select: (id: string) => request(() => select(id)), locate, returnView, canReturn, reset }
 }

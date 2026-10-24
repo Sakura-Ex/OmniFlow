@@ -1,0 +1,65 @@
+.surface {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  color: var(--text);
+  background: var(--panel);
+  font-family: var(--sans);
+}
+.docked {
+  position: static;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+}
+.floating {
+  position: fixed;
+  inset: 0;
+  width: min(1200px, calc(100vw - 48px));
+  height: min(850px, calc(100dvh - 48px));
+  max-width: calc(100vw - 48px);
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px var(--shadow-color);
+  overflow: hidden;
+}
+.floating::backdrop { background: rgb(0 0 0 / 38%); }
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.header[hidden] { display: none; }
+.header h2 { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.dockButton {
+  composes: button from '@/common/styles/primitives.module.css';
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-strong);
+  font-size: 12px;
+  cursor: pointer;
+}
+.content { flex: 1; min-height: 0; min-width: 0; overflow: hidden; }
+@media (max-width: 600px) {
+  .floating { width: calc(100vw - 16px); height: calc(100dvh - 16px); max-width: calc(100vw - 16px); max-height: calc(100dvh - 16px); }
+  .header { padding: 10px; gap: 8px; }
+}

@@ -304,7 +304,7 @@ export default function App() {
     handlePaste: async () => guard.request(() => { void handlePaste() }),
     handleDuplicate: () => guard.request(handleDuplicate),
     onDelete: () => guard.request(handleDeleteSelected),
-    isEditing: guard.asking || showSettings || showShortcuts || openMenu !== null,
+    isEditing: workspace.recipeWindow || guard.asking || showSettings || showShortcuts || openMenu !== null,
   })
 
   const handleFitView = useCallback(() => {
@@ -442,7 +442,7 @@ export default function App() {
         <PlanningEditorProvider value={openPlanning}>
         <BoundaryCommitProvider value={commitBoundary}>
         <BoundaryBatchCommitProvider value={commitBoundaries}>
-        <RecipeEditorProvider value={{ onEdit: id => workspace.openProperties(id, 'recipe'), onAutoFill: autoFillEndpoints }}>
+        <RecipeEditorProvider value={{ onEdit: id => workspace.openProperties(id, 'recipe', 'window'), onAutoFill: autoFillEndpoints }}>
           <EndpointEditorProvider value={{ onEdit: id => workspace.openProperties(id, 'resources') }}>
           <NodeDataProvider value={{ updateNodeData }}>
             <ReactFlow

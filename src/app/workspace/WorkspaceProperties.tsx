@@ -1,10 +1,11 @@
+import { RecipeEditorSurface } from '@/features/recipe/components/RecipeEditorSurface'
 import { useId, type ComponentProps, type ReactNode } from 'react'
 import type { Edge, Node } from 'reactflow'
 import { EditorDraftContext } from '@/common/components/EditorDraftContext'
 import { Icon } from '@/common/components/Icon'
 import { useTranslation, type UiTranslationKey } from '@/common/i18n'
 import { buildResourceId } from '@/common/utils/resourceId'
-import { RecipeEditor } from '@/features/recipe/components/RecipeEditor'
+import type { RecipeEditor } from '@/features/recipe/components/RecipeEditor'
 import { EndpointEditor } from '@/features/endpoint/components/EndpointEditor'
 import { NetworkConfigurationEditor } from '@/features/calculation/components/NetworkConfigurationEditor'
 import { useRecipeStore } from '@/features/recipe/recipe.store'
@@ -26,7 +27,7 @@ const errorLabels: Record<EditorFailure, UiTranslationKey> = {
 
 /** Existing domain editors keep their own public targets and save signatures. */
 interface WorkspacePropertiesProps {
-  workspace: Pick<ReturnType<typeof useWorkspace>, 'properties' | 'expanded' | 'target' | 'setExpanded' | 'closeProperties' | 'openProperties' | 'locate'>
+  workspace: Pick<ReturnType<typeof useWorkspace>, 'properties' | 'expanded' | 'recipeWindow' | 'setRecipeWindow' | 'target' | 'setExpanded' | 'closeProperties' | 'openProperties' | 'locate'>
   node?: Node
   nodes: Node[]
   edges: Edge[]
@@ -85,7 +86,7 @@ export function WorkspaceProperties(props: WorkspacePropertiesProps) {
   let content: ReactNode = null
   if (workspace.properties) {
     if (recipe) {
-      content = <RecipeEditor key={`${recipe.id}:${recipe.sessionId}`} node={recipe} onClose={workspace.closeProperties} onSave={onSaveRecipe} />
+      content = <RecipeEditorSurface floating={workspace.recipeWindow} onDock={() => workspace.setRecipeWindow(false)} key={`${recipe.id}:${recipe.sessionId}`} node={recipe} onClose={workspace.closeProperties} onSave={onSaveRecipe} />
     } else if (endpoint) {
       content = <EndpointEditor key={`${endpoint.id}:${endpoint.sessionId}`} node={endpoint} onClose={workspace.closeProperties} onSave={onSaveEndpoint} />
     } else if (node && sections.length) {
@@ -116,6 +117,7 @@ export function WorkspaceProperties(props: WorkspacePropertiesProps) {
       const target = sections.find(item => item === section)
       if (node && target) workspace.openProperties(node.id, target)
     }} trailing={<>
+      {recipe && <button aria-label={t('workspace.openRecipeWindow')} title={t('workspace.openRecipeWindow')} onClick={() => workspace.setRecipeWindow(true)}><Icon name="duplicate" /></button>}
       <button aria-label={t(workspace.expanded ? 'workspace.shrinkEditor' : 'workspace.expandEditor')} onClick={() => workspace.setExpanded(!workspace.expanded)}><Icon name="fitView" /></button>
       <button aria-label={t('canvas.close')} onClick={workspace.closeProperties}><Icon name="close" /></button>
     </>} />
